@@ -46,7 +46,7 @@ export default function Footer() {
         </div>
 
         {/* Mail Us */}
-        <div className="lg:pl-6 border-l border-gray-700 hidden lg:block">
+        <div className="lg:pl-6  block">
           <h3 className="text-gray-400 text-[13px] font-semibold uppercase mb-2 tracking-wide">
             Mail Us
           </h3>
@@ -69,7 +69,7 @@ export default function Footer() {
         </div>
 
         {/* Office Address */}
-        <div className="hidden lg:block">
+        <div className="block">
           <h3 className="text-gray-400 text-[13px] font-semibold uppercase mb-3 tracking-wide">
             Registered Office Address
           </h3>
@@ -96,7 +96,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between text-[13px] text-gray-400 gap-3">
         <div className="flex flex-wrap items-center justify-center gap-6">
           <p className="text-gray-400">
-            © 2026 <span className="text-white font-medium">Filo-Tesso</span>
+            © 2026 <span className="text-white font-medium">Filo Teso</span>
           </p>
         </div>
 

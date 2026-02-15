@@ -432,7 +432,7 @@ const Navbar = () => {
         {/* Center: logo image always centered */}
         <div className="justify-self-center">
           <Link to="/" className="inline-flex items-center pt-3">
-            <img src={logoImg} alt="FILO-TESSO" className="h-14 w-auto md:h-17" />
+            <img src={logoImg} alt="Filo Teso" className="h-14 w-auto md:h-17" />
           </Link>
         </div>
 

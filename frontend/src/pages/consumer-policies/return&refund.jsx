@@ -13,7 +13,7 @@ export default function ReturnsAndRefundsPage() {
             1. Overview
           </h2>
           <p>
-            We aim to ensure a smooth shopping experience at <strong>Filo Tesso</strong>.
+            We aim to ensure a smooth shopping experience at <strong>Filo Teso</strong>.
             This policy explains the rules for order cancellation, returns, replacements,
             and refunds. By placing an order, you agree to the terms below.
           </p>
@@ -138,7 +138,7 @@ export default function ReturnsAndRefundsPage() {
           </p>
 
           <div className="mt-3 rounded-2xl border bg-gray-50 p-4">
-            <p className="font-semibold text-gray-900">Filo Tesso Support</p>
+            <p className="font-semibold text-gray-900">Filo Teso Support</p>
             <p className="mt-1">
               Email: <span className="font-medium">filoteso.rk@gmail.com</span>
               <br />

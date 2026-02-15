@@ -11,7 +11,7 @@ const MarqueeOffers = () => {
         <div className="flex items-center space-x-2 mx-10 text-lg font-medium">
           <FaTshirt className="text-pink-400" />
           <span>
-            Welcome to <span className="text-pink-400 font-semibold">FILO-TESSO</span> — Style that Speaks Confidence!
+            Welcome to <span className="text-pink-400 font-semibold">Filo Teso</span> — Style that Speaks Confidence!
           </span>
         </div>
 
@@ -40,7 +40,7 @@ const MarqueeOffers = () => {
           <BsStars className="text-pink-400" />
           <span>
             ✨ Elevate your vibe — Fashion that Defines You. Only at{" "}
-            <span className="text-pink-400 font-semibold">FILO-TESSO</span> ✨
+            <span className="text-pink-400 font-semibold">Filo Teso</span> ✨
           </span>
         </div>
       </Marquee>

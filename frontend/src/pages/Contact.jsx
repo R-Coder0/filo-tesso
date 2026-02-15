@@ -8,7 +8,7 @@ export default function ContactPage() {
   const instagram =
     "https://www.instagram.com/filoteso.co.in?igsh=MTZweGhoOGxxemtuZw%3D%3D&utm_source=qr";
 
-  const waText = "Hi FILO-TESSO, I need help with my order.";
+  const waText = "Hi Filo Teso, I need help with my order.";
   const waLink = `https://wa.me/916307694248?text=${encodeURIComponent(waText)}`;
 
   return (

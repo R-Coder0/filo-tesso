@@ -73,7 +73,7 @@ const Collaborate = () => {
             Let's Collaborate
           </h2>
           <p className="mt-2 text-lg text-gray-600">
-            Join hands with <span className="font-bold text-black">FILO-TESSO</span>. Fill the form below and let's create magic together.
+            Join hands with <span className="font-bold text-black">Filo Teso</span>. Fill the form below and let's create magic together.
           </p>
         </div>
 
