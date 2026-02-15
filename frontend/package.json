@@ -1,0 +1,41 @@
+{
+  "name": "mobility-ssr",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --ssr src/entry-server.jsx --outDir dist/server",
+    "preview": "cross-env NODE_ENV=production node server"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@tailwindcss/vite": "^4.1.11",
+    "axios": "^1.12.2",
+    "compression": "^1.8.0",
+    "dom": "^0.0.3",
+    "express": "^5.1.0",
+    "framer-motion": "^12.34.0",
+    "lucide-react": "^0.525.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-fast-marquee": "^1.6.5",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^6.30.1",
+    "react-slick": "^0.31.0",
+    "react-slick-carousel": "^0.14.9",
+    "router": "^2.2.0",
+    "sirv": "^3.0.1",
+    "slick-carousel": "^1.8.1",
+    "tailwindcss": "^4.1.11",
+    "vite-plugin-ssr": "^0.4.142"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.6.0",
+    "cross-env": "^7.0.3",
+    "vite": "^7.0.0"
+  }
+}

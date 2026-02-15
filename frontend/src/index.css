@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import "tailwindcss";
+
+:root {
+  --brand-bg: #7b9071;        /* main navbar bg */
+  --brand-text: #324a22;      /* primary text */
+  --brand-text-soft: #38452b; /* muted text */
+  --brand-light: #eef2ec;     /* light background */
+  --brand-border: #d6ddcf;
+} 
+body{
+    font-family: 'Poppins';
+}
+
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+/* Add this to your global CSS file */
+body {
+  margin-top: 0 !important;
+}
+
+/* Or add padding to main content */
+main {
+  padding-top: 0px; /* Adjust based on your navbar height */
+}
+
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
