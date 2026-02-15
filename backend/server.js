@@ -15,6 +15,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const testimonialRoutes = require("./routes/testimonialroutes")
 // ✅ NEW LINE: Wishlist route import
 const wishlistRoutes = require("./routes/wishlistRoutes");
+const path = require("path");
 
 const app = express();
 
