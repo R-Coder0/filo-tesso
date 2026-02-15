@@ -60,7 +60,8 @@ const ManageProducts = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
+// Add these states near your other state declarations
+const [featureInput, setFeatureInput] = useState("");
   // previews
   const [mainPreview, setMainPreview] = useState(""); // url string
   const [galleryPreviews, setGalleryPreviews] = useState([]); // [{id, url, file}]
@@ -111,7 +112,28 @@ const ManageProducts = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen]);
+// Add these functions in your component
+const addFeature = () => {
+  if (featureInput.trim()) {
+    const currentFeatures = newProduct.featuresArray || [];
+    setNewProduct({
+      ...newProduct,
+      featuresArray: [...currentFeatures, featureInput.trim()],
+      features: [...currentFeatures, featureInput.trim()].join(",")
+    });
+    setFeatureInput("");
+  }
+};
 
+const removeFeature = (indexToRemove) => {
+  const currentFeatures = newProduct.featuresArray || [];
+  const updatedFeatures = currentFeatures.filter((_, index) => index !== indexToRemove);
+  setNewProduct({
+    ...newProduct,
+    featuresArray: updatedFeatures,
+    features: updatedFeatures.join(",")
+  });
+};
   // cleanup object urls on unmount
   useEffect(() => {
     return () => {
@@ -298,14 +320,14 @@ const ManageProducts = () => {
           <div className="flex gap-3">
             <button
               onClick={() => navigate("/admin/dashboard")}
-              className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 font-medium"
+              className="px-4 py-2 border border-black bg-transparent cursor-pointer hover:bg-black hover:text-white text-gray-800 font-medium"
             >
               ← Back
             </button>
 
             <button
               onClick={openAddModal}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
+              className="px-4 py-2 bg-black hover:bg-transparent hover:text-black border border-black text-white font-medium cursor-pointer shadow-sm"
             >
               + Add Product
             </button>
@@ -389,14 +411,14 @@ const ManageProducts = () => {
                         <button
                           onClick={() => openEditModal(product)}
                           disabled={isLoading}
-                          className="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-semibold"
+                          className="px-4 py-2 bg-black hover:bg-transparent hover:text-black border-black border cursor-pointer text-white font-semibold"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(product._id)}
                           disabled={isLoading}
-                          className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold"
+                          className="px-4 py-2 hover:bg-black :bg-transparent text-black border-black border cursor-pointer hover:text-white font-semibold"
                         >
                           Delete
                         </button>
@@ -409,304 +431,365 @@ const ManageProducts = () => {
           )}
         </div>
 
-        {/* Modal */}
-        {isModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center px-3 sm:px-4"
-            aria-modal="true"
-            role="dialog"
-          >
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/55"
-              onClick={closeModal}
-              aria-hidden="true"
-            />
+{/* Modal */}
+{isModalOpen && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center px-3 sm:px-4"
+    aria-modal="true"
+    role="dialog"
+  >
+    {/* Backdrop */}
+    <div
+      className="absolute inset-0 bg-black/55"
+      onClick={closeModal}
+      aria-hidden="true"
+    />
 
-            {/* Panel */}
-            <div
-              className="
-                relative w-full max-w-3xl
-                bg-white rounded-2xl shadow-xl border border-gray-200
-                max-h-[92vh] overflow-hidden
-              "
-            >
-              {/* Sticky Header */}
-              <div className="sticky top-0 z-10 bg-white p-4 sm:p-2 border-b border-gray-200 flex items-start justify-between">
-                <div className="pr-8">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                    {editingId ? "Edit Product" : "Add Product"}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                    {editingId ? "Update basic details." : "Upload image and fill product details."}
-                  </p>
+    {/* Panel */}
+    <div
+      className="
+        relative w-full max-w-3xl
+        bg-white rounded-2xl shadow-xl border border-gray-200
+        max-h-[92vh] overflow-hidden
+      "
+    >
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-white p-4 sm:p-2 border-b border-gray-200 flex items-start justify-between">
+        <div className="pr-8">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+            {editingId ? "Edit Product" : "Add Product"}
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            {editingId ? "Update basic details." : "Upload image and fill product details."}
+          </p>
 
-                  {error && (
-                    <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg">
-                      <p className="text-sm">{error}</p>
-                    </div>
-                  )}
-                </div>
+          {error && (
+            <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg">
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+        </div>
 
-                <button
-                  onClick={closeModal}
-                  className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-700"
-                  title="Close"
-                >
-                  ✕
-                </button>
+        <button
+          onClick={closeModal}
+          className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-700"
+          title="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Scrollable Body */}
+      <form onSubmit={handleAddOrUpdate} encType="multipart/form-data">
+        <div className="p-4 sm:p-5 overflow-y-auto max-h-[calc(92vh-140px)]">
+          {/* Previews Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            {/* Main image preview */}
+            <div className="border rounded-xl p-3 bg-gray-50">
+              <p className="text-sm font-semibold text-gray-800 mb-2">Main Image Preview</p>
+              <div className="w-full h-44 rounded-lg overflow-hidden bg-white border flex items-center justify-center">
+                {mainPreview ? (
+                  <img src={mainPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : existingMainImage ? (
+                  <img
+                    src={existingMainImage}
+                    alt="Existing"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs text-gray-500">No preview</span>
+                )}
               </div>
-
-              {/* Scrollable Body */}
-              <form onSubmit={handleAddOrUpdate} encType="multipart/form-data">
-                <div className="p-4 sm:p-5 overflow-y-auto max-h-[calc(92vh-140px)]">
-                  {/* Previews Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                    {/* Main image preview */}
-                    <div className="border rounded-xl p-3 bg-gray-50">
-                      <p className="text-sm font-semibold text-gray-800 mb-2">Main Image Preview</p>
-                      <div className="w-full h-44 rounded-lg overflow-hidden bg-white border flex items-center justify-center">
-                        {mainPreview ? (
-                          <img src={mainPreview} alt="Preview" className="w-full h-full object-cover" />
-                        ) : existingMainImage ? (
-                          <img
-                            src={existingMainImage}
-                            alt="Existing"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-500">No preview</span>
-                        )}
-                      </div>
-                      {(mainPreview || existingMainImage) && (
-                        <div className="mt-2 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleMainImageChange(null)}
-                            className="text-xs font-semibold text-gray-700 hover:text-red-600"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Gallery preview */}
-                    <div className="border rounded-xl p-3 bg-gray-50">
-                      <p className="text-sm font-semibold text-gray-800 mb-2">Gallery Preview</p>
-
-                      {galleryPreviews.length === 0 ? (
-                        <div className="w-full h-44 rounded-lg bg-white border flex items-center justify-center">
-                          <span className="text-xs text-gray-500">No gallery selected</span>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {galleryPreviews.map((g) => (
-                            <div key={g.id} className="relative group rounded-lg overflow-hidden border bg-white">
-                              <img src={g.url} alt="Gallery" className="w-full h-20 object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => removeGalleryItem(g.id)}
-                                className="
-                                  absolute top-1 right-1
-                                  bg-black/60 text-white text-xs
-                                  rounded px-2 py-1
-                                  opacity-100 sm:opacity-0 sm:group-hover:opacity-100
-                                  transition
-                                "
-                                title="Remove"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {galleryPreviews.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Tap ✕ to remove any image.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Form */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Name */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Product Name
-                      </label>
-                      <input
-                        type="text"
-                        value={newProduct.name}
-                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        placeholder="e.g. Premium Oversize T-Shirt"
-                      />
-                    </div>
-
-                    {/* Category */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Category
-                      </label>
-                      <select
-                        value={newProduct.category}
-                        onChange={(e) =>
-                          setNewProduct((p) => ({
-                            ...p,
-                            category: e.target.value,
-                            subcategory: "",
-                          }))
-                        }
-                        className="w-full p-3 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="" disabled>
-                          Choose category
-                        </option>
-                        <option value="men">Men</option>
-                        <option value="women">Women</option>
-                        <option value="customize">Customize</option>
-                      </select>
-                    </div>
-
-                    {/* Subcategory */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Subcategory
-                      </label>
-                      <select
-                        value={newProduct.subcategory}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, subcategory: e.target.value })
-                        }
-                        className="w-full p-3 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                        required
-                        disabled={!newProduct.category}
-                      >
-                        <option value="" disabled>
-                          {newProduct.category ? "Choose subcategory" : "Select category first"}
-                        </option>
-                        {subcats.map((sc) => (
-                          <option key={sc} value={sc}>
-                            {sc}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Price */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Price
-                      </label>
-                      <input
-                        type="number"
-                        value={newProduct.price}
-                        onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        min="0"
-                        step="0.01"
-                        placeholder="e.g. 999"
-                      />
-                    </div>
-
-                    {/* Main Image */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        {editingId ? "New Main Image (optional)" : "Main Image"}
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleMainImageChange(e.target.files?.[0] || null)}
-                        className="w-full p-3 border rounded-lg bg-white"
-                        required={!editingId}
-                      />
-                      {editingId && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          (Optional) Agar change nahi karna, to blank chhodo.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Features */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Features (comma separated)
-                      </label>
-                      <input
-                        type="text"
-                        value={newProduct.features}
-                        onChange={(e) => setNewProduct({ ...newProduct, features: e.target.value })}
-                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        placeholder="e.g. cotton, slim fit, machine-wash"
-                      />
-                    </div>
-
-                    {/* Gallery Images */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Gallery Images (optional)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => handleGalleryChange(e.target.files)}
-                        className="w-full p-3 border rounded-lg bg-white"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        value={newProduct.description}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, description: e.target.value })
-                        }
-                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="5"
-                        required
-                        placeholder="Write a short product description..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sticky Footer */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-1 sm:p-2 flex flex-col sm:flex-row gap-3 sm:justify-end">
+              {(mainPreview || existingMainImage) && (
+                <div className="mt-2 flex justify-end">
                   <button
                     type="button"
-                    onClick={closeModal}
-                    className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 font-semibold"
+                    onClick={() => handleMainImageChange(null)}
+                    className="text-xs font-semibold text-gray-700 hover:text-red-600"
                   >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className={`px-5 py-2.5 rounded-lg font-semibold text-white ${
-                      isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                    }`}
-                  >
-                    {isLoading ? "Processing..." : editingId ? "Update Product" : "Add Product"}
+                    Remove
                   </button>
                 </div>
-              </form>
+              )}
+            </div>
+
+            {/* Gallery preview */}
+            <div className="border rounded-xl p-3 bg-gray-50">
+              <p className="text-sm font-semibold text-gray-800 mb-2">Gallery Preview</p>
+
+              {galleryPreviews.length === 0 ? (
+                <div className="w-full h-44 rounded-lg bg-white border flex items-center justify-center">
+                  <span className="text-xs text-gray-500">No gallery selected</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {galleryPreviews.map((g) => (
+                    <div key={g.id} className="relative group rounded-lg overflow-hidden border bg-white">
+                      <img src={g.url} alt="Gallery" className="w-full h-20 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryItem(g.id)}
+                        className="
+                          absolute top-1 right-1
+                          bg-black/60 text-white text-xs
+                          rounded px-2 py-1
+                          opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                          transition
+                        "
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {galleryPreviews.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Tap ✕ to remove any image.
+                </p>
+              )}
             </div>
           </div>
-        )}
+
+          {/* Form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Name */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Product Name
+              </label>
+              <input
+                type="text"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                placeholder="e.g. Premium Oversize T-Shirt"
+              />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                value={newProduct.category}
+                onChange={(e) =>
+                  setNewProduct((p) => ({
+                    ...p,
+                    category: e.target.value,
+                    subcategory: "",
+                  }))
+                }
+                className="w-full p-3 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="" disabled>
+                  Choose category
+                </option>
+                <option value="men">Men</option>
+                <option value="women">Women</option>
+                <option value="customize">Customize</option>
+              </select>
+            </div>
+
+            {/* Subcategory */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Subcategory
+              </label>
+              <select
+                value={newProduct.subcategory}
+                onChange={(e) =>
+                  setNewProduct({ ...newProduct, subcategory: e.target.value })
+                }
+                className="w-full p-3 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                required
+                disabled={!newProduct.category}
+              >
+                <option value="" disabled>
+                  {newProduct.category ? "Choose subcategory" : "Select category first"}
+                </option>
+                {subcats.map((sc) => (
+                  <option key={sc} value={sc}>
+                    {sc}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Price */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Price
+              </label>
+              <input
+                type="number"
+                value={newProduct.price}
+                onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                min="0"
+                step="0.01"
+                placeholder="e.g. 999"
+              />
+            </div>
+
+            {/* Main Image - Improved */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                {editingId ? "New Main Image (optional)" : "Main Image"}
+              </label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleMainImageChange(e.target.files?.[0] || null)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  id="main-image-upload"
+                  required={!editingId}
+                />
+                <div className="w-full p-3 border rounded-lg bg-white flex items-center justify-between">
+                  <span className="text-gray-600 text-sm truncate mr-2">
+                    {mainPreview ? 'Image selected' : editingId ? 'Choose new image (optional)' : 'Click to upload main image'}
+                  </span>
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm font-medium border">
+                    Browse
+                  </span>
+                </div>
+              </div>
+              {editingId && (
+                <p className="text-xs text-gray-500 mt-1">
+                  (Optional) Agar change nahi karna, to blank chhodo.
+                </p>
+              )}
+            </div>
+
+            {/* Features - Improved */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Features
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Add product features (click on a feature to remove it)
+              </p>
+              
+              {/* Feature tags */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {newProduct.featuresArray && newProduct.featuresArray.length > 0 ? (
+                  newProduct.featuresArray.map((feature, index) => (
+                    <span
+                      key={index}
+                      onClick={() => removeFeature(index)}
+                      className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 cursor-pointer hover:bg-red-100 hover:text-red-600 transition-colors"
+                    >
+                      {feature}
+                      <span className="text-xs ml-1">✕</span>
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No features added yet</p>
+                )}
+              </div>
+
+              {/* Add feature input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={featureInput}
+                  onChange={(e) => setFeatureInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Type a feature and press Enter or click Add"
+                />
+                <button
+                  type="button"
+                  onClick={addFeature}
+                  className="px-4 py-2 bg-black text-white font-medium hover:bg-white hover:text-black hover:border-black border border-transparent transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Gallery Images - Improved */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Gallery Images (optional)
+              </label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleGalleryChange(e.target.files)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  id="gallery-images-upload"
+                />
+                <div className="w-full p-3 border rounded-lg bg-white flex items-center justify-between">
+                  <span className="text-gray-600 text-sm truncate mr-2">
+                    {galleryPreviews.length > 0 
+                      ? `${galleryPreviews.length} image(s) selected` 
+                      : 'Click to upload multiple gallery images'}
+                  </span>
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm font-medium border">
+                    Browse
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                You can select multiple images at once
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                value={newProduct.description}
+                onChange={(e) =>
+                  setNewProduct({ ...newProduct, description: e.target.value })
+                }
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="5"
+                required
+                placeholder="Write a short product description..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky Footer - Updated buttons */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-1 sm:p-2 flex flex-col sm:flex-row gap-3 sm:justify-end">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="px-5 py-2.5 bg-black text-white font-medium hover:bg-white hover:text-black hover:border-black border border-transparent transition-colors"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`px-5 py-2.5 font-medium text-white transition-colors ${
+              isLoading 
+                ? "bg-gray-400 cursor-not-allowed" 
+                : "bg-black hover:bg-white hover:text-black hover:border-black border border-transparent"
+            }`}
+          >
+            {isLoading ? "Processing..." : editingId ? "Update Product" : "Add Product"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

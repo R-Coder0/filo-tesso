@@ -1,4 +1,5 @@
-// src/pages/ProductDetailPage.jsx
+// src/pages/ProductDetailPage.jsx (updated sections)
+
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
@@ -14,12 +15,20 @@ import {
   FaCheck,
   FaTimes,
   FaArrowLeft,
+  FaChevronDown,
+  FaChevronUp,
+  FaShippingFast,
+  FaUndoAlt,
 } from "react-icons/fa";
 import {
   Star,
   User,
   Calendar,
-  MessageCircle
+  MessageCircle,
+  Package,
+  RotateCcw,
+  Truck,
+  Info,
 } from "lucide-react";
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
@@ -39,6 +48,9 @@ const ProductDetailPage = () => {
   const [selectedColor, setSelectedColor] = useState("");
   const [customFile, setCustomFile] = useState(null);
 
+  // FAQ Accordion state
+  const [openFaq, setOpenFaq] = useState("description"); // 'description', 'features', 'refund', 'shipping'
+
   // Reviews state
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -57,9 +69,19 @@ const ProductDetailPage = () => {
   // Wishlist
   const { wishlist, addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [wishlistLoading, setWishlistLoading] = useState(false);
-  
-  // Use the isInWishlist function from context for more reliable checking
+
   const isWishlisted = !!product && isInWishlist(product._id);
+
+  // Static FAQ content for refund and shipping
+  const refundPolicy = {
+    title: "Refund Policy",
+    content: "We offer a 30-day return policy on all unused items in original packaging. Customized products are non-refundable unless defective. Refunds are processed within 5-7 business days after receiving the returned item."
+  };
+
+  const shippingPolicy = {
+    title: "Shipping Policy",
+    content: "Free shipping on orders above ₹999. Standard delivery takes 3-5 business days. Express shipping available at additional cost. Orders are dispatched within 24 hours on business days."
+  };
 
   useEffect(() => {
     console.log('🔐 ProductDetailPage - Auth Context:', {
@@ -126,7 +148,6 @@ const ProductDetailPage = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Improved wishlist handler
   const handleWishlistClick = async () => {
     if (!product) return;
 
@@ -251,7 +272,7 @@ const ProductDetailPage = () => {
     }
   };
 
-  // Star Rating Component
+  // Star Rating Component (improved design)
   const StarRating = ({ rating, size = 18, onRatingChange, readonly = false }) => {
     const [hoverRating, setHoverRating] = useState(0);
 
@@ -261,7 +282,7 @@ const ProductDetailPage = () => {
           <button
             key={star}
             type="button"
-            className={`${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
+            className={`${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform focus:outline-none`}
             onClick={() => !readonly && onRatingChange && onRatingChange(star)}
             onMouseEnter={() => !readonly && setHoverRating(star)}
             onMouseLeave={() => !readonly && setHoverRating(0)}
@@ -270,12 +291,47 @@ const ProductDetailPage = () => {
             <Star
               size={size}
               className={`${(hoverRating || rating) >= star
-                  ? 'fill-yellow-400 text-yellow-400'
-                  : 'text-gray-300'
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
                 } transition-colors`}
             />
           </button>
         ))}
+      </div>
+    );
+  };
+
+  const AccordionItem = ({ id, title, children, isOpen, onToggle }) => {
+    return (
+      <div className="border-b border-gray-300">
+
+        {/* Header */}
+        <button
+          onClick={() => onToggle(isOpen ? "" : id)}
+          className="w-full flex items-center justify-between px-6 py-5 text-left bg-gray-50 hover:bg-gray-100 transition"
+        >
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">
+              {title}
+            </h4>
+            <p className="text-sm text-gray-500 mt-1">
+              Overview and product details
+            </p>
+          </div>
+
+          {isOpen ? (
+            <FaChevronUp className="text-gray-600" />
+          ) : (
+            <FaChevronDown className="text-gray-600" />
+          )}
+        </button>
+
+        {/* Content */}
+        {isOpen && (
+          <div className="px-6 pb-6 bg-white text-gray-700 leading-relaxed">
+            {children}
+          </div>
+        )}
       </div>
     );
   };
@@ -313,13 +369,14 @@ const ProductDetailPage = () => {
   const isCustomize = (product.category || "").toLowerCase() === "customize";
   const availableSizes = product.sizes && product.sizes.length > 0 ? product.sizes : DEFAULT_SIZES;
   const totalPrice = product.price * quantity;
+  const inStock = product.stock > 0;
 
   return (
-    <div className="min-h-screen bg-white p-4">
+    <div className="min-h-screen bg-white p-4 mt-20">
       {toast && (
         <div className={`fixed top-24 right-6 z-50 p-4 rounded border-l-4 shadow-lg transition-all duration-300 ${toast.type === "success"
-            ? "bg-white border-green-500 text-green-800"
-            : "bg-white border-red-500 text-red-800"
+          ? "bg-white border-green-500 text-green-800"
+          : "bg-white border-red-500 text-red-800"
           }`}>
           <div className="flex items-center space-x-2">
             {toast.type === "success" ? <FaCheck className="text-green-500" /> : <FaTimes className="text-red-500" />}
@@ -342,9 +399,9 @@ const ProductDetailPage = () => {
             <button
               onClick={handleWishlistClick}
               disabled={wishlistLoading}
-              className={`flex border py-4 px-8 font-semibold tracking-wide uppercase transition-all duration-200 flex items-center justify-center space-x-2 ${isWishlisted
-                  ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
-                  : "border-gray-300 text-gray-700 hover:border-gray-400 hover:text-black"
+              className={`flex border py-4 px-8 font-semibold tracking-wide uppercase transition-all duration-200 items-center justify-center space-x-2 ${isWishlisted
+                ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
+                : "border-gray-300 text-gray-700 hover:border-gray-400 hover:text-black"
                 } ${wishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {wishlistLoading ? (
@@ -363,9 +420,10 @@ const ProductDetailPage = () => {
       </div>
 
       <div className="container mx-auto px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Image Gallery */}
-          <div className="space-y-6">
+         <div className="space-y-6 lg:sticky lg:top-28 h-fit">
+
             <div className="aspect-square bg-gray-50 overflow-hidden">
               <img
                 src={`${apiUrl}${selectedImage}`}
@@ -408,83 +466,84 @@ const ProductDetailPage = () => {
             <div className="space-y-3">
               <h1 className="text-xl md:text-4xl md:font-bold text-black leading-tight">{product.name}</h1>
 
-              {/* Rating Display */}
-              <div className="flex items-center space-x-4">
+              {/* Improved Rating Display */}
+              <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2">
                   <StarRating rating={product?.ratings?.average || 0} readonly={true} size={20} />
                   <span className="text-lg font-semibold text-gray-700">
-                    ({product?.ratings?.average?.toFixed(1) || 0})
+                    {product?.ratings?.average?.toFixed(1) || "0.0"}
                   </span>
                 </div>
-                <span className="text-gray-500">•</span>
-                <span className="text-gray-600">
-                  {product?.ratings?.count || 0} reviews
+                <span className="text-gray-400 hidden sm:inline">•</span>
+                <a href="#reviews" className="text-gray-600 hover:text-black transition-colors">
+                  {product?.ratings?.count || 0} {product?.ratings?.count === 1 ? 'Review' : 'Reviews'}
+                </a>
+                <span className="text-gray-400 hidden sm:inline">•</span>
+                {/* <span className="text-gray-600">{product?.soldCount || 0} Sold</span> */}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-2xl md:font-bold text-black">₹{product.price.toLocaleString()}</div>
+                {/* In Stock Label - Green Color */}
+                {/* <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${inStock 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : 'bg-red-100 text-red-800 border border-red-200'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full mr-2 ${inStock ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  {inStock ? 'In Stock' : 'Out of Stock'}
+                </span> */}
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium 'bg-green-100 text-green-800 border border-green-200`}>
+                  <span className={`w-2 h-2 rounded-full mr-2 bg-green-500`}></span>
+                  In Stock
                 </span>
               </div>
 
-              <div className="text-2xl md:font-bold text-black">₹{product.price.toLocaleString()}</div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-black tracking-wide uppercase">Description</h3>
-              <p className="text-gray-600 leading-relaxed">{product.description}</p>
-            </div>
-
-            {product.features && product.features.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-black tracking-wide uppercase">Features</h3>
-                <ul className="space-y-2">
-                  {product.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start space-x-3 text-gray-600">
-                      <GoDotFill className="text-black text-sm mt-1 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Size Selection */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-black tracking-wide uppercase">Size</h3>
-              <div className="flex flex-wrap gap-2">
-                {availableSizes.map((size, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedSize(size)}
-                    className={`px-4 py-2 border font-medium text-sm tracking-wide uppercase transition-colors duration-200 ${selectedSize === size
+            {/* Size and Quantity - Left Right Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-1 gap-6">
+              {/* Size Selection */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-black tracking-wide uppercase">Size</h3>
+                <div className="flex flex-wrap gap-2">
+                  {availableSizes.map((size, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-4 py-2 border font-medium text-sm tracking-wide uppercase transition-colors duration-200 ${selectedSize === size
                         ? "border-black bg-black text-white"
                         : "border-gray-300 text-gray-700 hover:border-gray-400 hover:text-black"
-                      }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quantity */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-black tracking-wide uppercase">Quantity</h3>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center border border-gray-300">
-                  <button
-                    onClick={() => handleQuantityChange(-1)}
-                    className="px-4 py-2 text-gray-600 hover:text-black hover:bg-gray-50 transition-colors duration-200"
-                    disabled={quantity <= 1}
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-2 font-medium text-black border-x border-gray-300">{quantity}</span>
-                  <button
-                    onClick={() => handleQuantityChange(1)}
-                    className="px-4 py-2 text-gray-600 hover:text-black hover:bg-gray-50 transition-colors duration-200"
-                  >
-                    +
-                  </button>
+                        }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
                 </div>
-                <div className="text-sm text-gray-600">
-                  Total: <span className="font-semibold text-black">₹{totalPrice.toLocaleString()}</span>
+              </div>
+
+              {/* Quantity */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-black tracking-wide uppercase">Quantity</h3>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center border border-gray-300">
+                    <button
+                      onClick={() => handleQuantityChange(-1)}
+                      className="px-4 py-2 text-gray-600 hover:text-black hover:bg-gray-50 transition-colors duration-200"
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-2 font-medium text-black border-x border-gray-300">{quantity}</span>
+                    <button
+                      onClick={() => handleQuantityChange(1)}
+                      className="px-4 py-2 text-gray-600 hover:text-black hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Total: <span className="font-semibold text-black">₹{totalPrice.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -507,8 +566,8 @@ const ProductDetailPage = () => {
                         key={side}
                         onClick={() => setSelectedSide(side)}
                         className={`px-4 py-2 border rounded-sm text-sm font-medium transition-colors duration-200 ${selectedSide === side
-                            ? "bg-black text-white border-black"
-                            : "border-gray-300 text-gray-700 hover:border-gray-400 hover:text-black"
+                          ? "bg-black text-white border-black"
+                          : "border-gray-300 text-gray-700 hover:border-gray-400 hover:text-black"
                           }`}
                       >
                         {side}
@@ -549,7 +608,7 @@ const ProductDetailPage = () => {
               <div className="flex space-x-4">
                 <button
                   onClick={handleBuyNow}
-                  className="flex-1 bg-black text-white md:py-4 md:px-8 py-2 px-4  font-semibold tracking-wide uppercase transition-all duration-200 hover:bg-gray-800 flex items-center justify-center space-x-2"
+                  className="flex-1 bg-black text-white md:py-4 md:px-8 py-2 px-4 font-semibold tracking-wide uppercase transition-all duration-200 hover:bg-gray-800 flex items-center justify-center space-x-2"
                 >
                   <FaShoppingBag className="text-lg" />
                   <span>Buy Now</span>
@@ -565,9 +624,49 @@ const ProductDetailPage = () => {
                 </button>
               </div>
               <div className="text-xs text-gray-500 text-center">
-                ✓ Free shipping on orders over ₹999 • ✓ 03-days return policy
+                {/* ✓ Free shipping on orders over ₹999 • ✓ 03-days return policy */}
               </div>
             </div>
+
+            {/* FAQ Accordion Section - Description, Features, Refund, Shipping */}
+            <div className="mt-8 border border-gray-300 bg-gray-50">
+              <AccordionItem
+                id="description"
+                title="Description"
+                isOpen={openFaq === "description"}
+                onToggle={setOpenFaq}
+              >
+                <p>{product.description}</p>
+              </AccordionItem>
+
+              <AccordionItem
+                id="specifications"
+                title="Specifications"
+                isOpen={openFaq === "specifications"}
+                onToggle={setOpenFaq}
+              >
+                <p>Overview and product details</p>
+              </AccordionItem>
+
+              <AccordionItem
+                id="refund"
+                title="Refund Policy"
+                isOpen={openFaq === "refund"}
+                onToggle={setOpenFaq}
+              >
+                <p>{refundPolicy.content}</p>
+              </AccordionItem>
+
+              <AccordionItem
+                id="shipping"
+                title="Shipping Policy"
+                isOpen={openFaq === "shipping"}
+                onToggle={setOpenFaq}
+              >
+                <p>{shippingPolicy.content}</p>
+              </AccordionItem>
+            </div>
+
           </div>
         </div>
 
@@ -608,7 +707,7 @@ const ProductDetailPage = () => {
         )}
 
         {/* Reviews Section */}
-        <div className="mt-16 border-t border-gray-200 pt-16">
+        <div id="reviews" className="mt-16 border-t border-gray-200 pt-16">
           <div className="md:max-w-4xl mx-auto">
             <div className="block md:flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold text-gray-900">Customer's Reviews</h2>
@@ -671,8 +770,8 @@ const ProductDetailPage = () => {
                       type="submit"
                       disabled={reviewSubmitting || !user}
                       className={`px-6 py-2 font-medium cursor-pointer ${reviewSubmitting || !user
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-black'
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-black'
                         } text-white transition-colors`}
                     >
                       {reviewSubmitting ? 'Submitting...' : 'Submit Review'}

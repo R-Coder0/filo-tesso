@@ -210,7 +210,7 @@ export default function Bestsellers({
       {loading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: chunkSize }).map((_, i) => (
-            <div key={i} className="border border-gray-200 rounded-2xl p-3 animate-pulse">
+            <div key={i} className="border border-gray-200 p-3 animate-pulse">
               <div className="w-full bg-gray-200 rounded-xl h-44 sm:h-48" />
               <div className="h-4 bg-gray-200 rounded mt-3 w-3/4" />
               <div className="h-4 bg-gray-200 rounded mt-2 w-1/2" />
@@ -253,7 +253,7 @@ export default function Bestsellers({
             {items.map((p, idx) => (
               <div
                 key={`${p._id || p.id || idx}`}
-                className="flex-shrink-0 snap-start w-40 sm:w-48 lg:w-52"
+                className="flex-shrink-0 snap-start w-40 sm:w-48 lg:w-62"
                 role="listitem"
               >
                 <BestCard product={p} apiUrl={apiUrl} />
@@ -296,7 +296,7 @@ function BestCard({ product, apiUrl }) {
   return (
     <Link
       to={`/product/${id}`}
-      className="group block border border-gray-200 rounded-2xl overflow-hidden hover:shadow-md transition bg-white"
+      className="group block border border-gray-200  overflow-hidden hover:shadow-md transition bg-white"
     >
       {/* IMAGE SECTION */}
       <div className="relative w-full bg-white overflow-hidden rounded-t-2xl">

@@ -101,7 +101,7 @@ const LatestProducts = () => {
             {latestProducts.map((product) => (
               <div
                 key={product._id}
-                className="w-40 sm:w-48 lg:w-52 flex-shrink-0 snap-start rounded-lg overflow-hidden shadow-lg shadow-gray-200 hover:shadow-md transition-shadow bg-white"
+                className="w-40 sm:w-48 lg:w-62 flex-shrink-0 snap-start overflow-hidden shadow-sm shadow-gray-200 hover:shadow-md transition-shadow bg-white"
               >
                 <Link to={`/product/${product._id}`} className="block relative">
                   
