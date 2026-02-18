@@ -1,157 +1,150 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+/* MEN IMAGES */
+import one from "../assets/mensimage/1.png";
+import two from "../assets/mensimage/2.png";
+import three from "../assets/mensimage/3.png";
+import four from "../assets/mensimage/4.png";
+import five from "../assets/mensimage/5.png";
+import six from "../assets/mensimage/6.png";
+import seven from "../assets/mensimage/7.png";
+import eight from "../assets/mensimage/8.png";
+import eleven from "../assets/mensimage/11.png";
 
-// Swap these with your real assets if you’ve got them.
-import imageone from "../assets/mens.png";
-import imagetwo from "../assets/women.png"
-import imagethree from "../assets/banner.png"
-import imagefour from "../assets/womentshirt.avif"
-import imagefive from "../assets/womenpolo.avif"
-import imagesix from "../assets/womenoversize.avif"
-import regular from "../assets/regulartshirt.avif";
-import oversize from "../assets/oversizetshirt.avif";
-import polo from "../assets/Polo.avif";
-import formal from "../assets/formal.jpeg";
-import jeans from "../assets/jeans.webp";
-import joggers from "../assets/joggers.webp";
-import jacket from "../assets/jacket.jpeg";
-import hoodies from "../assets/hoodies.avif";
-import sweartshirt from "../assets/womensimage/5.svg"
-/**
- * Slugs match ProductList.jsx and Navbar.jsx
- * Paths:
- *  - /products/:category
- *  - /products/:category/:subcategory
- */
+/* WOMEN IMAGES */
+import imagefourteen from "../assets/womensimage/14.png";
+import imagefifteen from "../assets/womensimage/15.png";
+import imagesixteen from "../assets/womensimage/16.png";
+import imageseventeen from "../assets/womensimage/17.png";
+import imageeighteen from "../assets/womensimage/18.png";
+import imagenineteen from "../assets/womensimage/19.png";
+import imagetwenty from "../assets/womensimage/20.png";
+
+/* CUSTOM IMAGES */
+import thirteen from "../assets/mensimage/13.svg";
+import ten from "../assets/mensimage/10.svg";
+import imagetwentyone from "../assets/custom/1.svg";
+import imagetwentytwo from "../assets/custom/2.svg";
+import imagetwentythree from "../assets/custom/3.svg";
+
 const DATA = [
   {
     key: "men",
     title: "Men",
-    cover: imageone,
-    ctaBg: "bg-black",
-    ctaText: "text-white",
     subs: [
-      { label: "Regular T-shirt", slug: "regular-tshirt", img: regular },
-      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: oversize },
-      { label: "Polo T-shirt", slug: "polo-tshirt", img: polo },
-      { label: "Formal Shirt", slug: "formal-shirt", img: formal },
-      { label: "Jeans", slug: "jeans", img: jeans },
-      { label: "Joggers", slug: "joggers", img: joggers },
-      { label: "Jacket", slug: "jacket", img: jacket },
-      { label: "Hoodies", slug: "hoodies", img: hoodies },
+      { label: "Jackets", slug: "jacket", img: eleven },
+      { label: "Shirts", slug: "regular-shirt", img: six },
+      { label: "Trousers", slug: "trousers", img: one },
+      { label: "Jeans", slug: "jeans", img: seven },
+      { label: "Polos", slug: "polo-tshirt", img: four },
+      { label: "Oversize Shirt", slug: "oversize-shirt", img: three },
+      { label: "Plus Size", slug: "plus-size", img: two },
+      { label: "Cargos", slug: "cargos", img: eight },
+      { label: "Shoes", slug: "shoes", img: five },
     ],
   },
   {
     key: "women",
     title: "Women",
-    cover: imagetwo,
-    ctaBg: "bg-pink-600",
-    ctaText: "text-white",
     subs: [
-      { label: "Regular T-shirt", slug: "regular-tshirt", img: imagefour },
-      { label: "Polo T-shirt", slug: "polo-tshirt", img: imagefive },
-      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: imagesix },
-      { label: "Jeans", slug: "jeans", img: imageone },
-      { label: "Jackets", slug: "jackets", img: imageone },
-      { label: "Hoodies", slug: "hoodies", img: imageone },
+      { label: "Top", slug: "top", img: imagefourteen },
+      { label: "Oversized", slug: "oversized", img: imagesixteen },
+      { label: "Co-ord Set", slug: "co-ord-set", img: imagefifteen },
+      { label: "Joggers", slug: "joggers", img: imageseventeen },
+      { label: "Trousers", slug: "trousers", img: imageeighteen },
+      { label: "Jeans", slug: "jeans", img: imagenineteen },
+      { label: "Sports", slug: "sports", img: imagetwenty },
     ],
   },
   {
     key: "customize",
     title: "Customize",
-    cover: imagethree,
-    ctaBg: "bg-indigo-600",
-    ctaText: "text-white",
     subs: [
-      { label: "Hoodies", slug: "hoodies", img: hoodies },
-      { label: "Sweatshirt", slug: "sweatshirt", img: sweartshirt },
-      { label: "Regular T-shirt", slug: "regular-tshirt", img: regular },
-      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: imageone },
-      { label: "Couple T-shirt", slug: "couple-tshirt", img: imageone },
+      // { label: "Hoodies", slug: "hoodies", img: thirteen },
+      // { label: "Sweatshirt", slug: "sweatshirt", img: ten },
+      { label: "Regular T-shirt", slug: "regular-tshirt", img: imagefourteen },
+      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: three },
+      { label: "Polo T-shirts", slug: "polo-tshirt", img: imagesixteen },
+      { label: "Regular CoupleTshirt", slug: "regular-coupletshirt", img: imagetwentyone },
+      { label: "Oversize CoupleTshirt", slug: "oversize-coupletshirt", img: imagetwentytwo },
+      // { label: "Couple Hoodies", slug: "couple-hoodies", img: imagetwentythree },
     ],
   },
 ];
 
-export default function CategoriesSection({ showCount = 3 }) {
-  const navigate = useNavigate();
 
-  const goAll = (cat) => navigate(cat === "all" ? "/products" : `/products/${cat}`);
+export default function CategoriesSection() {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState({});
+
+  const toggleExpand = (key) => {
+    setExpanded((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
   const goSub = (cat, sub) => navigate(`/products/${cat}/${sub}`);
 
   return (
     <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-6">
-        <h2 className="text-xl sm:text-3xl md:font-bold font-semibold tracking-tight">Shop by Categories</h2>
-        <p className="text-gray-600 mt-1 text-sm md:text-md">Only the highlights. The rest is behind “View All.”</p>
+        <h2 className="text-xl sm:text-3xl font-semibold tracking-tight">
+          Shop by Categories
+        </h2>
       </div>
 
-      <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-3 lg:grid-cols-3">
+      <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-3">
         {DATA.map((cat) => {
-          const topSubs = (cat.subs || []).slice(0, showCount);
+          const isExpanded = expanded[cat.key];
+          const visibleSubs = isExpanded ? cat.subs : cat.subs.slice(0, 6);
+
           return (
             <article
               key={cat.key}
-              className="group border border-gray-200 rounded-2xl overflow-hidden bg-white hover:shadow-lg transition"
+              className="border border-gray-200 rounded-2xl overflow-hidden bg-white hover:shadow-lg transition"
             >
-              {/* Hero image with overlay */}
-              <div className="relative">
-                <div className="w-full aspect-[16/9] bg-gray-50">
-                  <img
-                    src={cat.cover}
-                    alt={cat.title}
-                    className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-                  />
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-                <div className="absolute left-4 bottom-4">
-                  <h3 className="text-white text-xl font-semibold drop-shadow">{cat.title}</h3>
-                </div>
-
-                <button
-                  onClick={() => goAll(cat.key)}
-                  className={`absolute right-4 bottom-4 px-4 py-2 rounded-full text-sm font-medium ${cat.ctaBg} ${cat.ctaText} hover:opacity-90 transition`}
-                >
-                  Shop All
-                </button>
+              {/* Header */}
+              <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold">{cat.title}</h3>
               </div>
 
-              {/* Subcategories preview (only 3) */}
+              {/* Subcategories */}
               <div className="p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Popular in {cat.title}</h4>
-
                 <div className="grid grid-cols-3 gap-3">
-                  {topSubs.map((s) => (
+                  {visibleSubs.map((s) => (
                     <button
                       key={s.slug}
                       onClick={() => goSub(cat.key, s.slug)}
-                      className="text-left border border-gray-200 rounded-xl hover:border-black hover:shadow-sm transition group"
-                      title={s.label}
+                      className="text-left border border-gray-200 rounded-xl hover:border-black hover:shadow-sm transition"
                     >
                       <div className="w-full aspect-square bg-gray-50 rounded-t-xl overflow-hidden">
                         <img
-                          src={s.img || imageone}
+                          src={s.img}
                           alt={s.label}
-                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="h-full w-full object-cover hover:scale-105 transition duration-300"
                         />
                       </div>
                       <div className="px-2 py-2">
-                        <div className="text-xs font-medium text-gray-800 truncate">{s.label}</div>
+                        <div className="text-xs font-medium text-gray-800 truncate">
+                          {s.label}
+                        </div>
                       </div>
                     </button>
                   ))}
                 </div>
 
-                {/* View All button under subcategories */}
-                <div className="mt-4 flex justify-center">
-                  <button
-                    onClick={() => goAll(cat.key)}
-                    className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-full hover:bg-gray-50"
-                    aria-label={`View all ${cat.title} subcategories`}
-                  >
-                    View All
-                  </button>
-                </div>
+                {/* View More / View Less */}
+                {cat.subs.length > 6 && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => toggleExpand(cat.key)}
+                      className="text-sm font-medium text-black border-b border-black hover:opacity-70 transition"
+                    >
+                      {isExpanded ? "View Less" : "View More"}
+                    </button>
+                  </div>
+                )}
               </div>
             </article>
           );

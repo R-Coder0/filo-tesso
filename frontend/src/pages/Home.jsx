@@ -6,6 +6,7 @@ import CategoriesSection from '../components/Categoriessection'
 import LatestProducts from '../components/LatestProducts'
 import OurStory from '../components/OurStory'
 import TestimonialSection from '../components/TestimonialSection'
+import { ShoppingExperience } from '../components/ShoppingExperience'
 
 const Home = () => {
   return (
@@ -16,6 +17,7 @@ const Home = () => {
 <Bestsellers/>
  <ProductList/>
  <OurStory/>
+ <ShoppingExperience/>
  {/* <TestimonialSection/> */}
     </div>
   )
