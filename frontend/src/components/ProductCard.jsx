@@ -10,20 +10,39 @@ const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
 
+  const getStockStatus = (stock) => {
+    if (stock === 0) return { text: "Out of Stock", color: "text-red-500" };
+    if (stock <= 5) return { text: "Low Stock", color: "text-orange-500" };
+    return { text: "In Stock", color: "text-green-600" };
+  };
+
+  const stockStatus = getStockStatus(product?.stock);
+
+  const discount =
+    product?.price?.original && product?.price?.sale
+      ? Math.round(
+          ((product.price.original - product.price.sale) /
+            product.price.original) *
+            100
+        )
+      : 0;
+
   const handleAddToCart = (e) => {
     e.stopPropagation();
+    if (product?.stock === 0) return;
     addToCart(product);
     if (window.innerWidth >= 768) setShowCartSidebar(true);
   };
 
   const handleBuyNow = (e) => {
     e.stopPropagation();
+    if (product?.stock === 0) return;
     addToCart(product);
     window.scrollTo(0, 0);
     navigate("/checkout", {
       state: {
         cartItems: [{ ...product, quantity: 1 }],
-        totalAmount: product?.price ?? 0,
+        totalAmount: product?.price?.sale ?? 0,
       },
     });
   };
@@ -36,17 +55,16 @@ const ProductCard = ({ product }) => {
     ? `${apiUrl}${product.image}`
     : "https://via.placeholder.com/600x400?text=No+Image";
 
-  const priceText =
-    typeof product?.price === "number"
-      ? `Rs ${product.price}.00`
-      : `Rs ${Number(product?.price || 0)}`;
-
   return (
-    <div className="group bg-white border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-md cursor-pointer rounded-md">
-      
-      {/* Image */}
-      <div className="relative overflow-hidden rounded-t-md" onClick={handleViewDetails}>
-        <div className="aspect-[4/5] bg-gray-50">
+    <div className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col">
+
+      {/* ── IMAGE ── */}
+      <div
+        className="relative overflow-hidden bg-gray-50"
+        onClick={handleViewDetails}
+      >
+        {/* Fixed aspect ratio — image fills the box, no distortion */}
+        <div className="aspect-[3/3] w-full">
           <img
             src={imgSrc}
             alt={product?.name || "Product"}
@@ -55,61 +73,98 @@ const ProductCard = ({ product }) => {
           />
         </div>
 
-        {/* Hover View Icon */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
-          <div className="translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all">
-            <button className="bg-white text-black p-2 shadow-md hover:bg-gray-100">
-              <FaEye className="text-md" />
-            </button>
-          </div>
-        </div>
+        {/* Discount badge — top right */}
+        {discount > 0 && (
+          <span className="absolute top-2.5 right-2.5 bg-black text-white text-[10px] font-semibold tracking-wide px-2 py-0.5">
+            {discount}% OFF
+          </span>
+        )}
 
-        {/* Category Badge */}
+        {/* Category badge — top left */}
         {(product?.category || product?.subcategory) && (
-          <div className="absolute top-3 left-3">
-            <span className="bg-white text-black text-xs px-2 py-1 font-medium uppercase shadow-sm rounded">
+          <div className="absolute top-2.5 left-2.5">
+            <span className="bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 shadow-sm">
               {product?.category}
               {product?.subcategory ? ` / ${product.subcategory}` : ""}
             </span>
           </div>
         )}
-      </div>
 
-      {/* Info Section */}
-      <div className="p-4 space-y-2" onClick={handleViewDetails}>
-        <h3 className="text-md font-semibold text-black line-clamp-2 leading-snug">
-          {product?.name || "Unnamed Product"}
-        </h3>
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-700">{priceText}</span>
-          <span className="text-xs text-gray-500 uppercase">Premium</span>
+        {/* Hover overlay with eye icon */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-all duration-300 flex items-center justify-center pointer-events-none">
+          <div className="translate-y-3 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="bg-white text-black p-2 shadow-md">
+              <FaEye className="text-sm" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="px-4 pb-4 space-y-2">
+      {/* ── INFO ── */}
+      <div
+        className="px-3.5 pt-3 pb-2 flex flex-col gap-1.5 flex-1 cursor-pointer"
+        onClick={handleViewDetails}
+      >
+        {/* Product name */}
+        <h3 className="text-[13.5px] font-semibold text-gray-900 line-clamp-2 leading-snug">
+          {product?.name || "Unnamed Product"}
+        </h3>
+
+        {/* Price row — MRP left, Sale price right */}
+        <div className="flex items-center justify-between mt-0.5">
+          <div className="flex items-baseline gap-2">
+            <span className="text-base font-bold text-gray-900 leading-none">
+              ₹{product?.price?.sale}
+            </span>
+            {product?.price?.original && (
+              <span className="text-xs text-gray-400 line-through leading-none">
+                ₹{product?.price?.original}
+              </span>
+            )}
+          </div>
+
+          {/* Stock status — pushed right */}
+          <span className={`text-[11px] font-semibold ${stockStatus.color}`}>
+            {stockStatus.text}
+          </span>
+        </div>
+      </div>
+
+      {/* ── BUTTONS ── */}
+      <div className="px-3.5 pb-3.5 pt-1 flex flex-col gap-2">
+        {/* Buy Now */}
         <button
           onClick={handleBuyNow}
-          className="w-full bg-black text-white py-2.5 font-medium uppercase text-sm hover:bg-gray-900 transition"
+          disabled={product?.stock === 0}
+          className={`w-full py-2.5 text-[12px] font-bold uppercase tracking-widest transition-colors duration-200 ${
+            product?.stock === 0
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-black text-white hover:bg-gray-800 active:bg-gray-700"
+          }`}
         >
           Buy Now
         </button>
 
-        <div className="flex space-x-2">
+        {/* Details + Cart */}
+        <div className="flex gap-2">
           <button
             onClick={handleViewDetails}
-            className="flex-1 border border-gray-300 text-gray-700 py-2.5 text-sm font-medium uppercase hover:border-gray-400 hover:text-black transition"
+            className="flex-1 border border-gray-300 text-gray-700 py-2 text-[11px] font-semibold uppercase tracking-widest hover:border-black hover:text-black transition-colors duration-200"
           >
             Details
           </button>
 
           <button
             onClick={handleAddToCart}
-            className="bg-gray-100 text-black p-2.5 hover:bg-gray-200 transition"
-            title="Add to Cart"
+            disabled={product?.stock === 0}
+            title="Add to cart"
+            className={`w-10 flex items-center justify-center border transition-colors duration-200 ${
+              product?.stock === 0
+                ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "border-gray-300 bg-white text-gray-700 hover:border-black hover:text-black hover:bg-gray-50"
+            }`}
           >
-            <FaCartPlus className="text-lg" />
+            <FaCartPlus className="text-sm" />
           </button>
         </div>
       </div>

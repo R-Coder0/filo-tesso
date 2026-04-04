@@ -39,13 +39,19 @@ const CATEGORY_MAP = {
 
 const emptyProduct = {
   name: "",
-  image: null, // File
-  images: [], // File[] (we will store as array, not FileList)
-  price: "",
+  image: null,
+  images: [],
+  originalPrice: "",
+  salePrice: "",
+  stock: "",
   description: "",
   features: "",
   category: "",
   subcategory: "",
+  tags: "",
+  metaTitle: "",
+  metaDescription: "",
+  keywords: "",
 };
 
 const ManageProducts = () => {
@@ -175,7 +181,13 @@ const removeFeature = (indexToRemove) => {
     setEditingId(product._id);
     setNewProduct({
       name: product.name || "",
-      price: product.price ?? "",
+originalPrice: product.price?.original || "",
+salePrice: product.price?.sale || "",
+stock: product.stock || "",
+tags: product.tags?.join(", ") || "",
+metaTitle: product.seo?.metaTitle || "",
+metaDescription: product.seo?.metaDescription || "",
+keywords: product.seo?.keywords?.join(", ") || "",
       description: product.description || "",
       features: product.features?.join(", ") || "",
       image: null,
@@ -246,7 +258,13 @@ const removeFeature = (indexToRemove) => {
         // ✅ Update via JSON (images optional)
         await axiosAdmin.put(`/${editingId}`, {
           name: newProduct.name,
-          price: newProduct.price,
+          originalPrice: newProduct.originalPrice,
+salePrice: newProduct.salePrice,
+stock: newProduct.stock,
+tags: newProduct.tags,
+metaTitle: newProduct.metaTitle,
+metaDescription: newProduct.metaDescription,
+keywords: newProduct.keywords,  
           description: newProduct.description,
           features: newProduct.features
             .split(",")
@@ -262,7 +280,13 @@ const removeFeature = (indexToRemove) => {
         // ✅ Create with multipart (images + fields)
         const formData = new FormData();
         formData.append("name", newProduct.name);
-        formData.append("price", newProduct.price);
+       formData.append("originalPrice", newProduct.originalPrice);
+formData.append("salePrice", newProduct.salePrice);
+formData.append("stock", newProduct.stock);
+formData.append("tags", newProduct.tags);
+formData.append("metaTitle", newProduct.metaTitle);
+formData.append("metaDescription", newProduct.metaDescription);
+formData.append("keywords", newProduct.keywords);
         formData.append("description", newProduct.description);
         formData.append("category", newProduct.category);
         formData.append("subcategory", newProduct.subcategory);
@@ -401,7 +425,14 @@ const removeFeature = (indexToRemove) => {
 
                         <div className="shrink-0">
                           <p className="text-gray-900 font-semibold text-base sm:text-lg">
-                            ₹{product.price}
+                           <div>
+  <p className="text-gray-400 line-through text-sm">
+    ₹{product.price?.original}
+  </p>
+  <p className="text-black font-bold">
+    ₹{product.price?.sale}
+  </p>
+</div>
                           </p>
                         </div>
                       </div>
@@ -621,22 +652,101 @@ const removeFeature = (indexToRemove) => {
               </select>
             </div>
 
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Price
-              </label>
-              <input
-                type="number"
-                value={newProduct.price}
-                onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                min="0"
-                step="0.01"
-                placeholder="e.g. 999"
-              />
-            </div>
+{/* Original Price */}
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-1">
+    Original Price (MRP)
+  </label>
+  <input
+    type="number"
+    value={newProduct.originalPrice}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, originalPrice: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg"
+    required
+  />
+</div>
+
+{/* Sale Price */}
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-1">
+    Sale Price
+  </label>
+  <input
+    type="number"
+    value={newProduct.salePrice}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, salePrice: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg"
+    required
+  />
+</div>
+
+{/* Stock */}
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-1">
+    Stock Quantity
+  </label>
+  <input
+    type="number"
+    value={newProduct.stock}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, stock: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg"
+    min="0"
+  />
+</div>
+{/* Tags */}
+<div className="md:col-span-2">
+  <label className="block text-sm font-semibold text-gray-700 mb-1">
+    Tags (comma separated)
+  </label>
+  <input
+    type="text"
+    value={newProduct.tags}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, tags: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg"
+    placeholder="tshirt, cotton, summer"
+  />
+</div>
+{/* SEO Fields */}
+<div className="md:col-span-2 mt-4 border-t pt-4">
+  <h4 className="text-md font-bold mb-3">SEO Settings</h4>
+
+  <input
+    type="text"
+    placeholder="Meta Title"
+    value={newProduct.metaTitle}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, metaTitle: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg mb-3"
+  />
+
+  <textarea
+    placeholder="Meta Description"
+    value={newProduct.metaDescription}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, metaDescription: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg mb-3"
+  />
+
+  <input
+    type="text"
+    placeholder="Keywords (comma separated)"
+    value={newProduct.keywords}
+    onChange={(e) =>
+      setNewProduct({ ...newProduct, keywords: e.target.value })
+    }
+    className="w-full p-3 border rounded-lg"
+  />
+</div>
 
             {/* Main Image - Improved */}
             <div>

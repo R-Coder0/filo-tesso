@@ -96,7 +96,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between text-[13px] text-gray-400 gap-3">
         <div className="flex flex-wrap items-center justify-center gap-6">
           <p className="text-gray-400">
-            © 2026 <span className="text-white font-medium">Filo Teso</span>
+            © 2026 <span className="text-white font-medium">Filo Teso | All rights are reserved.</span>
           </p>
         </div>
 

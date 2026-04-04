@@ -1,4 +1,3 @@
-// models/Order.js
 const mongoose = require("mongoose");
 
 const orderItemSchema = new mongoose.Schema(
@@ -9,8 +8,12 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
     },
     quantity: { type: Number, required: true, default: 1 },
+
     selectedSize: { type: String, default: "" },
     selectedColor: { type: String, default: "" },
+
+    // ✅ IMPORTANT (freeze price)
+    priceAtPurchase: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -22,89 +25,51 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     products: [orderItemSchema],
 
     totalAmount: { type: Number, required: true },
     payableAmount: { type: Number, required: true },
 
-    // Coins - UPDATED FIELDS
-    coinsEarned: { type: Number, required: true, default: 0 },
-    coinsRedeemed: { type: Number, required: true, default: 0 },
-    coinStatus: { 
-      type: String, 
+    coinsEarned: { type: Number, default: 0 },
+    coinsRedeemed: { type: Number, default: 0 },
+
+    coinStatus: {
+      type: String,
       enum: ["pending", "credited", "cancelled"],
-      default: "pending" 
+      default: "pending",
     },
+
     coinCreditDate: { type: Date },
 
-    // Payment status lifecycle
     paymentStatus: {
       type: String,
       enum: ["Pending", "Paid", "Failed", "Refunded"],
       default: "Pending",
     },
 
-    // Order status for better tracking
     orderStatus: {
       type: String,
       enum: ["pending", "confirmed", "shipped", "delivered", "cancelled", "returned"],
-      default: "pending"
-    },
-
-    // NEW: Cancellation fields
-    cancelled: {
-      type: Boolean,
-      default: false
-    },
-    cancellationReason: String,
-    cancelledAt: Date,
-    cancelledBy: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user'
-    },
-    cancellationStatus: {
-      type: String,
-      enum: ['requested', 'approved', 'rejected', 'completed'],
-      default: 'requested'
-    },
-
-    // Optional customization uploads (order-level)
-    customizationUploads: {
-      image: { type: String, default: "" },
-      pdf: { type: String, default: "" },
-      selectedSide: { type: String, default: "" }, // ✅ YEH LINE ADD KARO
-
+      default: "pending",
     },
 
     address: {
-      name: { type: String, required: true },
-      phone: { type: String, required: true },
-      email: { type: String },
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      postalCode: { type: String, required: true },
+      name: String,
+      phone: String,
+      email: String,
+      street: String,
+      city: String,
+      state: String,
+      postalCode: String,
     },
-    returnRequested: {
-      type: Boolean,
-      default: false
-    },
-    returnReason: String,
-    returnRequestedAt: Date,
-    returnStatus: {
-      type: String,
-      enum: ['requested', 'approved', 'rejected', 'completed'],
-      default: 'requested'
-    },
-    returnBy: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user'
+
+    customizationUploads: {
+      image: String,
+      pdf: String,
+      selectedSide: String,
     },
   },
-  
-  
   { timestamps: true }
 );
 

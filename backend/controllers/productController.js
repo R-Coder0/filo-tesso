@@ -14,9 +14,9 @@ const getProducts = async (req, res) => {
     if (category && category !== "all") filter.category = category;
     if (subcategory && subcategory !== "all") filter.subcategory = subcategory;
 
-const products = await Product
-  .find(filter)
-  .sort({ createdAt: -1 });   // 🔥 newest first
+    const products = await Product
+      .find(filter)
+      .sort({ createdAt: -1 });   // 🔥 newest first
 
     res.json(products);
   } catch (err) {
@@ -52,14 +52,33 @@ const normalizeFeatures = (features) => {
 const addProduct = async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
-    const price = Number(req.body.price);
+    const originalPrice = Number(req.body.originalPrice);
+    const salePrice = Number(req.body.salePrice);
+    const stock = Number(req.body.stock || 0);
+    if (salePrice > originalPrice) {
+      return res.status(400).json({
+        message: "Sale price cannot be greater than original price"
+      });
+    }
     const description = String(req.body.description || "");
     const category = String(req.body.category || "").toLowerCase().trim();
     const subcategory = String(req.body.subcategory || "").toLowerCase().trim();
     const features = normalizeFeatures(req.body.features);
+const tags = req.body.tags
+  ? String(req.body.tags).split(",").map(t => t.trim()).filter(Boolean)
+  : [];
 
+const metaTitle = String(req.body.metaTitle || "");
+const metaDescription = String(req.body.metaDescription || "");
+const keywords = req.body.keywords
+  ? String(req.body.keywords).split(",").map(k => k.trim()).filter(Boolean)
+  : [];
     if (!name) return res.status(400).json({ message: "Name is required" });
-    if (!price && price !== 0) return res.status(400).json({ message: "Price is required" });
+    if (!originalPrice && originalPrice !== 0)
+      return res.status(400).json({ message: "Original price is required" });
+
+    if (!salePrice && salePrice !== 0)
+      return res.status(400).json({ message: "Sale price is required" });
     if (!category) return res.status(400).json({ message: "Category is required" });
     if (!subcategory) return res.status(400).json({ message: "Subcategory is required" });
 
@@ -72,14 +91,25 @@ const addProduct = async (req, res) => {
 
     const product = await Product.create({
       name,
-      price,
+      price: {
+        original: originalPrice,
+        sale: salePrice,
+      },
+      stock,
       description,
       features,
+        tags,
+  seo: {
+    metaTitle,
+    metaDescription,
+    keywords,
+  },
       image: mainImage,
       gallery: galleryImages,
       category,
       subcategory,
     });
+
 
     res.status(201).json({ message: "Product added successfully!", product });
   } catch (error) {
@@ -99,7 +129,17 @@ const updateProduct = async (req, res) => {
     const body = req.body;
 
     if (typeof body.name !== "undefined") product.name = String(body.name).trim();
-    if (typeof body.price !== "undefined") product.price = Number(body.price);
+    if (typeof body.originalPrice !== "undefined") {
+      product.price.original = Number(body.originalPrice);
+    }
+
+    if (typeof body.salePrice !== "undefined") {
+      product.price.sale = Number(body.salePrice);
+    }
+
+    if (typeof body.stock !== "undefined") {
+      product.stock = Number(body.stock);
+    }
     if (typeof body.description !== "undefined") product.description = String(body.description);
 
     if (typeof body.features !== "undefined") {
@@ -112,6 +152,27 @@ const updateProduct = async (req, res) => {
     if (typeof body.subcategory !== "undefined") {
       product.subcategory = String(body.subcategory).toLowerCase().trim();
     }
+    if (typeof body.tags !== "undefined") {
+  product.tags = String(body.tags)
+    .split(",")
+    .map(t => t.trim())
+    .filter(Boolean);
+}
+
+if (typeof body.metaTitle !== "undefined") {
+  product.seo.metaTitle = String(body.metaTitle);
+}
+
+if (typeof body.metaDescription !== "undefined") {
+  product.seo.metaDescription = String(body.metaDescription);
+}
+
+if (typeof body.keywords !== "undefined") {
+  product.seo.keywords = String(body.keywords)
+    .split(",")
+    .map(k => k.trim())
+    .filter(Boolean);
+}
 
     // files if provided
     if (req.files?.image?.length) {
@@ -151,7 +212,7 @@ const getLatestProducts = async (req, res) => {
     const latestProducts = await Product.find()
       .sort({ createdAt: -1 }) // Newest first
       .limit(limit);
-    
+
     res.json(latestProducts);
   } catch (err) {
     console.error("❌ Failed to fetch latest products:", err);
@@ -165,6 +226,6 @@ module.exports = {
   addProduct,
   updateProduct,
   deleteProduct,
- getLatestProducts, // ✅ YEH ADD KARO
+  getLatestProducts, // ✅ YEH ADD KARO
 
 };

@@ -97,7 +97,7 @@ const CheckoutPage = () => {
   const [availableCoins, setAvailableCoins] = useState(user?.coinsBalance ?? 0);
   const [redeemCoins, setRedeemCoins] = useState(0);
   const [referralCode, setReferralCode] = useState("");
-const [referralDiscount, setReferralDiscount] = useState(0);
+  const [referralDiscount, setReferralDiscount] = useState(0);
 
 
   const preSelectedFile = customUploads?.singleFile || null;
@@ -133,30 +133,43 @@ const [referralDiscount, setReferralDiscount] = useState(0);
   /* -----------------------------
      PRICING
   ------------------------------*/
+    const saleBaseTotal = (cartItems || []).reduce(
+    (acc, item) => acc + (item.price?.sale || 0) * (item.quantity || 0),
+    0
+  );
   const { subtotal, discountRate, discountAmount, discountedTotal } = useMemo(() => {
     // re-evaluate subtotal in case qty changed here
     const sub =
       (cartItems || []).reduce(
-        (acc, item) => acc + (item.price || 0) * (item.quantity || 0),
+        (acc, item) => acc + (item.price?.original || item.price?.sale || 0) * (item.quantity || 0),
         0
       ) || initialSubtotal || 0;
 
-    const { discountRate, discountAmount, discountedTotal } = computeDiscount(sub);
+    const { discountRate, discountAmount } = computeDiscount(saleBaseTotal);
+
+    const discountedTotal = saleBaseTotal - discountAmount;
     return { subtotal: sub, discountRate, discountAmount, discountedTotal };
   }, [cartItems, initialSubtotal]);
 
+  const saleDiscount = (cartItems || []).reduce(
+    (acc, item) =>
+      acc +
+      ((item.price?.original || 0) - (item.price?.sale || 0)) *
+      (item.quantity || 0),
+    0
+  );
   // Coins are capped to final discounted total
   const effectiveRedeem = Math.max(
     0,
     Math.min(redeemCoins || 0, availableCoins || 0, discountedTotal || 0)
   );
-// Referral discount calculations
-const referralAmount = Math.floor(discountedTotal * referralDiscount);
-const finalAfterReferral = discountedTotal - referralAmount;
-const payableAmount = Math.max(0, finalAfterReferral - effectiveRedeem);
+  // Referral discount calculations
+  const referralAmount = Math.floor(discountedTotal * referralDiscount);
+  const finalAfterReferral = discountedTotal - referralAmount;
+  const payableAmount = Math.max(0, finalAfterReferral - effectiveRedeem);
 
-/*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
- */
+  /*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
+   */
   /* -----------------------------
      HANDLERS
   ------------------------------*/
@@ -178,16 +191,16 @@ const payableAmount = Math.max(0, finalAfterReferral - effectiveRedeem);
       postalCode: addr.pincode || "",
     });
   };
-const applyReferral = () => {
-  const code = referralCode.trim().toUpperCase();
-  if (REFERRAL_CODES[code]) {
-    setReferralDiscount(REFERRAL_CODES[code]);
-    alert(`Referral code applied! You got ${REFERRAL_CODES[code] * 100}% off.`);
-  } else {
-    setReferralDiscount(0);
-    alert("Invalid referral code.");
-  }
-};
+  const applyReferral = () => {
+    const code = referralCode.trim().toUpperCase();
+    if (REFERRAL_CODES[code]) {
+      setReferralDiscount(REFERRAL_CODES[code]);
+      alert(`Referral code applied! You got ${REFERRAL_CODES[code] * 100}% off.`);
+    } else {
+      setReferralDiscount(0);
+      alert("Invalid referral code.");
+    }
+  };
 
 
   const updateQuantity = (productId, delta) => {
@@ -233,19 +246,16 @@ const applyReferral = () => {
       }));
 
       form.append("products", JSON.stringify(products));
-      form.append("subtotal", String(subtotal));
       form.append("discountRate", String(discountRate));
-      form.append("discountAmount", String(discountAmount));
       form.append("discountedTotal", String(discountedTotal));
       form.append("redeemCoins", String(effectiveRedeem));
       form.append("payableAmount", String(payableAmount));
       form.append("address", JSON.stringify(address));
-      form.append("totalAmount", String(discountedTotal));
-      
-         // ✅ YEH SECTION ADD KARO - Side information
-    if (customUploads?.isCustomize && customUploads.selectedSide) {
-      form.append("selectedSide", customUploads.selectedSide);
-    }
+
+      // ✅ YEH SECTION ADD KARO - Side information
+      if (customUploads?.isCustomize && customUploads.selectedSide) {
+        form.append("selectedSide", customUploads.selectedSide);
+      }
 
 
       if (singleFile) appendSingleFileSmart(form, singleFile);
@@ -301,16 +311,12 @@ const applyReferral = () => {
       const response = await axios.post(
         `${apiUrl}/api/payment/create-order`,
         {
-          amount: payableAmount,
           cartItems,
-          subtotal,
-          discountAmount,
-          discountedTotal,
           redeemCoins: effectiveRedeem,
           address,
           totalAmount: discountedTotal,
-                  // ✅ YEH LINE ADD KARO
-        selectedSide: customUploads?.isCustomize ? customUploads.selectedSide : "",
+          // ✅ YEH LINE ADD KARO
+          selectedSide: customUploads?.isCustomize ? customUploads.selectedSide : "",
 
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -344,11 +350,7 @@ const applyReferral = () => {
                 razorpay_signature: rzpResponse.razorpay_signature,
                 cartItems,
                 address,
-                totalAmount: discountedTotal,
                 redeemCoins: effectiveRedeem,
-                subtotal,
-                discountAmount,
-                discountedTotal,
               },
               { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -417,9 +419,8 @@ const applyReferral = () => {
                   return (
                     <label
                       key={addr.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition ${
-                        checked ? "border-black bg-gray-50" : "border-gray-300"
-                      }`}
+                      className={`border rounded-lg p-4 cursor-pointer transition ${checked ? "border-black bg-gray-50" : "border-gray-300"
+                        }`}
                       onClick={() => handleSelectSavedAddress(addr)}
                     >
                       <div className="flex items-start">
@@ -510,53 +511,53 @@ const applyReferral = () => {
             </div>
           </div>
 
-          
+
 
           {/* Redeem Coins */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-  <h2 className="text-lg font-semibold mb-4 text-gray-900">Redeem Coins & Referral</h2>
-  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-    {/* Coins input */}
-    <div className="flex items-center gap-2">
-      <input
-        type="number"
-        min={0}
-        max={Math.min(availableCoins, discountedTotal)}
-        value={redeemCoins}
-        onChange={(e) => {
-          const v = Number(e.target.value || 0);
-          setRedeemCoins(Math.max(0, Math.min(v, availableCoins, discountedTotal)));
-        }}
-        className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
-      />
-      <span className="text-sm text-gray-600">
-        Available: <b>{availableCoins}</b>
-      </span>
-    </div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-900">Redeem Coins & Referral</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              {/* Coins input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={Math.min(availableCoins, discountedTotal)}
+                  value={redeemCoins}
+                  onChange={(e) => {
+                    const v = Number(e.target.value || 0);
+                    setRedeemCoins(Math.max(0, Math.min(v, availableCoins, discountedTotal)));
+                  }}
+                  className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                />
+                <span className="text-sm text-gray-600">
+                  Available: <b>{availableCoins}</b>
+                </span>
+              </div>
 
-    {/* Referral input */}
-    <div className="flex items-center gap-2">
-      <input
-        type="text"
-        placeholder="Referral Code"
-        value={referralCode}
-        onChange={(e) => setReferralCode(e.target.value)}
-        className="border border-gray-300 rounded-lg px-3 py-2 w-40 focus:ring-2 focus:ring-black outline-none"
-      />
-      <button
-        onClick={applyReferral}
-        className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-black transition"
-      >
-        Apply
-      </button>
-    </div>
-  </div>
-  {referralDiscount > 0 && (
-    <p className="text-sm text-green-700 mt-2">
-      Referral applied ({referralDiscount * 100}% off)
-    </p>
-  )}
-</div>
+              {/* Referral input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Referral Code"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 w-40 focus:ring-2 focus:ring-black outline-none"
+                />
+                <button
+                  onClick={applyReferral}
+                  className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-black transition"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+            {referralDiscount > 0 && (
+              <p className="text-sm text-green-700 mt-2">
+                Referral applied ({referralDiscount * 100}% off)
+              </p>
+            )}
+          </div>
 
         </div>
 
@@ -579,7 +580,7 @@ const applyReferral = () => {
                         {item.selectedColor ? ` • Color: ${item.selectedColor}` : ""}
                       </div>
                     </div>
-                    <div className="text-sm font-semibold">{formatINR((item.price || 0) * (item.quantity || 0))}</div>
+                    <div className="text-sm font-semibold">{formatINR((item.price?.sale || 0) * (item.quantity || 0))}</div>
                   </div>
                 ))}
 
@@ -590,24 +591,24 @@ const applyReferral = () => {
                   <span>{formatINR(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Discount {discountRate ? `(${Math.round(discountRate * 100)}%)` : ""}</span>
-                  <span className={discountAmount ? "text-green-700 font-medium" : ""}>
-                    − {formatINR(discountAmount)}
+                  <span>Product Discount</span>
+                  <span className="text-green-700 font-medium">
+                    − {formatINR(saleDiscount)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>After Discount</span>
-                  
+
                   <span>{formatINR(discountedTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-  <span>Referral Discount</span>
-  <span className="text-green-700 font-medium">
-    − {formatINR(referralAmount)}
-  </span>
-</div>
+                  <span>Referral Discount</span>
+                  <span className="text-green-700 font-medium">
+                    − {formatINR(referralAmount)}
+                  </span>
+                </div>
 
-                
+
                 <div className="flex justify-between text-sm">
                   <span>Coins Redeemed</span>
                   <span className={effectiveRedeem ? "text-green-700 font-medium" : ""}>
@@ -625,11 +626,10 @@ const applyReferral = () => {
                   <button
                     onClick={handleOnlinePayment}
                     disabled={!isFormValid || !token}
-                    className={`w-full group relative overflow-hidden bg-gray-900 text-white font-medium py-4 px-6 rounded-lg transition-all ${
-                      !isFormValid || !token
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-gray-800 hover:shadow-md"
-                    }`}
+                    className={`w-full group relative overflow-hidden bg-gray-900 text-white font-medium py-4 px-6 rounded-lg transition-all ${!isFormValid || !token
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-gray-800 hover:shadow-md"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -665,11 +665,10 @@ const applyReferral = () => {
                   <button
                     onClick={handlePlaceOrder}
                     disabled={!isFormValid || !token}
-                    className={`w-full group bg-white border-2 border-gray-300 text-gray-900 font-medium py-4 px-6 rounded-lg transition-all ${
-                      !isFormValid || !token
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:border-gray-900 hover:shadow-md"
-                    }`}
+                    className={`w-full group bg-white border-2 border-gray-300 text-gray-900 font-medium py-4 px-6 rounded-lg transition-all ${!isFormValid || !token
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:border-gray-900 hover:shadow-md"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

@@ -350,7 +350,7 @@ const navigate = useNavigate();
                         </div>
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">{order.products.length} items</span>
+                         <span className="text-sm">{order.products?.length || 0} items</span>
                         </div>
                       </div>
 
@@ -412,7 +412,7 @@ const navigate = useNavigate();
                       <div className="mt-4">
                         <p className="text-gray-800 font-semibold mb-1">Products:</p>
                         <ul className="space-y-4">
-                          {order.products.map((item, idx) => (
+                          {(order.products || []).map((item, idx) => (
                             <li key={idx} className="flex items-center gap-4">
                               <img
                                 src={`${apiUrl}${item.product?.image || "/placeholder.jpg"}`}
@@ -424,7 +424,7 @@ const navigate = useNavigate();
                                   {item.product?.name || "Unknown Product"}
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                  Qty: {item.quantity} | ₹{item.product?.price} | Size: {item.selectedSize || "—"}
+                                  Qty: {item.quantity} | ₹{item.product?.price?.sale || 0} | Size: {item.selectedSize || "—"}
                                   {item.selectedColor ? ` | Color: ${item.selectedColor}` : ""}
                                 </p>
                               </div>
@@ -657,7 +657,7 @@ const navigate = useNavigate();
                       <div className="mt-4">
                         <p className="text-gray-800 font-semibold mb-2">Products:</p>
                         <ul className="space-y-2">
-                          {order.products.map((item, idx) => (
+                          {(order.products || []).map((item, idx) => (
                             <li key={idx} className="flex items-center gap-3">
                               <img
                                 src={`${apiUrl}${item.product?.image || "/placeholder.jpg"}`}
@@ -824,7 +824,7 @@ const navigate = useNavigate();
                       <div className="mt-4">
                         <p className="text-gray-800 font-semibold mb-2">Products:</p>
                         <ul className="space-y-2">
-                          {order.products.map((item, idx) => (
+                          {(order.products || []).map((item, idx) => (
                             <li key={idx} className="flex items-center gap-3">
                               <img
                                 src={`${apiUrl}${item.product?.image || "/placeholder.jpg"}`}

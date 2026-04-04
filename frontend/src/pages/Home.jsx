@@ -7,12 +7,14 @@ import LatestProducts from '../components/LatestProducts'
 import OurStory from '../components/OurStory'
 import TestimonialSection from '../components/TestimonialSection'
 import { ShoppingExperience } from '../components/ShoppingExperience'
+import TrustStrip from '../section/TrustStrip'
 
 const Home = () => {
   return (
     <div>
 <Hero/>
 <CategoriesSection/>
+<TrustStrip/>
 <LatestProducts/>
 <Bestsellers/>
  <ProductList/>

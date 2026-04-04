@@ -1,10 +1,8 @@
 // src/components/Bestsellers.jsx
-import React, { useEffect, useMemo, useRef, useState, useContext } from "react"; // useContext add kiya
+import React, { useEffect, useRef, useState, useContext } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaChevronLeft, FaChevronRight, FaCartPlus } from "react-icons/fa"; // FaCartPlus add kiya
-
-// Contexts import kiye
+import { FaChevronLeft, FaChevronRight, FaCartPlus } from "react-icons/fa";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 
@@ -13,7 +11,7 @@ const CATEGORIES = ["men", "women", "customize"];
 export default function Bestsellers({
   chunkSize = 4,
   rotateMs = 6000,
-  pollMs = 30000, 
+  pollMs = 30000,
 }) {
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -24,8 +22,8 @@ export default function Bestsellers({
 
   const [visibleCount, setVisibleCount] = useState(() => {
     if (typeof window === "undefined") return chunkSize;
-    if (window.matchMedia && window.matchMedia("(min-width: 1024px)").matches) return 4;
-    if (window.matchMedia && window.matchMedia("(min-width: 768px)").matches) return 3;
+    if (window.matchMedia("(min-width: 1024px)").matches) return 4;
+    if (window.matchMedia("(min-width: 768px)").matches) return 3;
     return 2;
   });
 
@@ -44,13 +42,10 @@ export default function Bestsellers({
               params: { category: cat },
               cancelToken,
             })
-            .then((r) => {
-              const products = Array.isArray(r.data) ? r.data : r.data?.products || [];
-              return products;
-            })
+            .then((r) => (Array.isArray(r.data) ? r.data : r.data?.products || []))
             .catch((error) => {
               if (axios.isCancel?.(error)) throw error;
-              console.warn(`Error fetching ${cat}:`, error?.message || error);
+              console.warn(`Error fetching ${cat}:`, error?.message);
               return [];
             })
         )
@@ -61,31 +56,20 @@ export default function Bestsellers({
       const deduped = [];
       allProducts.forEach((p) => {
         const key = p._id || p.id || `${p.name}-${p.price}-${p.image}` || null;
-        if (!key) {
-          deduped.push(p);
-          return;
-        }
-        if (!seen.has(key)) {
-          seen.add(key);
-          deduped.push(p);
-        }
+        if (!key) { deduped.push(p); return; }
+        if (!seen.has(key)) { seen.add(key); deduped.push(p); }
       });
 
       const categoryWise = CATEGORIES.map((cat) =>
-        deduped.filter((p) => {
-          const productCategory = (p.category || p.gender || p.segment || p.type || "").toLowerCase();
-          return productCategory.includes(cat);
-        })
+        deduped.filter((p) =>
+          (p.category || p.gender || p.segment || p.type || "").toLowerCase().includes(cat)
+        )
       );
 
-      const mixed = interleave(categoryWise);
-      const shuffled = knuthShuffle(mixed);
-
-      setItems(shuffled);
+      setItems(knuthShuffle(interleave(categoryWise)));
     } catch (e) {
       if (!axios.isCancel?.(e)) {
-        console.error("Fetch error:", e);
-        setErr("Bestsellers load karne mein dikkat aa gayi.");
+        setErr("Could not load bestsellers.");
         setItems([]);
       }
     } finally {
@@ -96,164 +80,159 @@ export default function Bestsellers({
   useEffect(() => {
     const source = axios.CancelToken.source?.() ?? null;
     fetchAll(source?.token);
-    return () => {
-      if (source) source.cancel("Unmount");
-    };
+    return () => source?.cancel("Unmount");
   }, [apiUrl]);
 
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(fetchAll, pollMs);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = null;
-    };
+    return () => clearInterval(pollRef.current);
   }, [apiUrl, pollMs]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mqLg = window.matchMedia("(min-width: 1024px)");
     const mqMd = window.matchMedia("(min-width: 768px)");
-
     const update = () => {
       if (mqLg.matches) setVisibleCount(4);
       else if (mqMd.matches) setVisibleCount(3);
       else setVisibleCount(2);
     };
-
     update();
-    mqLg.addEventListener?.("change", update);
-    mqMd.addEventListener?.("change", update);
-
-    return () => {
-      mqLg.removeEventListener("change", update);
-      mqMd.removeEventListener("change", update);
-    };
+    mqLg.addEventListener("change", update);
+    mqMd.addEventListener("change", update);
+    return () => { mqLg.removeEventListener("change", update); mqMd.removeEventListener("change", update); };
   }, []);
 
   useEffect(() => {
     if (rotateRef.current) clearInterval(rotateRef.current);
     if (paused) return;
     const track = trackRef.current;
-    if (!track) return;
-    if (items.length <= visibleCount) return;
-
+    if (!track || items.length <= visibleCount) return;
     rotateRef.current = setInterval(() => {
-      const width = track.clientWidth;
       const maxScroll = track.scrollWidth - track.clientWidth;
       if (Math.abs(track.scrollLeft - maxScroll) <= 2) {
         track.scrollTo({ left: 0, behavior: "smooth" });
       } else {
-        track.scrollBy({ left: width, behavior: "smooth" });
+        track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
       }
     }, rotateMs);
-
     return () => clearInterval(rotateRef.current);
   }, [items.length, visibleCount, rotateMs, paused]);
 
   const goPrev = () => {
     const track = trackRef.current;
     if (!track) return;
-    const width = track.clientWidth;
     if (track.scrollLeft <= 2) {
       track.scrollTo({ left: track.scrollWidth - track.clientWidth, behavior: "smooth" });
     } else {
-      track.scrollBy({ left: -width, behavior: "smooth" });
+      track.scrollBy({ left: -track.clientWidth, behavior: "smooth" });
     }
   };
+
   const goNext = () => {
     const track = trackRef.current;
     if (!track) return;
-    const width = track.clientWidth;
     const maxScroll = track.scrollWidth - track.clientWidth;
     if (Math.abs(track.scrollLeft - maxScroll) <= 2) {
       track.scrollTo({ left: 0, behavior: "smooth" });
     } else {
-      track.scrollBy({ left: width, behavior: "smooth" });
+      track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
     }
   };
 
   return (
     <section
-      className="container mx-auto px-4 sm:px-6 lg:px-8 pt-10"
+      className="max-w-7xl mx-auto px-4 md:px-6 pt-10"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      <div className="mb-6 flex items-end justify-between">
+      {/* ── Header ── */}
+      <div className="flex items-end justify-between mb-5">
         <div>
-          <h2 className="text-xl md:text-3xl font-semibold md:font-bold tracking-tight">Bestsellers</h2>
-          <p className="text-gray-600 mt-1 text-sm md:text-md">Top picks across Men, Women and Customize</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
+            Bestsellers
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-widest">
+            Top picks across Men, Women & Customize
+          </p>
         </div>
 
         {items.length > visibleCount && (
           <div className="hidden sm:flex items-center gap-2">
             <button
-              className="p-2 rounded-full border border-gray-300 hover:bg-gray-50"
               onClick={goPrev}
               aria-label="Previous"
+              className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 hover:border-black shadow-sm hover:shadow transition-all duration-200"
             >
-              <FaChevronLeft />
+              <FaChevronLeft className="text-xs text-gray-600" />
             </button>
             <button
-              className="p-2 rounded-full border border-gray-300 hover:bg-gray-50"
               onClick={goNext}
               aria-label="Next"
+              className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 hover:border-black shadow-sm hover:shadow transition-all duration-200"
             >
-              <FaChevronRight />
+              <FaChevronRight className="text-xs text-gray-600" />
             </button>
           </div>
         )}
       </div>
 
+      {/* ── Skeleton ── */}
       {loading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: chunkSize }).map((_, i) => (
-            <div key={i} className="border border-gray-200 p-3 animate-pulse">
-              <div className="w-full bg-gray-200 rounded-xl h-44 sm:h-48" />
-              <div className="h-4 bg-gray-200 rounded mt-3 w-3/4" />
-              <div className="h-4 bg-gray-200 rounded mt-2 w-1/2" />
+            <div key={i} className="border border-gray-200 animate-pulse">
+              <div className="aspect-[3/4] w-full bg-gray-200" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 bg-gray-200 w-3/4" />
+                <div className="h-3 bg-gray-200 w-1/2" />
+              </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* ── Error ── */}
       {!loading && err && (
-        <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700">{err}</div>
+        <div className="p-4 border border-red-200 bg-red-50 text-red-600 text-sm">
+          {err}
+        </div>
       )}
 
+      {/* ── Products ── */}
       {!loading && !err && (
         <div className="relative">
+          {/* Mobile arrows */}
           {items.length > visibleCount && (
             <div className="sm:hidden flex justify-between mb-3">
               <button
-                className="p-2 rounded-full border border-gray-300 hover:bg-gray-50"
                 onClick={goPrev}
-                aria-label="Previous"
+                className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 hover:border-black"
               >
-                <FaChevronLeft />
+                <FaChevronLeft className="text-xs" />
               </button>
               <button
-                className="p-2 rounded-full border border-gray-300 hover:bg-gray-50"
                 onClick={goNext}
-                aria-label="Next"
+                className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 hover:border-black"
               >
-                <FaChevronRight />
+                <FaChevronRight className="text-xs" />
               </button>
             </div>
           )}
 
           <div
             ref={trackRef}
-            className="flex gap-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar"
+            className="flex gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar"
             role="list"
             aria-label="Bestselling products"
           >
             {items.map((p, idx) => (
               <div
-                key={`${p._id || p.id || idx}`}
-                className="flex-shrink-0 snap-start w-40 sm:w-48 lg:w-62"
+                key={p._id || p.id || idx}
+                className="flex-shrink-0 snap-start w-44 sm:w-52 lg:w-64"
                 role="listitem"
               >
                 <BestCard product={p} apiUrl={apiUrl} />
@@ -262,7 +241,11 @@ export default function Bestsellers({
           </div>
 
           {items.length > visibleCount && (
-            <ResponsiveDots trackRef={trackRef} itemsLength={items.length} visibleCount={visibleCount} />
+            <ResponsiveDots
+              trackRef={trackRef}
+              itemsLength={items.length}
+              visibleCount={visibleCount}
+            />
           )}
         </div>
       )}
@@ -270,76 +253,117 @@ export default function Bestsellers({
   );
 }
 
-/* ----------------------- BestCard Component with Cart ----------------------- */
-
+/* ── BestCard ── */
 function BestCard({ product, apiUrl }) {
-  // Hooks for Cart functionality
   const { addToCart } = useContext(CartContext);
   const { setShowCartSidebar } = useUI();
 
   const id = product._id || product.id;
   const name = product.name || "Product";
-  const price = product.price != null ? Number(product.price) : null;
   const img = product.image ? `${apiUrl}${product.image}` : "/placeholder.png";
   const category = product.category || product.gender || product.segment || product.type || "";
 
-  // Handle Add to Cart
+  const getStockStatus = (stock) => {
+    if (stock === 0) return { text: "Out of Stock", color: "text-red-500" };
+    if (stock <= 5) return { text: "Low Stock", color: "text-orange-500" };
+    return { text: "In Stock", color: "text-green-600" };
+  };
+
+  const stockStatus = getStockStatus(product.stock);
+
+  const discount =
+    product.price?.original && product.price?.sale
+      ? Math.round(((product.price.original - product.price.sale) / product.price.original) * 100)
+      : 0;
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (product.stock === 0) return;
     addToCart(product);
-    if (window.innerWidth >= 768) {
-      setShowCartSidebar(true);
-    }
+    if (window.innerWidth >= 768) setShowCartSidebar(true);
   };
 
   return (
-    <Link
-      to={`/product/${id}`}
-      className="group block border border-gray-200  overflow-hidden hover:shadow-md transition bg-white"
-    >
-      {/* IMAGE SECTION */}
-      <div className="relative w-full bg-white overflow-hidden rounded-t-2xl">
-        <img
-          src={img}
-          alt={name}
-          className="w-full h-44 sm:h-48 object-contain group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => (e.currentTarget.src = "/placeholder.png")}
-        />
+    <div className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 flex flex-col">
 
+      {/* Image */}
+      <Link to={`/product/${id}`} className="block relative overflow-hidden bg-gray-50">
+        <div className="aspect-[3/4] w-full">
+          <img
+            src={img}
+            alt={name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+            loading="lazy"
+          />
+        </div>
+
+        {/* Category badge — top left */}
         {category && (
-          <span
-            className="absolute left-2 top-2 px-2 py-0.5 text-xs rounded-full bg-black text-white capitalize whitespace-nowrap z-10"
-            title={category}
-          >
+          <span className="absolute top-2 left-2 bg-black text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
             {category}
           </span>
         )}
-      </div>
 
-      {/* DETAILS SECTION */}
-      <div className="p-3">
-        <div className="text-sm font-semibold text-gray-900 truncate">{name}</div>
-        
-        {/* Price + Cart Button Row */}
-        <div className="flex items-center justify-between mt-2">
-          {price != null && (
-            <div className="text-base  text-gray-900">₹{price.toFixed(2)}</div>
-          )}
-          
-          <button 
-            onClick={handleAddToCart}
-            className=" p-2 rounded-full hover:scale-110 transition-colors shadow-md flex items-center justify-center z-20 relative"
-            title="Add to Cart"
-          >
-            <FaCartPlus size={20} />
-          </button>
+        {/* Discount badge — top right */}
+        {discount > 0 && (
+          <span className="absolute top-2 right-2 bg-white border border-gray-200 text-gray-800 text-[9px] font-bold px-1.5 py-0.5 tracking-wide">
+            {discount}% OFF
+          </span>
+        )}
+      </Link>
+
+      {/* Info */}
+      <Link to={`/product/${id}`} className="px-3 pt-2.5 pb-1 flex flex-col gap-1 flex-1">
+        {category && (
+          <p className="text-[10px] uppercase tracking-widest text-gray-400 truncate">
+            {category}
+          </p>
+        )}
+
+        <h3 className="text-[12.5px] font-semibold text-gray-900 line-clamp-2 leading-snug">
+          {name}
+        </h3>
+
+        {/* Price row */}
+        <div className="flex items-center justify-between mt-0.5">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-bold text-gray-900">
+              ₹{product.price?.sale}
+            </span>
+            {product.price?.original && (
+              <span className="text-[10px] text-gray-400 line-through">
+                ₹{product.price?.original}
+              </span>
+            )}
+          </div>
+          <span className={`text-[10px] font-semibold ${stockStatus.color}`}>
+            {stockStatus.text}
+          </span>
         </div>
+      </Link>
+
+      {/* Cart button */}
+      <div className="px-3 pb-3 pt-1">
+        <button
+          disabled={product.stock === 0}
+          onClick={handleAddToCart}
+          className={`w-full flex items-center justify-center gap-2 py-2 text-[11px] font-semibold uppercase tracking-widest border transition-colors duration-200 ${
+            product.stock === 0
+              ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "border-gray-300 bg-white text-gray-700 hover:border-black hover:text-black hover:bg-gray-50"
+          }`}
+        >
+          <FaCartPlus className="text-xs" />
+          Add to Cart
+        </button>
       </div>
-    </Link>
+    </div>
   );
 }
 
+/* ── Dots ── */
 function ResponsiveDots({ trackRef, itemsLength, visibleCount }) {
   const [active, setActive] = useState(0);
   const pages = Math.max(1, Math.ceil(itemsLength / visibleCount));
@@ -347,31 +371,29 @@ function ResponsiveDots({ trackRef, itemsLength, visibleCount }) {
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-
     const updateActive = () => {
       const page = Math.round(track.scrollLeft / track.clientWidth);
       setActive(Math.min(page, pages - 1));
     };
-
     track.addEventListener("scroll", updateActive, { passive: true });
     updateActive();
     return () => track.removeEventListener("scroll", updateActive);
   }, [trackRef, pages]);
 
   const goTo = (i) => {
-    const track = trackRef.current;
-    if (!track) return;
-    track.scrollTo({ left: i * track.clientWidth, behavior: "smooth" });
+    trackRef.current?.scrollTo({ left: i * trackRef.current.clientWidth, behavior: "smooth" });
   };
 
   return (
-    <div className="flex justify-center gap-2 mt-4">
+    <div className="flex justify-center gap-1.5 mt-5">
       {Array.from({ length: pages }).map((_, i) => (
         <button
           key={i}
-          className={`h-2.5 w-2.5 rounded-full ${i === active ? "bg-black" : "bg-gray-300"}`}
           onClick={() => goTo(i)}
           aria-label={`Go to page ${i + 1}`}
+          className={`h-1.5 transition-all duration-300 ${
+            i === active ? "w-5 bg-black" : "w-1.5 bg-gray-300 hover:bg-gray-400"
+          }`}
         />
       ))}
     </div>

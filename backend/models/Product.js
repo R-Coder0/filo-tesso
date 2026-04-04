@@ -5,10 +5,27 @@ const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   image: { type: String, required: true },
   gallery: { type: [String], default: [] },
-  price: { type: Number, required: true },
+price: {
+  original: { type: Number, required: true }, // MRP
+  sale: { type: Number, required: true }      // Discount price
+},
   description: { type: String, default: "" },
   features: { type: [String], default: [] },
+stock: {
+  type: Number,
+  default: 0,
+  min: 0
+},
+tags: {
+  type: [String],
+  default: [],
+},
 
+seo: {
+  metaTitle: { type: String, default: "" },
+  metaDescription: { type: String, default: "" },
+  keywords: { type: [String], default: [] },
+},
   category: {
     type: String,
     enum: ALL_CATEGORIES,

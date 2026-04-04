@@ -1,28 +1,33 @@
 import './index.css'
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client'; // Use createRoot for React 18
+import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext'; // Import AuthProvider
-import { CartProvider } from './context/CartContext'; // Import CartProvider
-import { UIProvider } from './context/UIContext'; // Import UIProvider
-import App from './App';
+import { HelmetProvider } from 'react-helmet-async'; // ✅ ADD THIS
+
+import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import { UIProvider } from './context/UIContext';
 import { WishlistProvider } from './context/WishlistContext';
 
+import App from './App';
+
 const rootElement = document.getElementById('root');
-const root = createRoot(rootElement); // Initialize React root
+const root = createRoot(rootElement);
 
 root.render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>  {/* Wrap with AuthProvider */}
-        <CartProvider> {/* Wrap with CartProvider */}
-          <UIProvider> {/* Wrap with UIProvider */}
-            <WishlistProvider>  
-            <App />
-            </WishlistProvider>  
-          </UIProvider>
-        </CartProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <HelmetProvider> {/* ✅ YE ADD KARNA HAI */}
+      <BrowserRouter>
+        <AuthProvider>
+          <CartProvider>
+            <UIProvider>
+              <WishlistProvider>
+                <App />
+              </WishlistProvider>
+            </UIProvider>
+          </CartProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   </StrictMode>
 );
