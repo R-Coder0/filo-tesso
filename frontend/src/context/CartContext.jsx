@@ -28,24 +28,37 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems, user]);
 
+  const getCartKey = (item) =>
+    `${item._id || item.product}-${item.selectedSize || ""}-${item.selectedColor || ""}`;
+
   const addToCart = (product) => {
     setCartItems((prev) => {
-      const exists = prev.find((i) => i._id === product._id);
+      const incomingQty = Math.max(1, Number(product.quantity || 1));
+      const maxStock = Number(product.stock || 0);
+      if (maxStock <= 0) return prev;
+
+      const productKey = getCartKey(product);
+      const exists = prev.find((i) => getCartKey(i) === productKey);
       if (exists) {
         return prev.map((i) =>
-          i._id === product._id ? { ...i, quantity: i.quantity + 1 } : i
+          getCartKey(i) === productKey
+            ? { ...i, quantity: Math.min(maxStock, (i.quantity || 1) + incomingQty) }
+            : i
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: Math.min(maxStock, incomingQty) }];
     });
   };
 
-  const removeFromCart = (id) => setCartItems((prev) => prev.filter((i) => i._id !== id));
+  const removeFromCart = (id) =>
+    setCartItems((prev) => prev.filter((i) => i._id !== id && getCartKey(i) !== id));
 
   const updateCartItemQuantity = (id, delta) => {
     setCartItems((prev) =>
       prev.map((i) =>
-        i._id === id ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i
+          i._id === id || getCartKey(i) === id
+            ? { ...i, quantity: Math.max(1, Math.min(Number(i.stock || Infinity), i.quantity + delta)) }
+            : i
       )
     );
   };

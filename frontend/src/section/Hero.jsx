@@ -22,7 +22,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <section className="relative h- lg:h-[60vh] md:h-[400px] h-[200px] overflow-hidden bg-white mt-[90px]">
+    <section className="relative h- lg:h-[60vh] md:h-[400px] h-[200px] overflow-hidden bg-white">
       {/* Slides Container */}
       <div className="relative h-full">
         {slides.map((slide, index) => (

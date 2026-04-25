@@ -4,6 +4,11 @@ const Product = require("../models/Product");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
 
+const getVariantForSize = (product, selectedSize) => {
+  const variants = product.sizeVariants || [];
+  return variants.find((variant) => String(variant.size || "").trim().toUpperCase() === selectedSize);
+};
+
 const parseProducts = (raw) => {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
@@ -57,11 +62,22 @@ exports.createOrder = async (req, res) => {
       if (!product) continue;
 
       const qty = Number(it.quantity || 1);
+      const selectedSize = String(it.selectedSize || "").trim().toUpperCase();
+
+      const allowedSizes = (product.sizes || []).map(size => String(size).trim().toUpperCase());
+      const selectedVariant = getVariantForSize(product, selectedSize);
+      const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
 
       // ✅ STOCK CHECK
-      if (product.stock < qty) {
+      if (availableStock < qty) {
         return res.status(400).json({
           message: `${product.name} is out of stock`,
+        });
+      }
+
+      if (allowedSizes.length && !allowedSizes.includes(selectedSize)) {
+        return res.status(400).json({
+          message: `Please select a valid size for ${product.name}`,
         });
       }
 
@@ -72,7 +88,7 @@ exports.createOrder = async (req, res) => {
       orderItems.push({
         product: product._id,
         quantity: qty,
-        selectedSize: String(it.selectedSize || "").trim(),
+        selectedSize,
         selectedColor: String(it.selectedColor || "").trim(),
         priceAtPurchase: price, // ✅ IMPORTANT
       });
@@ -121,9 +137,16 @@ exports.createOrder = async (req, res) => {
 
     // ✅ STOCK REDUCE
     for (const item of orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: -item.quantity },
-      });
+      if (item.selectedSize) {
+        await Product.updateOne(
+          { _id: item.product, "sizeVariants.size": item.selectedSize },
+          { $inc: { stock: -item.quantity, "sizeVariants.$.stock": -item.quantity } }
+        );
+      } else {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        });
+      }
     }
 
     // ✅ COINS DEDUCT

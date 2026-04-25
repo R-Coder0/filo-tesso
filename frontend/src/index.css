@@ -21,16 +21,6 @@ body{
 .animate-bounce {
   animation: bounce 1s infinite;
 }
-/* Add this to your global CSS file */
-body {
-  margin-top: 0 !important;
-}
-
-/* Or add padding to main content */
-main {
-  padding-top: 0px; /* Adjust based on your navbar height */
-}
-
 .hide-scrollbar {
   scrollbar-width: none; /* Firefox */
 }

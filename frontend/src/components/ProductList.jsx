@@ -161,11 +161,6 @@ const ProductList = () => {
     return filteredProducts.slice(0, visibleCount);
   }, [filteredProducts, visibleCount]);
 
-  const heading =
-    cat === "all"
-      ? "Premium Collection"
-      : `${titleCase(cat)}${sub !== "all" ? ` / ${titleCase(sub)}` : ""} Collection`;
-
   const getCategoryLabel = (category) => {
     const labels = {
       all: "All Products",
@@ -183,28 +178,69 @@ const ProductList = () => {
       "oversize-tshirt": "Oversize T-Shirt",
       "polo-tshirt": "Polo T-Shirt",
       "formal-shirt": "Formal Shirt",
+      "regular-shirt": "Regular Shirt",
       jeans: "Jeans",
       joggers: "Joggers",
       jacket: "Jacket",
+      trousers: "Trousers",
+      "oversize-shirt": "Oversize Shirt",
+      "plus-size": "Plus Size",
+      cargos: "Cargos",
+      shoes: "Shoes",
+      top: "Top",
+      oversized: "Oversized",
+      "co-ord set": "Co-ord Set",
+      "co-ord-set": "Co-ord Set",
+      sports: "Sports",
       hoodies: "Hoodies",
       jackets: "Jackets",
       sweatshirt: "Sweatshirt",
       "couple-tshirt": "Couple T-Shirt",
+      "regular-coupletshirt": "Regular Couple T-Shirt",
+      "oversize-coupletshirt": "Oversize Couple T-Shirt",
+      "couple-hoodies": "Couple Hoodies",
     };
     return labels[subcategory] || titleCase(subcategory);
   };
 
+  const categoryTitle = getCategoryLabel(cat);
+  const subcategoryTitle = getSubcategoryLabel(sub);
+  const heading =
+    cat === "all"
+      ? "Premium Collection"
+      : sub !== "all"
+        ? `${categoryTitle} ${subcategoryTitle} Collection`
+        : `${categoryTitle} Collection`;
+  const eyebrow =
+    cat === "all"
+      ? "All Categories"
+      : sub !== "all"
+        ? `${categoryTitle} / ${subcategoryTitle}`
+        : categoryTitle;
+
   return (
-    <div className="min-h-screen bg-white pt-18 ">
+    <div className="min-h-screen bg-white">
       {/* Header Section */}
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="container mx-auto px-6 lg:px-8 pt-8">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl lg:text-4xl font-semibold md:font-bold text-black tracking-wide">
+      <div className="relative overflow-hidden bg-black border-b border-gray-900">
+        <div className="absolute inset-0 opacity-45">
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.10)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.07)_1px,transparent_1px)] bg-[length:42px_42px]" />
+          <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,transparent_42%,rgba(255,255,255,0.16)_42.5%,transparent_43%,transparent_100%)] bg-[length:90px_90px]" />
+          <div className="absolute inset-x-0 top-0 h-px bg-white/25" />
+          <div className="absolute inset-y-0 left-1/2 w-px bg-white/10" />
+        </div>
+        <div className="absolute inset-x-0 bottom-0 h-px bg-white/20" />
+
+        <div className="relative container mx-auto px-6 lg:px-8 py-9 md:py-11">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-3 text-[11px] md:text-xs font-bold uppercase tracking-[0.35em] text-white/60">
+              {eyebrow}
+            </p>
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-wide leading-tight">
               {heading}
             </h1>
-            <p className="text-gray-600 font-medium tracking-wide uppercase text-xs md:text-sm">
-              Discover Premium Quality Fashion
+            <div className="mx-auto mt-5 h-px w-32 bg-white/40" />
+            <p className="mt-4 text-white/70 font-semibold tracking-[0.22em] uppercase text-xs md:text-sm">
+              Premium fits, cleaner details, better everyday style
             </p>
           </div>
         </div>

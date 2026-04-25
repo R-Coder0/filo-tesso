@@ -183,7 +183,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 md:mt-2 ">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
         {step === "form" && (
           <>

@@ -30,6 +30,10 @@ const ProductCard = ({ product }) => {
   const handleAddToCart = (e) => {
     e.stopPropagation();
     if (product?.stock === 0) return;
+    if (product?.sizeVariants?.length > 0 || product?.sizes?.length > 0) {
+      navigate(`/product/${product?._id}`);
+      return;
+    }
     addToCart(product);
     if (window.innerWidth >= 768) setShowCartSidebar(true);
   };
@@ -37,6 +41,10 @@ const ProductCard = ({ product }) => {
   const handleBuyNow = (e) => {
     e.stopPropagation();
     if (product?.stock === 0) return;
+    if (product?.sizeVariants?.length > 0 || product?.sizes?.length > 0) {
+      navigate(`/product/${product?._id}`);
+      return;
+    }
     addToCart(product);
     window.scrollTo(0, 0);
     navigate("/checkout", {

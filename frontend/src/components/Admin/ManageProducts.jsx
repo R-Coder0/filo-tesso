@@ -44,6 +44,7 @@ const emptyProduct = {
   originalPrice: "",
   salePrice: "",
   stock: "",
+  sizeVariants: [],
   description: "",
   features: "",
   category: "",
@@ -68,6 +69,7 @@ const ManageProducts = () => {
   const [error, setError] = useState(null);
 // Add these states near your other state declarations
 const [featureInput, setFeatureInput] = useState("");
+const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
   // previews
   const [mainPreview, setMainPreview] = useState(""); // url string
   const [galleryPreviews, setGalleryPreviews] = useState([]); // [{id, url, file}]
@@ -140,6 +142,52 @@ const removeFeature = (indexToRemove) => {
     features: updatedFeatures.join(",")
   });
 };
+
+const addSizeVariant = () => {
+  const size = sizeDraft.size.trim().toUpperCase();
+  const stock = Math.max(0, Number(sizeDraft.stock || 0));
+  if (!size) return;
+
+  setNewProduct((product) => {
+    const current = product.sizeVariants || [];
+    const exists = current.some((variant) => variant.size === size);
+    if (exists) return product;
+
+    return {
+      ...product,
+      sizeVariants: [...current, { size, stock }],
+      stock: [...current, { size, stock }].reduce((sum, variant) => sum + Number(variant.stock || 0), 0),
+    };
+  });
+  setSizeDraft({ size: "", stock: "" });
+};
+
+const updateSizeVariantStock = (size, stockValue) => {
+  const stock = Math.max(0, Number(stockValue || 0));
+  setNewProduct((product) => {
+    const updated = (product.sizeVariants || []).map((variant) =>
+      variant.size === size ? { ...variant, stock } : variant
+    );
+    return {
+      ...product,
+      sizeVariants: updated,
+      stock: updated.reduce((sum, variant) => sum + Number(variant.stock || 0), 0),
+    };
+  });
+};
+
+const removeSizeVariant = (size) => {
+  setNewProduct((product) => {
+    const updated = (product.sizeVariants || []).filter((variant) => variant.size !== size);
+    return {
+      ...product,
+      sizeVariants: updated,
+      stock: updated.length
+        ? updated.reduce((sum, variant) => sum + Number(variant.stock || 0), 0)
+        : "",
+    };
+  });
+};
   // cleanup object urls on unmount
   useEffect(() => {
     return () => {
@@ -172,6 +220,7 @@ const removeFeature = (indexToRemove) => {
   const openAddModal = () => {
     setEditingId(null);
     setNewProduct(emptyProduct);
+    setSizeDraft({ size: "", stock: "" });
     setError(null);
     resetPreviews();
     setIsModalOpen(true);
@@ -179,11 +228,22 @@ const removeFeature = (indexToRemove) => {
 
   const openEditModal = (product) => {
     setEditingId(product._id);
+    const existingVariants = product.sizeVariants?.length
+      ? product.sizeVariants.map((variant) => ({
+          size: String(variant.size || "").toUpperCase(),
+          stock: Number(variant.stock || 0),
+        }))
+      : (product.sizes || []).map((size) => ({
+          size: String(size || "").toUpperCase(),
+          stock: 0,
+        }));
+
     setNewProduct({
       name: product.name || "",
 originalPrice: product.price?.original || "",
 salePrice: product.price?.sale || "",
-stock: product.stock || "",
+stock: product.stock ?? "",
+sizeVariants: existingVariants,
 tags: product.tags?.join(", ") || "",
 metaTitle: product.seo?.metaTitle || "",
 metaDescription: product.seo?.metaDescription || "",
@@ -199,6 +259,7 @@ keywords: product.seo?.keywords?.join(", ") || "",
     setExistingMainImage(product.image ? `${apiUrl}${product.image}` : "");
     setMainPreview(""); // only show existing until user selects new
     setGalleryPreviews([]); // fresh
+    setSizeDraft({ size: "", stock: "" });
     setError(null);
     setIsModalOpen(true);
   };
@@ -261,6 +322,7 @@ keywords: product.seo?.keywords?.join(", ") || "",
           originalPrice: newProduct.originalPrice,
 salePrice: newProduct.salePrice,
 stock: newProduct.stock,
+sizeVariants: newProduct.sizeVariants,
 tags: newProduct.tags,
 metaTitle: newProduct.metaTitle,
 metaDescription: newProduct.metaDescription,
@@ -283,6 +345,7 @@ keywords: newProduct.keywords,
        formData.append("originalPrice", newProduct.originalPrice);
 formData.append("salePrice", newProduct.salePrice);
 formData.append("stock", newProduct.stock);
+formData.append("sizeVariants", JSON.stringify(newProduct.sizeVariants || []));
 formData.append("tags", newProduct.tags);
 formData.append("metaTitle", newProduct.metaTitle);
 formData.append("metaDescription", newProduct.metaDescription);
@@ -421,6 +484,18 @@ formData.append("keywords", newProduct.keywords);
                           <p className="text-sm text-gray-600 mt-2 line-clamp-2">
                             {product.description}
                           </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                            <span className="font-semibold">
+                              Stock: {product.stock ?? 0}
+                            </span>
+                            {product.sizeVariants?.length > 0 ? (
+                              <span>
+                                Variants: {product.sizeVariants.map((variant) => `${variant.size} (${variant.stock})`).join(", ")}
+                              </span>
+                            ) : product.sizes?.length > 0 && (
+                              <span>Sizes: {product.sizes.join(", ")}</span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="shrink-0">
@@ -480,7 +555,7 @@ formData.append("keywords", newProduct.keywords);
     <div
       className="
         relative w-full max-w-3xl
-        bg-white rounded-2xl shadow-xl border border-gray-200
+        bg-white shadow-xl border border-gray-200
         max-h-[92vh] overflow-hidden
       "
     >
@@ -516,9 +591,9 @@ formData.append("keywords", newProduct.keywords);
           {/* Previews Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
             {/* Main image preview */}
-            <div className="border rounded-xl p-3 bg-gray-50">
+            <div className="border border-gray-200 p-3 bg-gray-50">
               <p className="text-sm font-semibold text-gray-800 mb-2">Main Image Preview</p>
-              <div className="w-full h-44 rounded-lg overflow-hidden bg-white border flex items-center justify-center">
+              <div className="w-full h-44 overflow-hidden bg-white border flex items-center justify-center">
                 {mainPreview ? (
                   <img src={mainPreview} alt="Preview" className="w-full h-full object-cover" />
                 ) : existingMainImage ? (
@@ -545,17 +620,17 @@ formData.append("keywords", newProduct.keywords);
             </div>
 
             {/* Gallery preview */}
-            <div className="border rounded-xl p-3 bg-gray-50">
+            <div className="border border-gray-200 p-3 bg-gray-50">
               <p className="text-sm font-semibold text-gray-800 mb-2">Gallery Preview</p>
 
               {galleryPreviews.length === 0 ? (
-                <div className="w-full h-44 rounded-lg bg-white border flex items-center justify-center">
+                <div className="w-full h-44 bg-white border flex items-center justify-center">
                   <span className="text-xs text-gray-500">No gallery selected</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {galleryPreviews.map((g) => (
-                    <div key={g.id} className="relative group rounded-lg overflow-hidden border bg-white">
+                    <div key={g.id} className="relative group overflow-hidden border bg-white">
                       <img src={g.url} alt="Gallery" className="w-full h-20 object-cover" />
                       <button
                         type="button"
@@ -595,7 +670,7 @@ formData.append("keywords", newProduct.keywords);
                 type="text"
                 value={newProduct.name}
                 onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
                 required
                 placeholder="e.g. Premium Oversize T-Shirt"
               />
@@ -615,7 +690,7 @@ formData.append("keywords", newProduct.keywords);
                     subcategory: "",
                   }))
                 }
-                className="w-full p-3 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 bg-white focus:outline-none focus:border-black"
                 required
               >
                 <option value="" disabled>
@@ -637,7 +712,7 @@ formData.append("keywords", newProduct.keywords);
                 onChange={(e) =>
                   setNewProduct({ ...newProduct, subcategory: e.target.value })
                 }
-                className="w-full p-3 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full p-3 border border-gray-300 bg-white focus:outline-none focus:border-black disabled:bg-gray-100"
                 required
                 disabled={!newProduct.category}
               >
@@ -663,7 +738,7 @@ formData.append("keywords", newProduct.keywords);
     onChange={(e) =>
       setNewProduct({ ...newProduct, originalPrice: e.target.value })
     }
-    className="w-full p-3 border rounded-lg"
+    className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
     required
   />
 </div>
@@ -679,25 +754,106 @@ formData.append("keywords", newProduct.keywords);
     onChange={(e) =>
       setNewProduct({ ...newProduct, salePrice: e.target.value })
     }
-    className="w-full p-3 border rounded-lg"
+    className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
     required
   />
 </div>
 
-{/* Stock */}
-<div>
-  <label className="block text-sm font-semibold text-gray-700 mb-1">
-    Stock Quantity
-  </label>
-  <input
-    type="number"
-    value={newProduct.stock}
-    onChange={(e) =>
-      setNewProduct({ ...newProduct, stock: e.target.value })
-    }
-    className="w-full p-3 border rounded-lg"
-    min="0"
-  />
+{/* Inventory */}
+<div className="md:col-span-2 border border-gray-200 bg-gray-50 p-4">
+  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900">
+        Inventory
+      </h4>
+      <p className="mt-1 text-xs text-gray-500">
+        Add size-wise stock for apparel. Leave variants empty for one common stock.
+      </p>
+    </div>
+    <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+      Total: {newProduct.sizeVariants?.length ? newProduct.stock || 0 : newProduct.stock || 0}
+    </div>
+  </div>
+
+  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto]">
+    <input
+      type="text"
+      value={sizeDraft.size}
+      onChange={(e) => setSizeDraft((draft) => ({ ...draft, size: e.target.value }))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addSizeVariant();
+        }
+      }}
+      className="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-black"
+      placeholder="Size e.g. S, M, L"
+    />
+    <input
+      type="number"
+      min="0"
+      value={sizeDraft.stock}
+      onChange={(e) => setSizeDraft((draft) => ({ ...draft, stock: e.target.value }))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addSizeVariant();
+        }
+      }}
+      className="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-black"
+      placeholder="Stock for this size"
+    />
+    <button
+      type="button"
+      onClick={addSizeVariant}
+      className="border border-black bg-black px-5 py-2.5 text-sm font-semibold text-white hover:bg-white hover:text-black"
+    >
+      Add
+    </button>
+  </div>
+
+  {newProduct.sizeVariants?.length > 0 ? (
+    <div className="mt-4 grid gap-2">
+      {newProduct.sizeVariants.map((variant) => (
+        <div
+          key={variant.size}
+          className="grid grid-cols-[80px_1fr_auto] items-center gap-3 border border-gray-200 bg-white p-3"
+        >
+          <span className="text-sm font-bold text-gray-900">{variant.size}</span>
+          <input
+            type="number"
+            min="0"
+            value={variant.stock}
+            onChange={(e) => updateSizeVariantStock(variant.size, e.target.value)}
+            className="w-full border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black"
+          />
+          <button
+            type="button"
+            onClick={() => removeSizeVariant(variant.size)}
+            className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-red-600 hover:bg-red-50"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="mt-4">
+      <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-1">
+        Common Stock
+      </label>
+      <input
+        type="number"
+        value={newProduct.stock}
+        onChange={(e) =>
+          setNewProduct({ ...newProduct, stock: e.target.value })
+        }
+        className="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-black"
+        min="0"
+        placeholder="Total stock"
+      />
+    </div>
+  )}
 </div>
 {/* Tags */}
 <div className="md:col-span-2">
@@ -710,7 +866,7 @@ formData.append("keywords", newProduct.keywords);
     onChange={(e) =>
       setNewProduct({ ...newProduct, tags: e.target.value })
     }
-    className="w-full p-3 border rounded-lg"
+    className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
     placeholder="tshirt, cotton, summer"
   />
 </div>
@@ -725,7 +881,7 @@ formData.append("keywords", newProduct.keywords);
     onChange={(e) =>
       setNewProduct({ ...newProduct, metaTitle: e.target.value })
     }
-    className="w-full p-3 border rounded-lg mb-3"
+    className="w-full p-3 border border-gray-300 mb-3 focus:outline-none focus:border-black"
   />
 
   <textarea
@@ -734,7 +890,7 @@ formData.append("keywords", newProduct.keywords);
     onChange={(e) =>
       setNewProduct({ ...newProduct, metaDescription: e.target.value })
     }
-    className="w-full p-3 border rounded-lg mb-3"
+    className="w-full p-3 border border-gray-300 mb-3 focus:outline-none focus:border-black"
   />
 
   <input
@@ -744,7 +900,7 @@ formData.append("keywords", newProduct.keywords);
     onChange={(e) =>
       setNewProduct({ ...newProduct, keywords: e.target.value })
     }
-    className="w-full p-3 border rounded-lg"
+    className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
   />
 </div>
 
@@ -762,11 +918,11 @@ formData.append("keywords", newProduct.keywords);
                   id="main-image-upload"
                   required={!editingId}
                 />
-                <div className="w-full p-3 border rounded-lg bg-white flex items-center justify-between">
+                <div className="w-full p-3 border border-gray-300 bg-white flex items-center justify-between">
                   <span className="text-gray-600 text-sm truncate mr-2">
                     {mainPreview ? 'Image selected' : editingId ? 'Choose new image (optional)' : 'Click to upload main image'}
                   </span>
-                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm font-medium border">
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 text-sm font-medium border">
                     Browse
                   </span>
                 </div>
@@ -812,7 +968,7 @@ formData.append("keywords", newProduct.keywords);
                   value={featureInput}
                   onChange={(e) => setFeatureInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addFeature()}
-                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 p-3 border border-gray-300 focus:outline-none focus:border-black"
                   placeholder="Type a feature and press Enter or click Add"
                 />
                 <button
@@ -839,13 +995,13 @@ formData.append("keywords", newProduct.keywords);
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   id="gallery-images-upload"
                 />
-                <div className="w-full p-3 border rounded-lg bg-white flex items-center justify-between">
+                <div className="w-full p-3 border border-gray-300 bg-white flex items-center justify-between">
                   <span className="text-gray-600 text-sm truncate mr-2">
                     {galleryPreviews.length > 0 
                       ? `${galleryPreviews.length} image(s) selected` 
                       : 'Click to upload multiple gallery images'}
                   </span>
-                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm font-medium border">
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 text-sm font-medium border">
                     Browse
                   </span>
                 </div>
@@ -865,7 +1021,7 @@ formData.append("keywords", newProduct.keywords);
                 onChange={(e) =>
                   setNewProduct({ ...newProduct, description: e.target.value })
                 }
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
                 rows="5"
                 required
                 placeholder="Write a short product description..."

@@ -11,8 +11,6 @@ import { Helmet } from "react-helmet-async";
 import { Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 
-const DEFAULT_SIZES = ["S", "M", "L", "XL"];
-
 const ProductDetailPage = () => {
   const { id } = useParams();
   const [selectedSide, setSelectedSide] = useState("");
@@ -66,6 +64,10 @@ const ProductDetailPage = () => {
     if (product) { fetchReviews(); fetchRelatedProducts(); }
   }, [product]);
 
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedSize]);
+
   const fetchReviews = async () => {
     try {
       setReviewsLoading(true);
@@ -101,17 +103,41 @@ const ProductDetailPage = () => {
   };
 
   const handleAddToCart = () => {
-    const sizeToUse = selectedSize || (product?.sizes?.[0] ?? DEFAULT_SIZES[0]);
-    addToCart({ ...product, quantity, selectedSize: sizeToUse, selectedColor });
+    if (!inStock) {
+      showToast("This product is out of stock", "error");
+      return;
+    }
+    if (requiresSize && !selectedSize) {
+      showToast("Please select a size", "error");
+      return;
+    }
+    if (availableStock <= 0) {
+      showToast("Selected size is out of stock", "error");
+      return;
+    }
+    const sizeToUse = selectedSize || "";
+    addToCart({ ...product, stock: availableStock, quantity, selectedSize: sizeToUse, selectedColor });
     showToast("Added to cart successfully!");
   };
 
   const handleBuyNow = () => {
-    const sizeToUse = selectedSize || (product?.sizes?.[0] ?? DEFAULT_SIZES[0]);
+    if (!inStock) {
+      showToast("This product is out of stock", "error");
+      return;
+    }
+    if (requiresSize && !selectedSize) {
+      showToast("Please select a size", "error");
+      return;
+    }
+    if (availableStock <= 0) {
+      showToast("Selected size is out of stock", "error");
+      return;
+    }
+    const sizeToUse = selectedSize || "";
     const isCustomize = (product.category || "").toLowerCase() === "customize";
     navigate("/checkout", {
       state: {
-        cartItems: [{ ...product, quantity, selectedSize: sizeToUse, selectedColor }],
+        cartItems: [{ ...product, stock: availableStock, quantity, selectedSize: sizeToUse, selectedColor }],
         totalAmount: product.price?.sale * quantity,
         customUploads: { singleFile: customFile || null, isCustomize, selectedSide: isCustomize ? selectedSide : "" }
       },
@@ -120,7 +146,8 @@ const ProductDetailPage = () => {
 
   const handleQuantityChange = (change) => {
     const newQty = quantity + change;
-    if (newQty >= 1) setQuantity(newQty);
+    const maxQty = Math.max(1, availableStock || 1);
+    if (newQty >= 1 && newQty <= maxQty) setQuantity(newQty);
   };
 
   const handleSubmitReview = async (e) => {
@@ -181,7 +208,7 @@ const ProductDetailPage = () => {
 
   // ── Loading ──
   if (loading) return (
-    <div className="min-h-screen bg-white pt-20 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center space-y-3">
         <div className="w-10 h-10 border-2 border-gray-200 border-t-black animate-spin mx-auto" />
         <p className="text-xs font-bold tracking-widest uppercase text-gray-400">Loading Product</p>
@@ -190,7 +217,7 @@ const ProductDetailPage = () => {
   );
 
   if (!product) return (
-    <div className="min-h-screen bg-white pt-20 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-800">Product Not Found</h2>
         <button onClick={() => navigate(-1)} className="bg-black text-white px-6 py-3 text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">Go Back</button>
@@ -199,13 +226,21 @@ const ProductDetailPage = () => {
   );
 
   const isCustomize = (product.category || "").toLowerCase() === "customize";
-  const availableSizes = product.sizes?.length > 0 ? product.sizes : DEFAULT_SIZES;
+  const sizeVariants = Array.isArray(product.sizeVariants) ? product.sizeVariants : [];
+  const availableSizes = sizeVariants.length
+    ? sizeVariants.map((variant) => variant.size).filter(Boolean)
+    : Array.isArray(product.sizes) ? product.sizes.filter(Boolean) : [];
+  const requiresSize = availableSizes.length > 0;
+  const selectedVariant = sizeVariants.find((variant) => variant.size === selectedSize);
+  const availableStock = requiresSize ? Number(selectedVariant?.stock || 0) : Number(product.stock || 0);
   const inStock = product.stock > 0;
   const totalPrice = product.price?.sale * quantity;
   const discount = product.price?.original && product.price?.sale
     ? Math.round(((product.price.original - product.price.sale) / product.price.original) * 100) : 0;
   const stockLabel = product.stock === 0 ? { text: "Out of Stock", color: "text-red-500", dot: "bg-red-500" }
-    : product.stock <= 5 ? { text: `Only ${product.stock} left`, color: "text-orange-500", dot: "bg-orange-500" }
+    : requiresSize && !selectedSize ? { text: "Select size for stock", color: "text-gray-500", dot: "bg-gray-400" }
+    : availableStock === 0 ? { text: "Selected size out of stock", color: "text-red-500", dot: "bg-red-500" }
+    : availableStock <= 5 ? { text: `Only ${availableStock} left`, color: "text-orange-500", dot: "bg-orange-500" }
     : { text: "In Stock", color: "text-green-600", dot: "bg-green-500" };
   const allImages = [product.image, ...(product.gallery || [])];
   const avgRating = product?.ratings?.average || 0;
@@ -227,10 +262,10 @@ const ProductDetailPage = () => {
         </div>
       )}
 
-      <div className="min-h-screen bg-gray-50 pt-20">
+      <div className="min-h-screen bg-gray-50">
 
         {/* ── Breadcrumb Bar ── */}
-        <div className="bg-white border-b border-gray-200 sticky top-[64px] z-30 pt-6">
+        <div className="bg-white border-b border-gray-200 sticky top-[76px] z-30">
           <div className="max-w-7xl mx-auto px-4 md:px-6 h-11 flex items-center justify-between">
             <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-xs font-semibold uppercase tracking-widest">
               <FaArrowLeft className="text-[10px]" /> Back
@@ -344,20 +379,22 @@ const ProductDetailPage = () => {
               </div>
 
               {/* Size */}
-              <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-700">Select Size</h3>
-                  <button className="text-xs text-gray-400 hover:text-black underline underline-offset-2 transition-colors">Size Guide</button>
+              {requiresSize && (
+                <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-700">Select Size</h3>
+                    <button className="text-xs text-gray-400 hover:text-black underline underline-offset-2 transition-colors">Size Guide</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((size, idx) => (
+                      <button key={idx} onClick={() => setSelectedSize(size)}
+                        className={`min-w-[44px] h-10 px-3 border text-sm font-semibold tracking-wide uppercase transition-all duration-200 ${selectedSize === size ? "border-black bg-black text-white" : "border-gray-300 text-gray-700 hover:border-gray-600 hover:text-black bg-white"}`}>
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {availableSizes.map((size, idx) => (
-                    <button key={idx} onClick={() => setSelectedSize(size)}
-                      className={`min-w-[44px] h-10 px-3 border text-sm font-semibold tracking-wide uppercase transition-all duration-200 ${selectedSize === size ? "border-black bg-black text-white" : "border-gray-300 text-gray-700 hover:border-gray-600 hover:text-black bg-white"}`}>
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Quantity */}
               <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
@@ -367,8 +404,8 @@ const ProductDetailPage = () => {
                     <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}
                       className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors text-lg font-light">−</button>
                     <span className="w-10 text-center text-sm font-bold text-gray-900 border-x border-gray-300 h-9 flex items-center justify-center">{quantity}</span>
-                    <button onClick={() => handleQuantityChange(1)}
-                      className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors text-lg font-light">+</button>
+                    <button onClick={() => handleQuantityChange(1)} disabled={quantity >= (availableStock || 1)}
+                      className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors text-lg font-light">+</button>
                   </div>
                   <div className="text-sm text-gray-500">
                     Total: <span className="font-bold text-gray-900 text-base">₹{totalPrice.toLocaleString()}</span>
@@ -403,13 +440,13 @@ const ProductDetailPage = () => {
               {/* CTA Buttons */}
               <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <button onClick={handleAddToCart} disabled={!inStock}
-                    className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest border transition-all duration-200 ${!inStock ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-black text-black bg-white hover:bg-gray-50"}`}>
+                  <button onClick={handleAddToCart} disabled={!inStock || (requiresSize && selectedSize && availableStock <= 0)}
+                    className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest border transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-black text-black bg-white hover:bg-gray-50"}`}>
                     <FaCartPlus className="text-sm" />
                     Add to Cart
                   </button>
-                  <button onClick={handleBuyNow} disabled={!inStock}
-                    className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-200 ${!inStock ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}>
+                  <button onClick={handleBuyNow} disabled={!inStock || (requiresSize && selectedSize && availableStock <= 0)}
+                    className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}>
                     <FaShoppingBag className="text-sm" />
                     Buy Now
                   </button>

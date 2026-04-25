@@ -8,7 +8,7 @@ const WishlistPage = () => {
 
   if (!wishlist.length) {
     return (
-      <div className="min-h-screen pt-20 flex flex-col items-center justify-center text-gray-600">
+      <div className="min-h-screen flex flex-col items-center justify-center text-gray-600">
         <p className="text-lg font-medium">Your wishlist is empty 💔</p>
         <button
           onClick={() => navigate("/")}
@@ -21,7 +21,7 @@ const WishlistPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-20 container mx-auto px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-white container mx-auto px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold mb-8">My Wishlist</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">

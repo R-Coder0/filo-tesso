@@ -43,7 +43,7 @@ const OrderConfirmationPage = () => {
   const paymentMethod = isPaid ? "Online Payment" : "Cash on Delivery";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 mt-5 py-10 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-10 px-4">
       <div className="max-w-3xl w-full bg-white shadow-xl rounded-2xl p-8">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">

@@ -26,6 +26,9 @@ const CartSidebar = ({ onClose }) => {
 
   const [showGift, setShowGift] = useState(false);
   const [removingItemId, setRemovingItemId] = useState(null);
+  const getCartKey = (item) =>
+    `${item._id}-${item.selectedSize || ""}-${item.selectedColor || ""}`;
+  const getSalePrice = (item) => item.price?.sale || item.price || 0;
 
   // ---- money math
   const {
@@ -38,7 +41,7 @@ const CartSidebar = ({ onClose }) => {
     progressPct,
   } = useMemo(() => {
     const subtotalRaw = cartItems.reduce(
-      (acc, item) => acc + (item.price || 0) * (item.quantity || 0),
+      (acc, item) => acc + getSalePrice(item) * (item.quantity || 0),
       0
     );
 
@@ -92,10 +95,10 @@ const CartSidebar = ({ onClose }) => {
     updateCartItemQuantity(id, delta);
   };
 
-  const handleRemoveItem = (id) => {
-    setRemovingItemId(id);
+  const handleRemoveItem = (cartKey) => {
+    setRemovingItemId(cartKey);
     setTimeout(() => {
-      removeFromCart(id);
+      removeFromCart(cartKey);
       setRemovingItemId(null);
     }, 300);
   };
@@ -222,15 +225,21 @@ const CartSidebar = ({ onClose }) => {
           ) : (
             <>
               <AnimatePresence>
-                {cartItems.map((item) => (
+                {cartItems.map((item) => {
+                  const cartKey = getCartKey(item);
+                  const salePrice = getSalePrice(item);
+                  const outOfStock = Number(item.stock || 0) <= 0;
+                  const atStockLimit = Number(item.stock || 0) > 0 && item.quantity >= item.stock;
+
+                  return (
                   <motion.div
-                    key={item._id}
+                    key={cartKey}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: 50 }}
                     transition={{ duration: 0.2 }}
                     className={`flex gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 transition-opacity ${
-                      removingItemId === item._id ? "opacity-50" : ""
+                      removingItemId === cartKey ? "opacity-50" : ""
                     }`}
                   >
                     <div className="w-20 h-20 bg-white rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
@@ -250,7 +259,7 @@ const CartSidebar = ({ onClose }) => {
                           {item.name}
                         </h3>
                         <button
-                          onClick={() => handleRemoveItem(item._id)}
+                          onClick={() => handleRemoveItem(cartKey)}
                           className="text-gray-400 hover:text-red-500 transition-colors p-1"
                           aria-label="Remove item"
                         >
@@ -259,13 +268,22 @@ const CartSidebar = ({ onClose }) => {
                       </div>
 
                       <p className="text-xs text-gray-500 mt-1">
-                        {formatINR(item.price)} each
+                        {formatINR(salePrice)} each
+                        {item.selectedSize ? ` • Size: ${item.selectedSize}` : ""}
                       </p>
+                      {outOfStock && (
+                        <p className="mt-1 text-xs font-semibold text-red-600">Out of stock</p>
+                      )}
+                      {atStockLimit && (
+                        <p className="mt-1 text-xs font-semibold text-orange-600">
+                          Only {item.stock} available
+                        </p>
+                      )}
 
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center border border-gray-300 rounded-lg bg-white">
                           <button
-                            onClick={() => changeQty(item._id, -1, item.quantity)}
+                            onClick={() => changeQty(cartKey, -1, item.quantity)}
                             className="px-2 py-1 hover:bg-gray-100 transition-colors rounded-l-lg disabled:opacity-50"
                             disabled={item.quantity <= 1}
                             aria-label="Decrease quantity"
@@ -276,8 +294,9 @@ const CartSidebar = ({ onClose }) => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => changeQty(item._id, 1, item.quantity)}
+                            onClick={() => changeQty(cartKey, 1, item.quantity)}
                             className="px-2 py-1 hover:bg-gray-100 transition-colors rounded-r-lg"
+                            disabled={outOfStock || atStockLimit}
                             aria-label="Increase quantity"
                           >
                             <FiPlus className="text-xs" />
@@ -285,12 +304,13 @@ const CartSidebar = ({ onClose }) => {
                         </div>
 
                         <span className="font-medium text-gray-900 text-sm">
-                          {formatINR(item.price * item.quantity)}
+                          {formatINR(salePrice * item.quantity)}
                         </span>
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                );
+                })}
               </AnimatePresence>
 
               {/* Cart Summary */}

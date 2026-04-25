@@ -1,9 +1,9 @@
 import React from 'react'
-import ProductList from '../components/ProductList'
 import Hero from '../section/Hero'
 import Bestsellers from '../components/Bestseller'
 import CategoriesSection from '../components/Categoriessection'
 import LatestProducts from '../components/LatestProducts'
+import HomeProducts from '../components/HomeProducts'
 import OurStory from '../components/OurStory'
 import TestimonialSection from '../components/TestimonialSection'
 import { ShoppingExperience } from '../components/ShoppingExperience'
@@ -17,7 +17,7 @@ const Home = () => {
 <TrustStrip/>
 <LatestProducts/>
 <Bestsellers/>
- <ProductList/>
+<HomeProducts/>
  <OurStory/>
  <ShoppingExperience/>
  {/* <TestimonialSection/> */}

@@ -280,9 +280,9 @@ useEffect(() => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8 mt-8 pt-8">
+    <div className="min-h-screen bg-gray-50 pb-8">
       {/* Mobile Header */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm lg:hidden">
+      <div className="sticky top-[76px] z-40 bg-white shadow-sm lg:hidden">
         <div className="px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-900">My Account</h1>
           <button

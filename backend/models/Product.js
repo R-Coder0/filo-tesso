@@ -11,6 +11,19 @@ price: {
 },
   description: { type: String, default: "" },
   features: { type: [String], default: [] },
+  sizes: {
+    type: [String],
+    default: [],
+  },
+  sizeVariants: {
+    type: [
+      {
+        size: { type: String, required: true, trim: true, uppercase: true },
+        stock: { type: Number, default: 0, min: 0 },
+      },
+    ],
+    default: [],
+  },
 stock: {
   type: Number,
   default: 0,

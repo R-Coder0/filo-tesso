@@ -48,13 +48,57 @@ const normalizeFeatures = (features) => {
     .filter(Boolean);
 };
 
+const normalizeSizes = (sizes) => {
+  if (Array.isArray(sizes)) {
+    return sizes.map(size => String(size).trim().toUpperCase()).filter(Boolean);
+  }
+  return String(sizes || "")
+    .split(",")
+    .map(size => size.trim().toUpperCase())
+    .filter(Boolean);
+};
+
+const normalizeSizeVariants = (raw, fallbackSizes = [], fallbackStock = 0) => {
+  let parsed = raw;
+
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = [];
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    const seen = new Set();
+    return parsed
+      .map((variant) => ({
+        size: String(variant?.size || "").trim().toUpperCase(),
+        stock: Math.max(0, Number(variant?.stock || 0)),
+      }))
+      .filter((variant) => {
+        if (!variant.size || seen.has(variant.size)) return false;
+        seen.add(variant.size);
+        return true;
+      });
+  }
+
+  return normalizeSizes(fallbackSizes).map((size) => ({
+    size,
+    stock: Math.max(0, Number(fallbackStock || 0)),
+  }));
+};
+
+const getTotalVariantStock = (variants) =>
+  variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock || 0)), 0);
+
 // POST /api/products  (multipart: image + images[])
 const addProduct = async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
     const originalPrice = Number(req.body.originalPrice);
     const salePrice = Number(req.body.salePrice);
-    const stock = Number(req.body.stock || 0);
+    const stock = Math.max(0, Number(req.body.stock || 0));
     if (salePrice > originalPrice) {
       return res.status(400).json({
         message: "Sale price cannot be greater than original price"
@@ -64,6 +108,9 @@ const addProduct = async (req, res) => {
     const category = String(req.body.category || "").toLowerCase().trim();
     const subcategory = String(req.body.subcategory || "").toLowerCase().trim();
     const features = normalizeFeatures(req.body.features);
+const sizeVariants = normalizeSizeVariants(req.body.sizeVariants, req.body.sizes, stock);
+const sizes = sizeVariants.length ? sizeVariants.map((variant) => variant.size) : normalizeSizes(req.body.sizes);
+const totalStock = sizeVariants.length ? getTotalVariantStock(sizeVariants) : stock;
 const tags = req.body.tags
   ? String(req.body.tags).split(",").map(t => t.trim()).filter(Boolean)
   : [];
@@ -95,7 +142,9 @@ const keywords = req.body.keywords
         original: originalPrice,
         sale: salePrice,
       },
-      stock,
+      stock: totalStock,
+      sizes,
+      sizeVariants,
       description,
       features,
         tags,
@@ -137,8 +186,13 @@ const updateProduct = async (req, res) => {
       product.price.sale = Number(body.salePrice);
     }
 
-    if (typeof body.stock !== "undefined") {
-      product.stock = Number(body.stock);
+    if (typeof body.sizeVariants !== "undefined" || typeof body.sizes !== "undefined") {
+      const nextVariants = normalizeSizeVariants(body.sizeVariants, body.sizes, body.stock ?? product.stock);
+      product.sizeVariants = nextVariants;
+      product.sizes = nextVariants.length ? nextVariants.map((variant) => variant.size) : normalizeSizes(body.sizes);
+      product.stock = nextVariants.length ? getTotalVariantStock(nextVariants) : Number(body.stock ?? product.stock);
+    } else if (typeof body.stock !== "undefined") {
+      product.stock = Math.max(0, Number(body.stock));
     }
     if (typeof body.description !== "undefined") product.description = String(body.description);
 

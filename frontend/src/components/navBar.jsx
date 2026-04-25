@@ -360,7 +360,7 @@ const Navbar = () => {
   // ---- UI ------------------------------------------------------
   return (
     <nav
-      className="fixed top-[0px] w-full z-50 bg-white border-b border-gray-200"
+      className="sticky top-0 w-full z-50 bg-white border-b border-gray-200"
     >
       {/* 3-column grid keeps logo centered on mobile too */}
       <div className="container mx-auto grid grid-cols-3 items-center px-4 sm:px-6 lg:px-8 py-1 gap-2">
@@ -432,7 +432,7 @@ const Navbar = () => {
         {/* Center: logo image always centered */}
         <div className="justify-self-center">
           <Link to="/" className="inline-flex items-center pt-3">
-            <img src={logoImg} alt="Filo Teso" className="h-14 w-auto md:h-17" />
+            <img src={logoImg} alt="Filo Teso" className="h-10 w-auto md:h-12" />
           </Link>
         </div>
 

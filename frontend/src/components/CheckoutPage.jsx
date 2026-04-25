@@ -207,7 +207,13 @@ const CheckoutPage = () => {
     setCartItems((prev) =>
       prev.map((item) =>
         item._id === productId
-          ? { ...item, quantity: Math.max(1, (item.quantity || 1) + delta) }
+          ? {
+              ...item,
+              quantity: Math.max(
+                1,
+                Math.min(Number(item.stock || Infinity), (item.quantity || 1) + delta)
+              ),
+            }
           : item
       )
     );
@@ -401,7 +407,7 @@ const CheckoutPage = () => {
      RENDER
   ------------------------------*/
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pt-20">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid lg:grid-cols-3 gap-8">
         {/* LEFT: Address + Upload + Coins */}
         <div className="lg:col-span-2 space-y-8">
@@ -579,6 +585,16 @@ const CheckoutPage = () => {
                         {item.selectedSize ? ` • Size: ${item.selectedSize}` : ""}
                         {item.selectedColor ? ` • Color: ${item.selectedColor}` : ""}
                       </div>
+                      {Number(item.stock || 0) <= 0 && (
+                        <div className="mt-1 text-xs font-semibold text-red-600">
+                          Out of stock
+                        </div>
+                      )}
+                      {Number(item.stock || 0) > 0 && item.quantity >= item.stock && (
+                        <div className="mt-1 text-xs font-semibold text-orange-600">
+                          Only {item.stock} available
+                        </div>
+                      )}
                     </div>
                     <div className="text-sm font-semibold">{formatINR((item.price?.sale || 0) * (item.quantity || 0))}</div>
                   </div>

@@ -10,6 +10,10 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+const getVariantForSize = (product, selectedSize) => {
+  const variants = product.sizeVariants || [];
+  return variants.find((variant) => String(variant.size || "").trim().toUpperCase() === selectedSize);
+};
 
 // ✅ CREATE ORDER (PAYMENT INIT)
 exports.createOrder = async (req, res) => {
@@ -27,11 +31,22 @@ exports.createOrder = async (req, res) => {
       if (!product) continue;
 
       const qty = item.quantity || 1;
+      const selectedSize = String(item.selectedSize || "").trim().toUpperCase();
+      const selectedVariant = getVariantForSize(product, selectedSize);
+      const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
 
-      if (product.stock < qty) {
+      if (availableStock < qty) {
         return res.status(400).json({
           success: false,
           message: `${product.name} is out of stock`,
+        });
+      }
+
+      const allowedSizes = (product.sizes || []).map(size => String(size).trim().toUpperCase());
+      if (allowedSizes.length && !allowedSizes.includes(selectedSize)) {
+        return res.status(400).json({
+          success: false,
+          message: `Please select a valid size for ${product.name}`,
         });
       }
 
@@ -119,11 +134,22 @@ exports.verifyPayment = async (req, res) => {
       if (!product) continue;
 
       const qty = item.quantity || 1;
+      const selectedSize = String(item.selectedSize || "").trim().toUpperCase();
+      const selectedVariant = getVariantForSize(product, selectedSize);
+      const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
 
-      if (product.stock < qty) {
+      if (availableStock < qty) {
         return res.status(400).json({
           success: false,
           message: `${product.name} is out of stock`,
+        });
+      }
+
+      const allowedSizes = (product.sizes || []).map(size => String(size).trim().toUpperCase());
+      if (allowedSizes.length && !allowedSizes.includes(selectedSize)) {
+        return res.status(400).json({
+          success: false,
+          message: `Please select a valid size for ${product.name}`,
         });
       }
 
@@ -134,7 +160,7 @@ exports.verifyPayment = async (req, res) => {
       products.push({
         product: product._id,
         quantity: qty,
-        selectedSize: item.selectedSize || "",
+        selectedSize,
         selectedColor: item.selectedColor || "",
         priceAtPurchase: price, // ✅ FIXED
       });
@@ -183,9 +209,16 @@ exports.verifyPayment = async (req, res) => {
 
     // ✅ REDUCE STOCK
     for (const item of products) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: -item.quantity },
-      });
+      if (item.selectedSize) {
+        await Product.updateOne(
+          { _id: item.product, "sizeVariants.size": item.selectedSize },
+          { $inc: { stock: -item.quantity, "sizeVariants.$.stock": -item.quantity } }
+        );
+      } else {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        });
+      }
     }
 
     // ✅ UPDATE PAYMENT
