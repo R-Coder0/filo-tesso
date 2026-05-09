@@ -3,6 +3,7 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
+const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 
 const getVariantForSize = (product, selectedSize) => {
   const variants = product.sizeVariants || [];
@@ -108,8 +109,10 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    const redeemable = Math.min(redeemRequested, totalAmount);
-    const payableAmount = Math.max(0, totalAmount - redeemable);
+    const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
+    const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
+    const redeemable = Math.min(redeemRequested, totalAfterFirstOrderDiscount);
+    const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
     const coinsEarned = Math.floor(payableAmount * 0.01);
 
     // ✅ CREATE ORDER
@@ -118,6 +121,8 @@ exports.createOrder = async (req, res) => {
       products: orderItems,
       totalAmount,
       payableAmount,
+      firstOrderDiscountRate: firstOrderDiscount.rate,
+      firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
       coinsEarned,
       coinsRedeemed: redeemable,
       coinStatus: "pending",

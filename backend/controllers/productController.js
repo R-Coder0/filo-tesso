@@ -38,13 +38,13 @@ const getProductById = async (req, res) => {
 };
 
 // helpers
-const normalizeFeatures = (features) => {
-  if (Array.isArray(features)) {
-    return features.map(f => String(f).trim()).filter(Boolean);
+const normalizeDetails = (details) => {
+  if (Array.isArray(details)) {
+    return details.map(detail => String(detail).trim()).filter(Boolean);
   }
-  return String(features || "")
+  return String(details || "")
     .split(",")
-    .map(f => f.trim())
+    .map(detail => detail.trim())
     .filter(Boolean);
 };
 
@@ -107,7 +107,10 @@ const addProduct = async (req, res) => {
     const description = String(req.body.description || "");
     const category = String(req.body.category || "").toLowerCase().trim();
     const subcategory = String(req.body.subcategory || "").toLowerCase().trim();
-    const features = normalizeFeatures(req.body.features);
+    const details = normalizeDetails(
+      typeof req.body.details !== "undefined" ? req.body.details : req.body.features
+    );
+    const washCare = normalizeDetails(req.body.washCare);
 const sizeVariants = normalizeSizeVariants(req.body.sizeVariants, req.body.sizes, stock);
 const sizes = sizeVariants.length ? sizeVariants.map((variant) => variant.size) : normalizeSizes(req.body.sizes);
 const totalStock = sizeVariants.length ? getTotalVariantStock(sizeVariants) : stock;
@@ -146,7 +149,8 @@ const keywords = req.body.keywords
       sizes,
       sizeVariants,
       description,
-      features,
+      details,
+      washCare,
         tags,
   seo: {
     metaTitle,
@@ -196,8 +200,14 @@ const updateProduct = async (req, res) => {
     }
     if (typeof body.description !== "undefined") product.description = String(body.description);
 
-    if (typeof body.features !== "undefined") {
-      product.features = normalizeFeatures(body.features);
+    if (typeof body.details !== "undefined") {
+      product.details = normalizeDetails(body.details);
+    } else if (typeof body.features !== "undefined") {
+      product.details = normalizeDetails(body.features);
+    }
+
+    if (typeof body.washCare !== "undefined") {
+      product.washCare = normalizeDetails(body.washCare);
     }
 
     if (typeof body.category !== "undefined") {

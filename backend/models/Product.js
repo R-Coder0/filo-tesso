@@ -10,6 +10,8 @@ price: {
   sale: { type: Number, required: true }      // Discount price
 },
   description: { type: String, default: "" },
+  details: { type: [String], default: [] },
+  washCare: { type: [String], default: [] },
   features: { type: [String], default: [] },
   sizes: {
     type: [String],

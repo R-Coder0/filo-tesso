@@ -4,6 +4,7 @@ const Payment = require("../models/Payment");
 const Order = require("../models/Order");
 const User = require("../models/User");
 const Product = require("../models/Product");
+const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -54,13 +55,16 @@ exports.createOrder = async (req, res) => {
       totalAmount += price * qty;
     }
 
+    const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
+    const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
+
     const redeemable = Math.min(
       Number(redeemCoins),
       user.coinsBalance,
-      totalAmount
+      totalAfterFirstOrderDiscount
     );
 
-    const payableAmount = Math.max(0, totalAmount - redeemable);
+    const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(payableAmount * 100),
@@ -174,13 +178,16 @@ exports.verifyPayment = async (req, res) => {
     }
 
     // ✅ COINS LOGIC
+    const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
+    const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
+
     const redeemable = Math.min(
       Number(redeemCoins),
       user.coinsBalance,
-      totalAmount
+      totalAfterFirstOrderDiscount
     );
 
-    const payableAmount = Math.max(0, totalAmount - redeemable);
+    const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
     const coinsEarned = Math.floor(payableAmount * 0.1);
 
     console.log(`🪙 Before: ${user.coinsBalance}, Redeeming: ${redeemable}`);
@@ -196,6 +203,8 @@ exports.verifyPayment = async (req, res) => {
       products,
       totalAmount,
       payableAmount,
+      firstOrderDiscountRate: firstOrderDiscount.rate,
+      firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
       coinsEarned,
       coinsRedeemed: redeemable,
       coinStatus: "pending",
