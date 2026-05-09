@@ -98,6 +98,11 @@ const CheckoutPage = () => {
   const [redeemCoins, setRedeemCoins] = useState(0);
   const [referralCode, setReferralCode] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
+  const [firstOrderDiscount, setFirstOrderDiscount] = useState({
+    enabled: false,
+    eligible: false,
+    percentage: 15,
+  });
 
 
   const preSelectedFile = customUploads?.singleFile || null;
@@ -130,6 +135,31 @@ const CheckoutPage = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchFirstOrderDiscount = async () => {
+      try {
+        const { data } = await axios.get(`${apiUrl}/api/orders/first-order-discount`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFirstOrderDiscount({
+          enabled: Boolean(data.enabled),
+          eligible: Boolean(data.eligible),
+          percentage: Number(data.percentage || 15),
+        });
+      } catch {
+        setFirstOrderDiscount((setting) => ({
+          ...setting,
+          enabled: false,
+          eligible: false,
+        }));
+      }
+    };
+
+    fetchFirstOrderDiscount();
+  }, [apiUrl, token]);
+
   /* -----------------------------
      PRICING
   ------------------------------*/
@@ -158,14 +188,21 @@ const CheckoutPage = () => {
       (item.quantity || 0),
     0
   );
+  const firstOrderDiscountRate =
+    firstOrderDiscount.enabled && firstOrderDiscount.eligible
+      ? firstOrderDiscount.percentage / 100
+      : 0;
+  const firstOrderDiscountAmount = Math.floor(discountedTotal * firstOrderDiscountRate);
+  const totalAfterFirstOrderDiscount = Math.max(0, discountedTotal - firstOrderDiscountAmount);
+
+  // Referral discount calculations
+  const referralAmount = Math.floor(totalAfterFirstOrderDiscount * referralDiscount);
+  const finalAfterReferral = totalAfterFirstOrderDiscount - referralAmount;
   // Coins are capped to final discounted total
   const effectiveRedeem = Math.max(
     0,
-    Math.min(redeemCoins || 0, availableCoins || 0, discountedTotal || 0)
+    Math.min(redeemCoins || 0, availableCoins || 0, finalAfterReferral || 0)
   );
-  // Referral discount calculations
-  const referralAmount = Math.floor(discountedTotal * referralDiscount);
-  const finalAfterReferral = discountedTotal - referralAmount;
   const payableAmount = Math.max(0, finalAfterReferral - effectiveRedeem);
 
   /*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
@@ -288,6 +325,8 @@ const CheckoutPage = () => {
         discountRate,
         discountAmount,
         totalAmount: discountedTotal,
+        firstOrderDiscountRate: order.firstOrderDiscountRate ?? firstOrderDiscountRate,
+        firstOrderDiscountAmount: order.firstOrderDiscountAmount ?? firstOrderDiscountAmount,
         address,
         coinsEarned: order.coinsEarned,
         coinsRedeemed: order.coinsRedeemed ?? effectiveRedeem,
@@ -376,6 +415,8 @@ const CheckoutPage = () => {
               discountRate,
               discountAmount,
               totalAmount: discountedTotal,
+              firstOrderDiscountRate: finalOrder.firstOrderDiscountRate ?? firstOrderDiscountRate,
+              firstOrderDiscountAmount: finalOrder.firstOrderDiscountAmount ?? firstOrderDiscountAmount,
               address,
               coinsEarned: finalOrder.coinsEarned,
               coinsRedeemed: finalOrder.coinsRedeemed ?? effectiveRedeem,
@@ -528,11 +569,11 @@ const CheckoutPage = () => {
                 <input
                   type="number"
                   min={0}
-                  max={Math.min(availableCoins, discountedTotal)}
+              max={Math.min(availableCoins, finalAfterReferral)}
                   value={redeemCoins}
                   onChange={(e) => {
                     const v = Number(e.target.value || 0);
-                    setRedeemCoins(Math.max(0, Math.min(v, availableCoins, discountedTotal)));
+                    setRedeemCoins(Math.max(0, Math.min(v, availableCoins, finalAfterReferral)));
                   }}
                   className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
                 />
@@ -617,6 +658,14 @@ const CheckoutPage = () => {
 
                   <span>{formatINR(discountedTotal)}</span>
                 </div>
+                {firstOrderDiscountAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>First Order Discount ({firstOrderDiscount.percentage}%)</span>
+                    <span className="text-green-700 font-medium">
+                      − {formatINR(firstOrderDiscountAmount)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span>Referral Discount</span>
                   <span className="text-green-700 font-medium">

@@ -31,6 +31,8 @@ const OrderConfirmationPage = () => {
     subtotal,
     discountRate,
     discountAmount,
+    firstOrderDiscountRate,
+    firstOrderDiscountAmount,
     totalAmount,
     address,
     coinsEarned,
@@ -95,6 +97,17 @@ const OrderConfirmationPage = () => {
                     : ""}
                 </span>
                 <span>- {formatINR(discountAmount)}</span>
+              </div>
+            )}
+            {firstOrderDiscountAmount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>
+                  First Order Discount{" "}
+                  {firstOrderDiscountRate
+                    ? `(${Math.round(firstOrderDiscountRate * 100)}%)`
+                    : ""}
+                </span>
+                <span>- {formatINR(firstOrderDiscountAmount)}</span>
               </div>
             )}
             {coinsRedeemed > 0 && (

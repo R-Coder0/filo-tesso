@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaChevronLeft, FaChevronRight, FaCartPlus } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { ShoppingBag } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 
@@ -158,7 +159,7 @@ const LatestProducts = () => {
                       </p>
                     )}
 
-                    <h3 className="text-[12.5px] font-semibold text-gray-900 line-clamp-2 leading-snug">
+                    <h3 className="font-sans text-[14px] font-bold text-black line-clamp-2 leading-snug">
                       {product.name}
                     </h3>
 
@@ -192,7 +193,7 @@ const LatestProducts = () => {
                           : "border-gray-300 bg-white text-gray-700 hover:border-black hover:text-black hover:bg-gray-50"
                       }`}
                     >
-                      <FaCartPlus className="text-xs" />
+                      <ShoppingBag size={13} strokeWidth={1.9} />
                       Add to Cart
                     </button>
                   </div>

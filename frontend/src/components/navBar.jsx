@@ -5,10 +5,10 @@
   import { CartContext } from "../context/CartContext";
   import { AuthContext } from "../context/AuthContext";
   import { useUI } from "../context/UIContext";
-  import { FaCartPlus, FaUserCircle, FaChevronDown, FaChevronRight, FaSearch, FaUser } from "react-icons/fa";
+  import { FaChevronDown, FaChevronRight, FaSearch } from "react-icons/fa";
   import { GiHamburgerMenu } from "react-icons/gi";
   import { RiCloseFill } from "react-icons/ri";
-  import { FaHeart } from "react-icons/fa";
+  import { Heart, ShoppingBag, UserRound } from "lucide-react";
   import { useWishlist } from "../context/WishlistContext";
 
   import imageone from "../assets/banner.png";
@@ -462,7 +462,7 @@ const Navbar = () => {
             className="relative flex items-center gap-2 text-gray-900 hover:text-gray-600 text-sm font-medium"
             aria-label="Cart"
           >
-            <FaCartPlus className="text-xl" />
+            <ShoppingBag size={21} strokeWidth={1.9} />
             {itemCount > 0 && (
               <span className="absolute -top-3 -right-2
                              bg-gray-900
@@ -478,7 +478,7 @@ const Navbar = () => {
             onClick={() => navigate("/wishlist")}
             className="hidden md:block relative text-gray-900 hover:text-gray-600 transition-colors"
           >
-            <FaHeart className="text-xl" />
+            <Heart size={21} strokeWidth={1.9} />
             {wishlist.length > 0 && (
               <span className="absolute -top-2 -right-2 bg-gray-900 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
                 {wishlist.length}
@@ -492,7 +492,7 @@ const Navbar = () => {
               onClick={() => handleMobileLinkClick(user ? "/profile" : "/login")}
               className="p-2 text-gray-900 hover:text-gray-600"
             >
-              <FaUser className="w-5 h-5" />
+              <UserRound size={21} strokeWidth={1.9} />
             </button>
           </div>
 
@@ -513,7 +513,7 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <FaUserCircle className="text-xl text-gray-400 group-hover:text-gray-600" />
+                <UserRound size={21} strokeWidth={1.9} className="text-gray-500 group-hover:text-gray-700" />
                 <span className="text-sm font-medium">Login</span>
               </>
             )}

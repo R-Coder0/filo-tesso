@@ -46,7 +46,10 @@ const emptyProduct = {
   stock: "",
   sizeVariants: [],
   description: "",
-  features: "",
+  details: "",
+  detailsArray: [],
+  washCare: "",
+  washCareArray: [],
   category: "",
   subcategory: "",
   tags: "",
@@ -67,8 +70,8 @@ const ManageProducts = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-// Add these states near your other state declarations
-const [featureInput, setFeatureInput] = useState("");
+const [detailInput, setDetailInput] = useState("");
+const [washCareInput, setWashCareInput] = useState("");
 const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
   // previews
   const [mainPreview, setMainPreview] = useState(""); // url string
@@ -120,27 +123,66 @@ const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen]);
-// Add these functions in your component
-const addFeature = () => {
-  if (featureInput.trim()) {
-    const currentFeatures = newProduct.featuresArray || [];
+const addDetail = () => {
+  if (detailInput.trim()) {
+    const currentDetails = newProduct.detailsArray || [];
     setNewProduct({
       ...newProduct,
-      featuresArray: [...currentFeatures, featureInput.trim()],
-      features: [...currentFeatures, featureInput.trim()].join(",")
+      detailsArray: [...currentDetails, detailInput.trim()],
+      details: [...currentDetails, detailInput.trim()].join(",")
     });
-    setFeatureInput("");
+    setDetailInput("");
   }
 };
 
-const removeFeature = (indexToRemove) => {
-  const currentFeatures = newProduct.featuresArray || [];
-  const updatedFeatures = currentFeatures.filter((_, index) => index !== indexToRemove);
+const removeDetail = (indexToRemove) => {
+  const currentDetails = newProduct.detailsArray || [];
+  const updatedDetails = currentDetails.filter((_, index) => index !== indexToRemove);
   setNewProduct({
     ...newProduct,
-    featuresArray: updatedFeatures,
-    features: updatedFeatures.join(",")
+    detailsArray: updatedDetails,
+    details: updatedDetails.join(",")
   });
+};
+
+const getDetailsForSubmit = () => {
+  const draft = detailInput.trim();
+  const details = draft
+    ? [...(newProduct.detailsArray || []), draft]
+    : newProduct.detailsArray || [];
+
+  return details.map((detail) => String(detail).trim()).filter(Boolean);
+};
+
+const addWashCare = () => {
+  if (washCareInput.trim()) {
+    const currentWashCare = newProduct.washCareArray || [];
+    setNewProduct({
+      ...newProduct,
+      washCareArray: [...currentWashCare, washCareInput.trim()],
+      washCare: [...currentWashCare, washCareInput.trim()].join(",")
+    });
+    setWashCareInput("");
+  }
+};
+
+const removeWashCare = (indexToRemove) => {
+  const currentWashCare = newProduct.washCareArray || [];
+  const updatedWashCare = currentWashCare.filter((_, index) => index !== indexToRemove);
+  setNewProduct({
+    ...newProduct,
+    washCareArray: updatedWashCare,
+    washCare: updatedWashCare.join(",")
+  });
+};
+
+const getWashCareForSubmit = () => {
+  const draft = washCareInput.trim();
+  const washCare = draft
+    ? [...(newProduct.washCareArray || []), draft]
+    : newProduct.washCareArray || [];
+
+  return washCare.map((item) => String(item).trim()).filter(Boolean);
 };
 
 const addSizeVariant = () => {
@@ -213,6 +255,8 @@ const removeSizeVariant = (size) => {
     setIsModalOpen(false);
     setEditingId(null);
     setNewProduct(emptyProduct);
+    setDetailInput("");
+    setWashCareInput("");
     setError(null);
     resetPreviews();
   };
@@ -220,6 +264,8 @@ const removeSizeVariant = (size) => {
   const openAddModal = () => {
     setEditingId(null);
     setNewProduct(emptyProduct);
+    setDetailInput("");
+    setWashCareInput("");
     setSizeDraft({ size: "", stock: "" });
     setError(null);
     resetPreviews();
@@ -238,6 +284,9 @@ const removeSizeVariant = (size) => {
           stock: 0,
         }));
 
+    const existingDetails = product.details?.length ? product.details : product.features || [];
+    const existingWashCare = product.washCare || [];
+
     setNewProduct({
       name: product.name || "",
 originalPrice: product.price?.original || "",
@@ -249,7 +298,10 @@ metaTitle: product.seo?.metaTitle || "",
 metaDescription: product.seo?.metaDescription || "",
 keywords: product.seo?.keywords?.join(", ") || "",
       description: product.description || "",
-      features: product.features?.join(", ") || "",
+      details: existingDetails.join(", "),
+      detailsArray: existingDetails,
+      washCare: existingWashCare.join(", "),
+      washCareArray: existingWashCare,
       image: null,
       images: [],
       category: product.category || "",
@@ -259,6 +311,8 @@ keywords: product.seo?.keywords?.join(", ") || "",
     setExistingMainImage(product.image ? `${apiUrl}${product.image}` : "");
     setMainPreview(""); // only show existing until user selects new
     setGalleryPreviews([]); // fresh
+    setDetailInput("");
+    setWashCareInput("");
     setSizeDraft({ size: "", stock: "" });
     setError(null);
     setIsModalOpen(true);
@@ -314,6 +368,8 @@ keywords: product.seo?.keywords?.join(", ") || "",
     try {
       if (!newProduct.category) throw new Error("Please select a category");
       if (!newProduct.subcategory) throw new Error("Please select a subcategory");
+      const detailsForSubmit = getDetailsForSubmit();
+      const washCareForSubmit = getWashCareForSubmit();
 
       if (editingId) {
         // ✅ Update via JSON (images optional)
@@ -325,13 +381,11 @@ stock: newProduct.stock,
 sizeVariants: newProduct.sizeVariants,
 tags: newProduct.tags,
 metaTitle: newProduct.metaTitle,
-metaDescription: newProduct.metaDescription,
+          metaDescription: newProduct.metaDescription,
 keywords: newProduct.keywords,  
           description: newProduct.description,
-          features: newProduct.features
-            .split(",")
-            .map((f) => f.trim())
-            .filter(Boolean),
+          details: detailsForSubmit,
+          washCare: washCareForSubmit,
           category: newProduct.category,
           subcategory: newProduct.subcategory,
         });
@@ -354,11 +408,8 @@ formData.append("keywords", newProduct.keywords);
         formData.append("category", newProduct.category);
         formData.append("subcategory", newProduct.subcategory);
 
-        newProduct.features
-          .split(",")
-          .map((f) => f.trim())
-          .filter(Boolean)
-          .forEach((f) => formData.append("features", f));
+        detailsForSubmit.forEach((detail) => formData.append("details", detail));
+        washCareForSubmit.forEach((item) => formData.append("washCare", item));
 
         if (newProduct.image) formData.append("image", newProduct.image);
 
@@ -934,53 +985,6 @@ formData.append("keywords", newProduct.keywords);
               )}
             </div>
 
-            {/* Features - Improved */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Features
-              </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Add product features (click on a feature to remove it)
-              </p>
-              
-              {/* Feature tags */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {newProduct.featuresArray && newProduct.featuresArray.length > 0 ? (
-                  newProduct.featuresArray.map((feature, index) => (
-                    <span
-                      key={index}
-                      onClick={() => removeFeature(index)}
-                      className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 cursor-pointer hover:bg-red-100 hover:text-red-600 transition-colors"
-                    >
-                      {feature}
-                      <span className="text-xs ml-1">✕</span>
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-400 italic">No features added yet</p>
-                )}
-              </div>
-
-              {/* Add feature input */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={featureInput}
-                  onChange={(e) => setFeatureInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addFeature()}
-                  className="flex-1 p-3 border border-gray-300 focus:outline-none focus:border-black"
-                  placeholder="Type a feature and press Enter or click Add"
-                />
-                <button
-                  type="button"
-                  onClick={addFeature}
-                  className="px-4 py-2 bg-black text-white font-medium hover:bg-white hover:text-black hover:border-black border border-transparent transition-colors"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-
             {/* Gallery Images - Improved */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -1026,6 +1030,106 @@ formData.append("keywords", newProduct.keywords);
                 required
                 placeholder="Write a short product description..."
               />
+            </div>
+
+            {/* Details */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Details
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Add each detail as a separate list item. Click any item to remove it.
+              </p>
+
+              <div className="flex flex-wrap gap-2 mb-3">
+                {newProduct.detailsArray && newProduct.detailsArray.length > 0 ? (
+                  newProduct.detailsArray.map((detail, index) => (
+                    <span
+                      key={`${detail}-${index}`}
+                      onClick={() => removeDetail(index)}
+                      className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 cursor-pointer hover:bg-red-100 hover:text-red-600 transition-colors"
+                    >
+                      {detail}
+                      <span className="text-xs ml-1">✕</span>
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No details added yet</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={detailInput}
+                  onChange={(e) => setDetailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addDetail();
+                    }
+                  }}
+                  className="flex-1 p-3 border border-gray-300 focus:outline-none focus:border-black"
+                  placeholder="Type one detail and press Enter or click Add"
+                />
+                <button
+                  type="button"
+                  onClick={addDetail}
+                  className="px-4 py-2 bg-black text-white font-medium hover:bg-white hover:text-black hover:border-black border border-transparent transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Wash Care */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Wash Care
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Add each wash care instruction as a separate list item.
+              </p>
+
+              <div className="flex flex-wrap gap-2 mb-3">
+                {newProduct.washCareArray && newProduct.washCareArray.length > 0 ? (
+                  newProduct.washCareArray.map((item, index) => (
+                    <span
+                      key={`${item}-${index}`}
+                      onClick={() => removeWashCare(index)}
+                      className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 cursor-pointer hover:bg-red-100 hover:text-red-600 transition-colors"
+                    >
+                      {item}
+                      <span className="text-xs ml-1">✕</span>
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No wash care added yet</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={washCareInput}
+                  onChange={(e) => setWashCareInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addWashCare();
+                    }
+                  }}
+                  className="flex-1 p-3 border border-gray-300 focus:outline-none focus:border-black"
+                  placeholder="Type one wash care point and press Enter or click Add"
+                />
+                <button
+                  type="button"
+                  onClick={addWashCare}
+                  className="px-4 py-2 bg-black text-white font-medium hover:bg-white hover:text-black hover:border-black border border-transparent transition-colors"
+                >
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         </div>

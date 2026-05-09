@@ -215,7 +215,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-gray-200">
         {/* Welcome Header */}
         <div className="text-center mt-2">
@@ -223,7 +223,7 @@ const Login = () => {
           <p className="text-gray-600">Don't have an account?</p>
           <Link 
             to="/register" 
-            className="inline-block mt-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="inline-block mt-2 text-black hover:text-gray-600 font-medium transition-colors"
           >
             Register
           </Link>
@@ -244,7 +244,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+              className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
               disabled={loading || googleLoading}
             />
           </div>
@@ -258,7 +258,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500 pr-12"
+                className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors text-gray-900 placeholder-gray-500 pr-12"
                 disabled={loading || googleLoading}
               />
               <button
@@ -282,7 +282,7 @@ const Login = () => {
               </button>
             </div>
             <div className="flex justify-end mt-2">
-              <button type="button" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <button type="button" className="text-sm text-gray-700 hover:text-black font-medium">
                 Forgot password?
               </button>
             </div>
@@ -293,8 +293,8 @@ const Login = () => {
             disabled={loading || googleLoading}
             className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-200 ${
               loading || googleLoading
-                ? "bg-blue-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-black hover:bg-gray-800 shadow-md hover:shadow-lg"
             }`}
           >
             {loading ? (
@@ -325,7 +325,7 @@ const Login = () => {
             {/* Google button will render here automatically */}
             {googleLoading && (
               <div className="flex items-center justify-center gap-2 text-gray-600">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
                 Connecting to Google...
               </div>
             )}
@@ -337,7 +337,7 @@ const Login = () => {
             Don't have an account?{" "}
             <Link 
               to="/register" 
-              className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              className="text-black hover:text-gray-600 font-medium transition-colors"
             >
               Register here
             </Link>

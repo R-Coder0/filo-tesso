@@ -2,7 +2,8 @@ import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
-import { FaCartPlus, FaEye } from "react-icons/fa";
+import { FaEye } from "react-icons/fa";
+import { ShoppingBag } from "lucide-react";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useContext(CartContext);
@@ -114,7 +115,7 @@ const ProductCard = ({ product }) => {
         onClick={handleViewDetails}
       >
         {/* Product name */}
-        <h3 className="text-[13.5px] font-semibold text-gray-900 line-clamp-2 leading-snug">
+        <h3 className="font-sans text-[15px] font-bold text-black line-clamp-2 leading-snug">
           {product?.name || "Unnamed Product"}
         </h3>
 
@@ -172,7 +173,7 @@ const ProductCard = ({ product }) => {
                 : "border-gray-300 bg-white text-gray-700 hover:border-black hover:text-black hover:bg-gray-50"
             }`}
           >
-            <FaCartPlus className="text-sm" />
+            <ShoppingBag size={15} strokeWidth={1.9} />
           </button>
         </div>
       </div>

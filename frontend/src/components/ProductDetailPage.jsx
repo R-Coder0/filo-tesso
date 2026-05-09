@@ -5,10 +5,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
-import { FaHeart, FaRegHeart, FaCartPlus, FaShoppingBag, FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp, FaShareAlt } from "react-icons/fa";
+import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp, FaShareAlt } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
 import { Helmet } from "react-helmet-async";
-import { Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
+import { Droplets, Heart, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 
 const ProductDetailPage = () => {
@@ -242,6 +242,10 @@ const ProductDetailPage = () => {
     : availableStock === 0 ? { text: "Selected size out of stock", color: "text-red-500", dot: "bg-red-500" }
     : availableStock <= 5 ? { text: `Only ${availableStock} left`, color: "text-orange-500", dot: "bg-orange-500" }
     : { text: "In Stock", color: "text-green-600", dot: "bg-green-500" };
+  const productDetails = Array.isArray(product.details) && product.details.length
+    ? product.details
+    : Array.isArray(product.features) ? product.features : [];
+  const productWashCare = Array.isArray(product.washCare) ? product.washCare : [];
   const allImages = [product.image, ...(product.gallery || [])];
   const avgRating = product?.ratings?.average || 0;
   const ratingCount = product?.ratings?.count || 0;
@@ -279,7 +283,11 @@ const ProductDetailPage = () => {
             <div className="flex items-center gap-2">
               <button onClick={handleWishlistClick} disabled={wishlistLoading}
                 className={`flex items-center gap-2 px-3 py-1.5 border text-xs font-semibold uppercase tracking-wider transition-all ${isWishlisted ? "bg-red-50 border-red-300 text-red-600" : "border-gray-300 text-gray-600 hover:border-gray-500 hover:text-black"} ${wishlistLoading ? "opacity-50 cursor-not-allowed" : ""}`}>
-                {wishlistLoading ? <div className="w-3 h-3 border border-current border-t-transparent animate-spin" /> : isWishlisted ? <FaHeart className="text-red-500 text-xs" /> : <FaRegHeart className="text-xs" />}
+                {wishlistLoading ? (
+                  <div className="w-3 h-3 border border-current border-t-transparent animate-spin" />
+                ) : (
+                  <Heart size={13} strokeWidth={2} className={isWishlisted ? "text-red-500" : ""} />
+                )}
                 <span className="hidden sm:inline">{isWishlisted ? "Wishlisted" : "Wishlist"}</span>
               </button>
             </div>
@@ -442,12 +450,12 @@ const ProductDetailPage = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={handleAddToCart} disabled={!inStock || (requiresSize && selectedSize && availableStock <= 0)}
                     className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest border transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-black text-black bg-white hover:bg-gray-50"}`}>
-                    <FaCartPlus className="text-sm" />
+                    <ShoppingBag size={15} strokeWidth={1.9} />
                     Add to Cart
                   </button>
                   <button onClick={handleBuyNow} disabled={!inStock || (requiresSize && selectedSize && availableStock <= 0)}
                     className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}>
-                    <FaShoppingBag className="text-sm" />
+                    <ShoppingBag size={15} strokeWidth={1.9} />
                     Buy Now
                   </button>
                 </div>
@@ -458,11 +466,38 @@ const ProductDetailPage = () => {
 
               {/* Accordion Info */}
               <div className="bg-white border-x border-b border-gray-200 mt-0">
-                <AccordionItem faqId="description" title="Description" icon={<Tag size={13} />}>
-                  <p>{product.description || "No description available."}</p>
+                <AccordionItem faqId="description" title="Details and Description" icon={<Tag size={13} />}>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-900">
+                        Description
+                      </h4>
+                      <p>{product.description || "No description available."}</p>
+                    </div>
+                    {productDetails.length > 0 && (
+                      <div>
+                        <h4 className="mb-2 text-xs font-semibold uppercase text-gray-900">
+                          Details
+                        </h4>
+                        <ul className="list-disc space-y-1.5 pl-5">
+                          {productDetails.map((detail, index) => (
+                            <li key={`${detail}-${index}`}>{detail}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </AccordionItem>
-                <AccordionItem faqId="specifications" title="Specifications" icon={<MessageCircle size={13} />}>
-                  <p>Material, fit and fabric details will be updated here.</p>
+                <AccordionItem faqId="wash-care" title="Wash Care" icon={<Droplets size={13} />}>
+                  {productWashCare.length > 0 ? (
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      {productWashCare.map((item, index) => (
+                        <li key={`${item}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Wash care instructions will be updated here.</p>
+                  )}
                 </AccordionItem>
                 <AccordionItem faqId="refund" title="Return Policy" icon={<RefreshCw size={13} />}>
                   <p>{refundPolicy}</p>

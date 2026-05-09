@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -7,9 +7,82 @@
   --brand-text-soft: #38452b; /* muted text */
   --brand-light: #eef2ec;     /* light background */
   --brand-border: #d6ddcf;
+  --font-body: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  --font-display: "Cormorant Garamond", "Bodoni 72", "Didot", Georgia, serif;
 } 
-body{
-    font-family: 'Poppins';
+
+html {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #111827;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-serif {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+  letter-spacing: 0;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 550;
+}
+
+.font-bold,
+.font-extrabold,
+.font-black {
+  font-weight: 600;
+}
+
+h1.font-medium,
+h2.font-medium,
+h3.font-medium,
+h4.font-medium,
+h5.font-medium,
+h6.font-medium,
+h1.font-semibold,
+h2.font-semibold,
+h3.font-semibold,
+h4.font-semibold,
+h5.font-semibold,
+h6.font-semibold,
+h1.font-bold,
+h2.font-bold,
+h3.font-bold,
+h4.font-bold,
+h5.font-bold,
+h6.font-bold,
+h1.font-extrabold,
+h2.font-extrabold,
+h3.font-extrabold,
+h4.font-extrabold,
+h5.font-extrabold,
+h6.font-extrabold {
+  font-weight: 700;
 }
 
 
