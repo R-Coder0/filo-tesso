@@ -85,7 +85,7 @@ const LatestProducts = () => {
       {loading ? (
         <div className="flex gap-3 overflow-x-auto pb-2">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="w-44 flex-shrink-0 animate-pulse">
+            <div key={i} className="w-44 sm:w-52 lg:w-64 flex-shrink-0 animate-pulse">
               <div className="bg-gray-200 aspect-[3/4] w-full mb-2" />
               <div className="bg-gray-200 h-3 w-3/4 mb-1.5" />
               <div className="bg-gray-200 h-3 w-1/2" />
@@ -119,7 +119,7 @@ const LatestProducts = () => {
               return (
                 <div
                   key={product._id}
-                  className="w-44 sm:w-52 flex-shrink-0 snap-start bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 flex flex-col group"
+                  className="w-44 sm:w-52 lg:w-64 flex-shrink-0 snap-start bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 flex flex-col group"
                 >
                   {/* Image */}
                   <Link
