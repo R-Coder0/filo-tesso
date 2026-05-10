@@ -81,7 +81,7 @@ const ProductCard = ({ product }) => {
         onClick={handleViewDetails}
       >
         {/* Fixed aspect ratio — image fills the box, no distortion */}
-        <div className="aspect-[3/3] w-full">
+        <div className="aspect-[4/5] w-full">
           <img
             src={imgSrc}
             alt={product?.name || "Product"}
@@ -98,13 +98,13 @@ const ProductCard = ({ product }) => {
         )}
 
         {/* Category badge — top left */}
-        {categoryBadge && (
+        {/* {categoryBadge && (
           <div className="absolute top-2.5 left-2.5">
             <span className="inline-block max-w-[170px] truncate bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 shadow-sm sm:max-w-[220px]">
               {categoryBadge}
             </span>
           </div>
-        )}
+        )} */}
 
         {/* Hover overlay with eye icon */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-all duration-300 flex items-center justify-center pointer-events-none">
