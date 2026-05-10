@@ -1,6 +1,6 @@
 // controllers/productController.js
 const Product = require("../models/Product");
-const { MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES } = require("../config/categories");
+const { CATEGORY_MAP, MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES } = require("../config/categories");
 
 const movedCustomizeTshirtSet = new Set(MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES);
 
@@ -12,6 +12,22 @@ const SUBCATEGORY_ALIASES = {
 const getSubcategoryValues = (subcategory) =>
   SUBCATEGORY_ALIASES[subcategory] || [subcategory];
 
+const canonicalizeSubcategory = (subcategory) => {
+  const normalized = String(subcategory || "").toLowerCase().trim();
+  return SUBCATEGORY_ALIASES[normalized]?.[0] || normalized;
+};
+
+const buildSubcategoryMatch = (subcategoryValues) => ({
+  $or: [
+    { subcategory: { $in: subcategoryValues } },
+    { subcategories: { $in: subcategoryValues } },
+  ],
+});
+
+const withCategoryAndSubcategory = (category, subcategoryValues) => ({
+  $and: [{ category }, buildSubcategoryMatch(subcategoryValues)],
+});
+
 const emptyFilter = () => ({ _id: { $exists: false } });
 
 const buildProductFilter = (category, subcategory) => {
@@ -20,7 +36,7 @@ const buildProductFilter = (category, subcategory) => {
   const subcategoryValues = hasSubcategory ? getSubcategoryValues(subcategory) : null;
 
   if (!hasCategory) {
-    return hasSubcategory ? { subcategory: { $in: subcategoryValues } } : {};
+    return hasSubcategory ? buildSubcategoryMatch(subcategoryValues) : {};
   }
 
   if (category === "customize") {
@@ -31,8 +47,11 @@ const buildProductFilter = (category, subcategory) => {
     return {
       category,
       ...(subcategoryValues
-        ? { subcategory: { $in: subcategoryValues } }
-        : { subcategory: { $nin: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES } }),
+        ? buildSubcategoryMatch(subcategoryValues)
+        : {
+            subcategory: { $nin: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES },
+            subcategories: { $nin: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES },
+          }),
     };
   }
 
@@ -43,7 +62,7 @@ const buildProductFilter = (category, subcategory) => {
           { category },
           {
             category: "customize",
-            subcategory: { $in: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES },
+            ...buildSubcategoryMatch(MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES),
           },
         ],
       };
@@ -52,16 +71,17 @@ const buildProductFilter = (category, subcategory) => {
     if (movedCustomizeTshirtSet.has(subcategory)) {
       return {
         $or: [
-          { category, subcategory: { $in: subcategoryValues } },
-          { category: "customize", subcategory: { $in: subcategoryValues } },
+          withCategoryAndSubcategory(category, subcategoryValues),
+          withCategoryAndSubcategory("customize", subcategoryValues),
         ],
       };
     }
   }
 
   return {
-    category,
-    ...(subcategoryValues ? { subcategory: { $in: subcategoryValues } } : {}),
+    ...(subcategoryValues
+      ? withCategoryAndSubcategory(category, subcategoryValues)
+      : { category }),
   };
 };
 
@@ -120,6 +140,41 @@ const normalizeSizes = (sizes) => {
     .filter(Boolean);
 };
 
+const parseSubcategoryInput = (raw) => {
+  if (typeof raw === "undefined" || raw === null) return [];
+  if (Array.isArray(raw)) return raw;
+
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Fall back to comma-separated parsing below.
+    }
+  }
+
+  return String(raw).split(",");
+};
+
+const normalizeSubcategories = (raw, fallback) => {
+  const selected = parseSubcategoryInput(raw);
+  const source = selected.length ? selected : parseSubcategoryInput(fallback);
+  const seen = new Set();
+
+  return source
+    .map(canonicalizeSubcategory)
+    .filter((subcategory) => {
+      if (!subcategory || seen.has(subcategory)) return false;
+      seen.add(subcategory);
+      return true;
+    });
+};
+
+const getInvalidSubcategories = (category, subcategories) => {
+  const allowed = CATEGORY_MAP[category] || [];
+  return subcategories.filter((subcategory) => !allowed.includes(subcategory));
+};
+
 const normalizeSizeVariants = (raw, fallbackSizes = [], fallbackStock = 0) => {
   let parsed = raw;
 
@@ -168,7 +223,8 @@ const addProduct = async (req, res) => {
     }
     const description = String(req.body.description || "");
     const category = String(req.body.category || "").toLowerCase().trim();
-    const subcategory = String(req.body.subcategory || "").toLowerCase().trim();
+    const subcategories = normalizeSubcategories(req.body.subcategories, req.body.subcategory);
+    const subcategory = subcategories[0] || "";
     const details = normalizeDetails(
       typeof req.body.details !== "undefined" ? req.body.details : req.body.features
     );
@@ -192,7 +248,14 @@ const keywords = req.body.keywords
     if (!salePrice && salePrice !== 0)
       return res.status(400).json({ message: "Sale price is required" });
     if (!category) return res.status(400).json({ message: "Category is required" });
-    if (!subcategory) return res.status(400).json({ message: "Subcategory is required" });
+    if (!subcategories.length) return res.status(400).json({ message: "Select at least one subcategory" });
+
+    const invalidSubcategories = getInvalidSubcategories(category, subcategories);
+    if (invalidSubcategories.length) {
+      return res.status(400).json({
+        message: `Invalid subcategories for ${category}: ${invalidSubcategories.join(", ")}`,
+      });
+    }
 
     if (!req.files?.image?.length) {
       return res.status(400).json({ message: "Main image is required" });
@@ -223,6 +286,7 @@ const keywords = req.body.keywords
       gallery: galleryImages,
       category,
       subcategory,
+      subcategories,
     });
 
 
@@ -275,8 +339,24 @@ const updateProduct = async (req, res) => {
     if (typeof body.category !== "undefined") {
       product.category = String(body.category).toLowerCase().trim();
     }
-    if (typeof body.subcategory !== "undefined") {
-      product.subcategory = String(body.subcategory).toLowerCase().trim();
+
+    if (typeof body.subcategories !== "undefined" || typeof body.subcategory !== "undefined") {
+      const subcategories = normalizeSubcategories(body.subcategories, body.subcategory);
+      if (!subcategories.length) {
+        return res.status(400).json({ message: "Select at least one subcategory" });
+      }
+
+      const invalidSubcategories = getInvalidSubcategories(product.category, subcategories);
+      if (invalidSubcategories.length) {
+        return res.status(400).json({
+          message: `Invalid subcategories for ${product.category}: ${invalidSubcategories.join(", ")}`,
+        });
+      }
+
+      product.subcategory = subcategories[0];
+      product.subcategories = subcategories;
+    } else if (!product.subcategories?.length && product.subcategory) {
+      product.subcategories = [product.subcategory];
     }
     if (typeof body.tags !== "undefined") {
   product.tags = String(body.tags)

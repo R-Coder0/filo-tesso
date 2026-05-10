@@ -54,6 +54,7 @@ const emptyProduct = {
   washCareArray: [],
   category: "",
   subcategory: "",
+  subcategories: [],
   tags: "",
   metaTitle: "",
   metaDescription: "",
@@ -90,6 +91,35 @@ const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
   }, [apiUrl]);
 
   const subcats = newProduct.category ? CATEGORY_MAP[newProduct.category] || [] : [];
+
+  const formatSubcategory = (subcategory) =>
+    String(subcategory || "")
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+
+  const getProductSubcategories = (product) => {
+    if (Array.isArray(product.subcategories) && product.subcategories.length) {
+      return product.subcategories;
+    }
+    return product.subcategory ? [product.subcategory] : [];
+  };
+
+  const toggleSubcategory = (subcategory) => {
+    setNewProduct((product) => {
+      const current = product.subcategories || [];
+      const next = current.includes(subcategory)
+        ? current.filter((item) => item !== subcategory)
+        : [...current, subcategory];
+
+      return {
+        ...product,
+        subcategories: next,
+        subcategory: next[0] || "",
+      };
+    });
+  };
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -288,6 +318,7 @@ const removeSizeVariant = (size) => {
 
     const existingDetails = product.details?.length ? product.details : product.features || [];
     const existingWashCare = product.washCare || [];
+    const selectedSubcategories = getProductSubcategories(product);
 
     setNewProduct({
       name: product.name || "",
@@ -307,7 +338,8 @@ keywords: product.seo?.keywords?.join(", ") || "",
       image: null,
       images: [],
       category: product.category || "",
-      subcategory: product.subcategory || "",
+      subcategory: selectedSubcategories[0] || "",
+      subcategories: selectedSubcategories,
     });
 
     setExistingMainImage(product.image ? `${apiUrl}${product.image}` : "");
@@ -369,9 +401,11 @@ keywords: product.seo?.keywords?.join(", ") || "",
 
     try {
       if (!newProduct.category) throw new Error("Please select a category");
-      if (!newProduct.subcategory) throw new Error("Please select a subcategory");
+      if (!newProduct.subcategories?.length) throw new Error("Please select at least one subcategory");
       const detailsForSubmit = getDetailsForSubmit();
       const washCareForSubmit = getWashCareForSubmit();
+      const subcategoriesForSubmit = newProduct.subcategories || [];
+      const primarySubcategory = subcategoriesForSubmit[0] || "";
 
       if (editingId) {
         // ✅ Update via JSON (images optional)
@@ -389,7 +423,8 @@ keywords: newProduct.keywords,
           details: detailsForSubmit,
           washCare: washCareForSubmit,
           category: newProduct.category,
-          subcategory: newProduct.subcategory,
+          subcategory: primarySubcategory,
+          subcategories: subcategoriesForSubmit,
         });
 
         // NOTE: If you want to update main/gallery images in edit mode,
@@ -408,7 +443,8 @@ formData.append("metaDescription", newProduct.metaDescription);
 formData.append("keywords", newProduct.keywords);
         formData.append("description", newProduct.description);
         formData.append("category", newProduct.category);
-        formData.append("subcategory", newProduct.subcategory);
+        formData.append("subcategory", primarySubcategory);
+        formData.append("subcategories", JSON.stringify(subcategoriesForSubmit));
 
         detailsForSubmit.forEach((detail) => formData.append("details", detail));
         washCareForSubmit.forEach((item) => formData.append("washCare", item));
@@ -527,10 +563,12 @@ formData.append("keywords", newProduct.keywords);
                             {product.name}
                           </h4>
 
-                          {(product.category || product.subcategory) && (
+                          {(product.category || product.subcategory || product.subcategories?.length) && (
                             <p className="mt-1 text-[11px] uppercase tracking-wide text-gray-600">
                               {product.category}
-                              {product.subcategory ? ` / ${product.subcategory}` : ""}
+                              {getProductSubcategories(product).length
+                                ? ` / ${getProductSubcategories(product).map(formatSubcategory).join(", ")}`
+                                : ""}
                             </p>
                           )}
 
@@ -741,6 +779,7 @@ formData.append("keywords", newProduct.keywords);
                     ...p,
                     category: e.target.value,
                     subcategory: "",
+                    subcategories: [],
                   }))
                 }
                 className="w-full p-3 border border-gray-300 bg-white focus:outline-none focus:border-black"
@@ -755,29 +794,43 @@ formData.append("keywords", newProduct.keywords);
               </select>
             </div>
 
-            {/* Subcategory */}
-            <div>
+            {/* Subcategories */}
+            <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Subcategory
+                Subcategories
               </label>
-              <select
-                value={newProduct.subcategory}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, subcategory: e.target.value })
-                }
-                className="w-full p-3 border border-gray-300 bg-white focus:outline-none focus:border-black disabled:bg-gray-100"
-                required
-                disabled={!newProduct.category}
-              >
-                <option value="" disabled>
-                  {newProduct.category ? "Choose subcategory" : "Select category first"}
-                </option>
-                {subcats.map((sc) => (
-                  <option key={sc} value={sc}>
-                    {sc}
-                  </option>
-                ))}
-              </select>
+              <div className="border border-gray-300 bg-white p-3">
+                {!newProduct.category ? (
+                  <p className="text-sm text-gray-400">Select category first</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {subcats.map((sc) => {
+                      const checked = (newProduct.subcategories || []).includes(sc);
+                      return (
+                        <label
+                          key={sc}
+                          className={`flex cursor-pointer items-center gap-2 border px-3 py-2 text-sm font-medium transition ${
+                            checked
+                              ? "border-black bg-black text-white"
+                              : "border-gray-200 text-gray-700 hover:border-black"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleSubcategory(sc)}
+                            className="h-4 w-4 accent-black"
+                          />
+                          <span>{formatSubcategory(sc)}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                You can select multiple subcategories for one product.
+              </p>
             </div>
 
 {/* Original Price */}

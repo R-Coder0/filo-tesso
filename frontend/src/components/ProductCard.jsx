@@ -63,6 +63,14 @@ const ProductCard = ({ product }) => {
   const imgSrc = product?.image
     ? `${apiUrl}${product.image}`
     : "https://via.placeholder.com/600x400?text=No+Image";
+  const productSubcategories = Array.isArray(product?.subcategories) && product.subcategories.length
+    ? product.subcategories
+    : product?.subcategory
+      ? [product.subcategory]
+      : [];
+  const categoryBadge = [product?.category, ...productSubcategories]
+    .filter(Boolean)
+    .join(" / ");
 
   return (
     <div className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col">
@@ -90,11 +98,10 @@ const ProductCard = ({ product }) => {
         )}
 
         {/* Category badge — top left */}
-        {(product?.category || product?.subcategory) && (
+        {categoryBadge && (
           <div className="absolute top-2.5 left-2.5">
-            <span className="bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 shadow-sm">
-              {product?.category}
-              {product?.subcategory ? ` / ${product.subcategory}` : ""}
+            <span className="inline-block max-w-[170px] truncate bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 shadow-sm sm:max-w-[220px]">
+              {categoryBadge}
             </span>
           </div>
         )}

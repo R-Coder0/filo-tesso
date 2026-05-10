@@ -246,6 +246,10 @@ const ProductDetailPage = () => {
     ? product.details
     : Array.isArray(product.features) ? product.features : [];
   const productWashCare = Array.isArray(product.washCare) ? product.washCare : [];
+  const productSubcategories = Array.isArray(product.subcategories) && product.subcategories.length
+    ? product.subcategories
+    : product.subcategory ? [product.subcategory] : [];
+  const subcategoryLabel = productSubcategories.join(", ");
   const allImages = [...new Set([product.image, ...(product.gallery || [])].filter(Boolean))];
   const currentImage = selectedImage || allImages[0] || "";
   const selectedImageIndex = Math.max(0, allImages.findIndex((img) => img === currentImage));
@@ -304,7 +308,7 @@ const ProductDetailPage = () => {
               <span className="hover:text-black cursor-pointer" onClick={() => navigate("/")}>Home</span>
               <span>/</span>
               <span className="hover:text-black cursor-pointer capitalize" onClick={() => navigate(`/products/${product.category}`)}>{product.category}</span>
-              {product.subcategory && <><span>/</span><span className="text-gray-600 capitalize">{product.subcategory}</span></>}
+              {subcategoryLabel && <><span>/</span><span className="text-gray-600 capitalize">{subcategoryLabel}</span></>}
             </nav>
             <div className="flex items-center gap-2">
               <button onClick={handleWishlistClick} disabled={wishlistLoading}
@@ -424,9 +428,9 @@ const ProductDetailPage = () => {
 
               {/* Category & Name */}
               <div className="bg-white border border-gray-200 p-5 pb-4">
-                {(product.category || product.subcategory) && (
+                {(product.category || subcategoryLabel) && (
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
-                    {product.category}{product.subcategory ? ` / ${product.subcategory}` : ""}
+                    {product.category}{subcategoryLabel ? ` / ${subcategoryLabel}` : ""}
                   </p>
                 )}
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">

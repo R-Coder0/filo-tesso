@@ -1,6 +1,13 @@
 const mongoose = require("mongoose");
 const { CATEGORY_MAP, ALL_CATEGORIES } = require("../config/categories");
 
+const isAllowedSubcategory = function (val) {
+  const cat = this.category?.toLowerCase();
+  if (!cat || !val) return false;
+  const allowed = CATEGORY_MAP[cat] || [];
+  return allowed.includes(String(val).toLowerCase().trim());
+};
+
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   image: { type: String, required: true },
@@ -54,13 +61,19 @@ seo: {
     lowercase: true,
     trim: true,
     validate: {
-      validator: function (val) {
-        const cat = this.category?.toLowerCase();
-        if (!cat || !val) return false;
-        const allowed = CATEGORY_MAP[cat] || [];
-        return allowed.includes(val.toLowerCase());
-      },
+      validator: isAllowedSubcategory,
       message: (props) => `Invalid subcategory "${props.value}" for category "${props.instance.category}"`,
+    },
+  },
+  subcategories: {
+    type: [{ type: String, lowercase: true, trim: true }],
+    default: [],
+    validate: {
+      validator: function (values) {
+        if (!Array.isArray(values) || values.length === 0) return true;
+        return values.every((value) => isAllowedSubcategory.call(this, value));
+      },
+      message: (props) => `Invalid subcategories for category "${props.instance.category}"`,
     },
   },
   
