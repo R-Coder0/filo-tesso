@@ -6,7 +6,6 @@ import { useUI } from "./context/UIContext"; // ✅ add this
 import Profile from "./pages/Profile";
 import Footer from "./components/Footer";
 import ReviewSubmissionPage from "./pages/Reveiwpage";
-import { AuthProvider } from "./context/AuthContext";
 import WishlistPage from "./pages/WishlistPage";
 import MarqueeOffers from "./section/Marquee";
 import ScrollToTop from "./components/ScrollToTop";
@@ -65,7 +64,6 @@ const location = useLocation();
 
   return (
     <>
-    <AuthProvider>
       {/* <MarqueeOffers/> */}
       <Suspense fallback={<LoadingSpinner />}>
          {/* ✅ Hide Navbar on admin routes */}
@@ -147,7 +145,6 @@ const location = useLocation();
 
           {!isAdminRoute && <Footer />}
       </Suspense>
-      </AuthProvider>
     </>
   );
 }
