@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import imageone from "../assets/HOO.webp"
-import imagetwo from "../assets/HOO2.webp"
-import imagethree from "../assets/HOO3.webp"
+import imageone from "../assets/1hero.webp"
+import imagetwo from "../assets/2hero.webp"
+import imagethree from "../assets/3hero.webp"
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
