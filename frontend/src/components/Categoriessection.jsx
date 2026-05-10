@@ -10,6 +10,9 @@ import six from "../assets/mensimage/6.png";
 import seven from "../assets/mensimage/7.png";
 import eight from "../assets/mensimage/8.png";
 import eleven from "../assets/mensimage/11.png";
+import menRegularTshirt from "../assets/regulartshirt.avif";
+import menOversizeTshirt from "../assets/oversizetshirt.avif";
+import menPoloTshirt from "../assets/Polo.avif";
 
 /* WOMEN IMAGES */
 import imagefourteen from "../assets/womensimage/14.png";
@@ -19,6 +22,9 @@ import imageseventeen from "../assets/womensimage/17.png";
 import imageeighteen from "../assets/womensimage/18.png";
 import imagenineteen from "../assets/womensimage/19.png";
 import imagetwenty from "../assets/womensimage/20.png";
+import womenRegularTshirt from "../assets/womentshirt.avif";
+import womenOversizeTshirt from "../assets/womenoversize.avif";
+import womenPoloTshirt from "../assets/womenpolo.avif";
 
 /* CUSTOM IMAGES */
 import thirteen from "../assets/mensimage/13.svg";
@@ -32,11 +38,13 @@ const DATA = [
     key: "men",
     title: "Men",
     subs: [
+      { label: "Regular T-shirt", slug: "regular-tshirt", img: menRegularTshirt },
+      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: menOversizeTshirt },
+      { label: "Polo T-shirts", slug: "polo-tshirt", img: menPoloTshirt },
       { label: "Jackets", slug: "jacket", img: eleven },
       { label: "Shirts", slug: "regular-shirt", img: six },
       { label: "Trousers", slug: "trousers", img: one },
       { label: "Jeans", slug: "jeans", img: seven },
-      { label: "Polos", slug: "polo-tshirt", img: four },
       { label: "Oversize Shirt", slug: "oversize-shirt", img: three },
       { label: "Plus Size", slug: "plus-size", img: two },
       { label: "Cargos", slug: "cargos", img: eight },
@@ -47,6 +55,9 @@ const DATA = [
     key: "women",
     title: "Women",
     subs: [
+      { label: "Regular T-shirt", slug: "regular-tshirt", img: womenRegularTshirt },
+      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: womenOversizeTshirt },
+      { label: "Polo T-shirts", slug: "polo-tshirt", img: womenPoloTshirt },
       { label: "Top", slug: "top", img: imagefourteen },
       { label: "Oversized", slug: "oversized", img: imagesixteen },
       { label: "Co-ord Set", slug: "co-ord-set", img: imagefifteen },
@@ -60,14 +71,11 @@ const DATA = [
     key: "customize",
     title: "Customize",
     subs: [
-      // { label: "Hoodies", slug: "hoodies", img: thirteen },
-      // { label: "Sweatshirt", slug: "sweatshirt", img: ten },
-      { label: "Regular T-shirt", slug: "regular-tshirt", img: imagefourteen },
-      { label: "Oversize T-shirt", slug: "oversize-tshirt", img: three },
-      { label: "Polo T-shirts", slug: "polo-tshirt", img: imagesixteen },
-      { label: "Regular CoupleTshirt", slug: "regular-coupletshirt", img: imagetwentyone },
-      { label: "Oversize CoupleTshirt", slug: "oversize-coupletshirt", img: imagetwentytwo },
-      // { label: "Couple Hoodies", slug: "couple-hoodies", img: imagetwentythree },
+      { label: "Hoodies", slug: "hoodies", img: thirteen },
+      { label: "Sweatshirt", slug: "sweatshirt", img: ten },
+      { label: "Regular Couple T-shirt", slug: "regular-coupletshirt", img: imagetwentyone },
+      { label: "Oversize Couple T-shirt", slug: "oversize-coupletshirt", img: imagetwentytwo },
+      { label: "Couple Hoodies", slug: "couple-hoodies", img: imagetwentythree },
     ],
   },
 ];
@@ -87,7 +95,7 @@ export default function CategoriesSection() {
   const goSub = (cat, sub) => navigate(`/products/${cat}/${sub}`);
 
   return (
-    <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <section className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-6 py-10">
       <div className="mb-6">
         <h2 className="text-xl sm:text-3xl font-semibold tracking-tight">
           Shop by Categories

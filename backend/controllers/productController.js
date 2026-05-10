@@ -1,5 +1,69 @@
 // controllers/productController.js
 const Product = require("../models/Product");
+const { MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES } = require("../config/categories");
+
+const movedCustomizeTshirtSet = new Set(MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES);
+
+const SUBCATEGORY_ALIASES = {
+  "co-ord-set": ["co-ord-set", "co-ord set"],
+  "co-ord set": ["co-ord-set", "co-ord set"],
+};
+
+const getSubcategoryValues = (subcategory) =>
+  SUBCATEGORY_ALIASES[subcategory] || [subcategory];
+
+const emptyFilter = () => ({ _id: { $exists: false } });
+
+const buildProductFilter = (category, subcategory) => {
+  const hasCategory = category && category !== "all";
+  const hasSubcategory = subcategory && subcategory !== "all";
+  const subcategoryValues = hasSubcategory ? getSubcategoryValues(subcategory) : null;
+
+  if (!hasCategory) {
+    return hasSubcategory ? { subcategory: { $in: subcategoryValues } } : {};
+  }
+
+  if (category === "customize") {
+    if (subcategoryValues?.some((value) => movedCustomizeTshirtSet.has(value))) {
+      return emptyFilter();
+    }
+
+    return {
+      category,
+      ...(subcategoryValues
+        ? { subcategory: { $in: subcategoryValues } }
+        : { subcategory: { $nin: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES } }),
+    };
+  }
+
+  if (category === "men" || category === "women") {
+    if (!subcategoryValues) {
+      return {
+        $or: [
+          { category },
+          {
+            category: "customize",
+            subcategory: { $in: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES },
+          },
+        ],
+      };
+    }
+
+    if (movedCustomizeTshirtSet.has(subcategory)) {
+      return {
+        $or: [
+          { category, subcategory: { $in: subcategoryValues } },
+          { category: "customize", subcategory: { $in: subcategoryValues } },
+        ],
+      };
+    }
+  }
+
+  return {
+    category,
+    ...(subcategoryValues ? { subcategory: { $in: subcategoryValues } } : {}),
+  };
+};
 
 // GET /api/products?category=men&subcategory=tshirts
 const getProducts = async (req, res) => {
@@ -10,9 +74,7 @@ const getProducts = async (req, res) => {
     const category = rawCat ? String(rawCat).toLowerCase().trim() : null;
     const subcategory = rawSub ? String(rawSub).toLowerCase().trim() : null;
 
-    const filter = {};
-    if (category && category !== "all") filter.category = category;
-    if (subcategory && subcategory !== "all") filter.subcategory = subcategory;
+    const filter = buildProductFilter(category, subcategory);
 
     const products = await Product
       .find(filter)

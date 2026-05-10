@@ -11,11 +11,13 @@ const CATS = ["all", "men", "women", "customize"];
 const SUB_MAP = {
   men: [
     "all",
+    "regular-tshirt",
+    "oversize-tshirt",
+    "polo-tshirt",
     "jacket",
     "regular-shirt",
     "trousers",
     "jeans",
-    "polo-tshirt",
     "oversize-shirt",
     "plus-size",
     "cargos",
@@ -23,9 +25,12 @@ const SUB_MAP = {
   ],
   women: [
     "all",
-      "top",
+    "regular-tshirt",
+    "oversize-tshirt",
+    "polo-tshirt",
+    "top",
     "oversized",
-    "co-ord set",
+    "co-ord-set",
     "joggers",
     "trousers",
     "jeans",
@@ -35,9 +40,6 @@ const SUB_MAP = {
     "all",
     "hoodies",
     "sweatshirt",
-    "regular-tshirt",
-    "oversize-tshirt",
-    "couple-tshirt",
     "regular-coupletshirt",
     "oversize-coupletshirt",
     "couple-hoodies"
@@ -328,7 +330,7 @@ const ProductList = () => {
         </div>
 
         {/* Products Count */}
-        {!loading && (
+        {!loading && (filteredProducts.length > 0 || searchTerm) && (
           <div className="mb-6">
             <p className="text-sm text-gray-600 font-medium">
               {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"} Found
@@ -374,23 +376,54 @@ const ProductList = () => {
 
             {/* Empty State */}
             {filteredProducts.length === 0 && (
-              <div className="col-span-full text-center py-10">
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                    <FaSearch className="text-2xl text-gray-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-700">
-                    No Products Found
-                  </h3>
-                  <p className="text-gray-500 max-w-md mx-auto">
-                    {searchTerm
-                      ? `No products match your search "${searchTerm}". Try adjusting your search terms.`
-                      : "No products available in this selection at the moment."}
-                  </p>
+              <div className="col-span-full text-center py-16">
+                <div className="mx-auto max-w-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12">
+                  {searchTerm ? (
+                    <div className="space-y-4">
+                      <div className="w-16 h-16 bg-white border border-gray-200 rounded-full flex items-center justify-center mx-auto">
+                        <FaSearch className="text-2xl text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-700">
+                        No Products Found
+                      </h3>
+                      <p className="text-gray-500 max-w-md mx-auto">
+                        No products match your search "{searchTerm}". Try adjusting your search terms.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.35em] text-gray-500">
+                        Coming Soon
+                      </p>
+                      <h3 className="text-2xl md:text-3xl font-black text-gray-900">
+                        New styles are on the way
+                      </h3>
+                      <p className="text-gray-600 max-w-md mx-auto">
+                        {sub !== "all"
+                          ? `${categoryTitle} ${subcategoryTitle}`
+                          : categoryTitle}{" "}
+                        collection is getting stocked soon.
+                      </p>
+                      <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+                        <button
+                          onClick={() => navigate("/products")}
+                          className="px-6 py-3 bg-black text-white text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
+                        >
+                          Explore All
+                        </button>
+                        <button
+                          onClick={() => navigate("/")}
+                          className="px-6 py-3 border border-black text-black text-sm font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+                        >
+                          Back Home
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm("")}
-                      className="mt-4 px-6 py-2 bg-black text-white font-medium tracking-wide uppercase hover:bg-gray-800 transition-colors duration-200"
+                      className="mt-6 px-6 py-2 bg-black text-white font-medium tracking-wide uppercase hover:bg-gray-800 transition-colors duration-200"
                     >
                       Clear Search
                     </button>

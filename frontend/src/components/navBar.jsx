@@ -37,15 +37,23 @@ import imagetwenty from "../assets/womensimage/20.png"
 import imagetwentyone from "../assets/custom/1.svg"
 import imagetwentytwo from "../assets/custom/2.svg"
 import imagetwentythree from "../assets/custom/3.svg"
+import menRegularTshirt from "../assets/regulartshirt.avif"
+import menOversizeTshirt from "../assets/oversizetshirt.avif"
+import menPoloTshirt from "../assets/Polo.avif"
+import womenRegularTshirt from "../assets/womentshirt.avif"
+import womenOversizeTshirt from "../assets/womenoversize.avif"
+import womenPoloTshirt from "../assets/womenpolo.avif"
 
 /* URL structure: /products/men|women|customize and /products/:category/:subcategory */
 const SUBCATEGORIES = {
   mens: [
+    { label: "Regular T-shirt", path: "/products/men/regular-tshirt", img: menRegularTshirt },
+    { label: "Oversize T-shirt", path: "/products/men/oversize-tshirt", img: menOversizeTshirt },
+    { label: "Polo T-shirts", path: "/products/men/polo-tshirt", img: menPoloTshirt },
     { label: "Jackets", path: "/products/men/jacket", img: eleven },
     { label: "Shirts", path: "/products/men/regular-shirt", img: six },
     { label: "Trousers", path: "/products/men/trousers", img: one },
     { label: "Jeans", path: "/products/men/jeans", img: seven },
-    { label: "Polos", path: "/products/men/polo-tshirt", img: four },
     { label: "Oversize Shirt", path: "/products/men/oversize-shirt", img: three },
     { label: "Plus Size", path: "/products/men/plus-size", img: two },
     { label: "Cargos", path: "/products/men/cargos", img: eight },
@@ -53,6 +61,9 @@ const SUBCATEGORIES = {
 
   ],
   womens: [
+    { label: "Regular T-shirt", path: "/products/women/regular-tshirt", img: womenRegularTshirt },
+    { label: "Oversize T-shirt", path: "/products/women/oversize-tshirt", img: womenOversizeTshirt },
+    { label: "Polo T-shirts", path: "/products/women/polo-tshirt", img: womenPoloTshirt },
     { label: "Top", path: "/products/women/top", img: imagefourteen },
     { label: "Oversized", path: "/products/women/oversized", img: imagesixteen },
     { label: "Co-ord set", path: "/products/women/co-ord-set", img: imagefifteen },
@@ -64,11 +75,8 @@ const SUBCATEGORIES = {
   customize: [
     { label: "Hoodies", path: "/products/customize/hoodies", img: thirteen },
     { label: "Sweatshirt", path: "/products/customize/sweatshirt", img: ten },
-    { label: "Regular T-shirt", path: "/products/customize/regular-tshirt", img: imagefourteen },
-    { label: "Oversize T-shirt", path: "/products/customize/oversize-tshirt", img: three },
-    { label: "Polo T-shirts", path: "/products/customize/polo-tshirt", img: imagesixteen },
-    { label: "Regular CoupleTshirt", path: "/products/customize/regular-coupletshirt", img: imagetwentyone },
-    { label: "Oversize CoupleTshirt", path: "/products/customize/oversize-coupletshirt", img: imagetwentytwo },
+    { label: "Regular Couple T-shirt", path: "/products/customize/regular-coupletshirt", img: imagetwentyone },
+    { label: "Oversize Couple T-shirt", path: "/products/customize/oversize-coupletshirt", img: imagetwentytwo },
     { label: "Couple Hoodies", path: "/products/customize/couple-hoodies", img: imagetwentythree },
   ],
 };

@@ -1,7 +1,7 @@
 export function ShoppingExperience() {
   return (
-    <section className="w-full bg-white py-6">
-      <div className="mx-auto px-6 lg:px-14">
+    <section className="max-w-[1700px] mx-auto bg-white py-6">
+      <div className="mx-auto px-6">
 
         <h2 className="text-2xl md:text-3xl font-semibold text-black mb-6">
           The Filoteso Shopping Experience

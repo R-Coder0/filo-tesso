@@ -6,20 +6,25 @@ import { useNavigate } from "react-router-dom";
 // Central map: yahi se options aayenge
 const CATEGORY_MAP = {
   men: [
+    "regular-tshirt",
+    "oversize-tshirt",
+    "polo-tshirt",
     "jacket",
     "regular-shirt",
     "trousers",
     "jeans",
-    "polo-tshirt",
     "oversize-shirt",
     "plus-size",
     "cargos",
     "shoes",
   ],
   women: [
+    "regular-tshirt",
+    "oversize-tshirt",
+    "polo-tshirt",
     "top",
     "oversized",
-    "co-ord set",
+    "co-ord-set",
     "joggers",
     "trousers",
     "jeans",
@@ -28,9 +33,6 @@ const CATEGORY_MAP = {
   customize: [
     "hoodies",
     "sweatshirt",
-    "regular-tshirt",
-    "oversize-tshirt",
-    "polo-tshirt",
     "regular-coupletshirt",
     "oversize-coupletshirt",
     "couple-hoodies",

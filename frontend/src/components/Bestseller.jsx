@@ -144,7 +144,7 @@ export default function Bestsellers({
 
   return (
     <section
-      className="max-w-7xl mx-auto px-4 md:px-6 pt-10"
+      className="max-w-[1700px] mx-auto px-4 md:px-6 pt-10"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}

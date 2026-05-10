@@ -4,6 +4,7 @@ import Bestsellers from '../components/Bestseller'
 import CategoriesSection from '../components/Categoriessection'
 import LatestProducts from '../components/LatestProducts'
 import HomeProducts from '../components/HomeProducts'
+import OversizeTshirtProducts from '../components/OversizeTshirtProducts'
 import OurStory from '../components/OurStory'
 import TestimonialSection from '../components/TestimonialSection'
 import { ShoppingExperience } from '../components/ShoppingExperience'
@@ -17,6 +18,7 @@ const Home = () => {
 <TrustStrip/>
 <LatestProducts/>
 <Bestsellers/>
+<OversizeTshirtProducts/>
 <HomeProducts/>
  <OurStory/>
  <ShoppingExperience/>
