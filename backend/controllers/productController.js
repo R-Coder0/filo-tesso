@@ -209,6 +209,9 @@ const normalizeSizeVariants = (raw, fallbackSizes = [], fallbackStock = 0) => {
 const getTotalVariantStock = (variants) =>
   variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock || 0)), 0);
 
+const getUploadedFiles = (files, fieldNames) =>
+  fieldNames.flatMap((fieldName) => files?.[fieldName] || []);
+
 // POST /api/products  (multipart: image + images[])
 const addProduct = async (req, res) => {
   try {
@@ -257,12 +260,20 @@ const keywords = req.body.keywords
       });
     }
 
-    if (!req.files?.image?.length) {
+    const mainImageFile = getUploadedFiles(req.files, ["image", "mainImage"])[0];
+    const galleryFiles = getUploadedFiles(req.files, [
+      "images",
+      "images[]",
+      "gallery",
+      "galleryImages",
+    ]);
+
+    if (!mainImageFile) {
       return res.status(400).json({ message: "Main image is required" });
     }
 
-    const mainImage = `/uploads/${req.files.image[0].filename}`;
-    const galleryImages = (req.files.images || []).map(file => `/uploads/${file.filename}`);
+    const mainImage = `/uploads/${mainImageFile.filename}`;
+    const galleryImages = galleryFiles.map(file => `/uploads/${file.filename}`);
 
     const product = await Product.create({
       name,
@@ -381,11 +392,19 @@ if (typeof body.keywords !== "undefined") {
 }
 
     // files if provided
-    if (req.files?.image?.length) {
-      product.image = `/uploads/${req.files.image[0].filename}`;
+    const mainImageFile = getUploadedFiles(req.files, ["image", "mainImage"])[0];
+    const galleryFiles = getUploadedFiles(req.files, [
+      "images",
+      "images[]",
+      "gallery",
+      "galleryImages",
+    ]);
+
+    if (mainImageFile) {
+      product.image = `/uploads/${mainImageFile.filename}`;
     }
-    if (req.files?.images?.length) {
-      product.gallery = req.files.images.map(file => `/uploads/${file.filename}`);
+    if (galleryFiles.length) {
+      product.gallery = galleryFiles.map(file => `/uploads/${file.filename}`);
     }
 
     const updatedProduct = await product.save();

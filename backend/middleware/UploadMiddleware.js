@@ -68,6 +68,8 @@ const imageOrPdfFilter = (req, file, cb) => {
 
 // ================== Multer Uploaders ==================
 
+const MAX_PRODUCT_GALLERY_IMAGES = 10;
+
 // Product uploads (main image + gallery)
 const uploadProduct = multer({
   storage,
@@ -76,8 +78,12 @@ const uploadProduct = multer({
     fileSize: 10 * 1024 * 1024, // 10 MB
   },
 }).fields([
-  { name: "image", maxCount: 1 },   // main image
-  { name: "images", maxCount: 5 },  // gallery images
+  { name: "image", maxCount: 1 }, // main image
+  { name: "mainImage", maxCount: 1 }, // older/alternate main image field
+  { name: "images", maxCount: MAX_PRODUCT_GALLERY_IMAGES }, // gallery images
+  { name: "images[]", maxCount: MAX_PRODUCT_GALLERY_IMAGES }, // common FormData array name
+  { name: "gallery", maxCount: MAX_PRODUCT_GALLERY_IMAGES },
+  { name: "galleryImages", maxCount: MAX_PRODUCT_GALLERY_IMAGES },
 ]);
 
 // Order uploads (custom image / pdf)
@@ -95,9 +101,13 @@ const uploadOrder = multer({
 // ================== Error Handler ==================
 const uploadErrorHandler = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
+    const fieldMessage = err.field ? `: ${err.field}` : "";
     return res.status(400).json({
       success: false,
-      message: err.message,
+      message:
+        err.code === "LIMIT_UNEXPECTED_FILE"
+          ? `Unexpected upload field${fieldMessage}. Please upload one main image and up to ${MAX_PRODUCT_GALLERY_IMAGES} gallery images.`
+          : err.message,
     });
   }
 

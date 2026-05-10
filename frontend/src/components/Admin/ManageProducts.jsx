@@ -39,6 +39,8 @@ const CATEGORY_MAP = {
   ],
 };
 
+const MAX_GALLERY_IMAGES = 10;
+
 const emptyProduct = {
   name: "",
   image: null,
@@ -368,12 +370,19 @@ keywords: product.seo?.keywords?.join(", ") || "",
   };
 
   const handleGalleryChange = (fileList) => {
-    const files = fileList ? Array.from(fileList) : [];
+    const selectedFiles = fileList ? Array.from(fileList) : [];
+    const files = selectedFiles.slice(0, MAX_GALLERY_IMAGES);
 
     // cleanup old previews
     galleryPreviews.forEach((g) => {
       if (g.url?.startsWith("blob:")) URL.revokeObjectURL(g.url);
     });
+
+    if (selectedFiles.length > MAX_GALLERY_IMAGES) {
+      setError(`Maximum ${MAX_GALLERY_IMAGES} gallery images allowed. First ${MAX_GALLERY_IMAGES} selected images will be uploaded.`);
+    } else {
+      setError(null);
+    }
 
     const mapped = files.map((file) => ({
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
@@ -452,7 +461,7 @@ formData.append("keywords", newProduct.keywords);
         if (newProduct.image) formData.append("image", newProduct.image);
 
         if (newProduct.images?.length > 0) {
-          newProduct.images.forEach((img) => formData.append("images", img));
+          newProduct.images.slice(0, MAX_GALLERY_IMAGES).forEach((img) => formData.append("images", img));
         }
 
         await axiosAdmin.post(`/`, formData);
@@ -1066,7 +1075,7 @@ formData.append("keywords", newProduct.keywords);
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                You can select multiple images at once
+                You can select up to {MAX_GALLERY_IMAGES} images at once
               </p>
             </div>
 

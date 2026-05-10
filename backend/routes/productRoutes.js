@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { isAdmin } = require('../middleware/authMiddleware');
-const { uploadProduct } = require('../middleware/UploadMiddleware');
+const { uploadProduct, uploadErrorHandler } = require('../middleware/UploadMiddleware');
 const {
   getProducts,
   getProductById,
@@ -19,7 +19,7 @@ router.get('/latest', getLatestProducts);      // ✅ YEH NAYA ROUTE ADD KARO
 router.get('/:id', getProductById);            // Get product by ID
 
 // Admin only:
-router.post('/', isAdmin, uploadProduct, addProduct); // Add product (main + gallery)
+router.post('/', isAdmin, uploadProduct, uploadErrorHandler, addProduct); // Add product (main + gallery)
 router.put('/:id', isAdmin, updateProduct);           // Update product
 router.delete('/:id', isAdmin, deleteProduct);        // Delete product
 
