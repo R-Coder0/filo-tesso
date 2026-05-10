@@ -8,7 +8,7 @@ import axios from "axios";
 import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp, FaShareAlt } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
 import { Helmet } from "react-helmet-async";
-import { Droplets, Heart, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
+import { Droplets, Heart, Maximize2, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 
 const ProductDetailPage = () => {
@@ -246,7 +246,9 @@ const ProductDetailPage = () => {
     ? product.details
     : Array.isArray(product.features) ? product.features : [];
   const productWashCare = Array.isArray(product.washCare) ? product.washCare : [];
-  const allImages = [product.image, ...(product.gallery || [])];
+  const allImages = [...new Set([product.image, ...(product.gallery || [])].filter(Boolean))];
+  const currentImage = selectedImage || allImages[0] || "";
+  const selectedImageIndex = Math.max(0, allImages.findIndex((img) => img === currentImage));
   const avgRating = product?.ratings?.average || 0;
   const ratingCount = product?.ratings?.count || 0;
 
@@ -263,6 +265,30 @@ const ProductDetailPage = () => {
         <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 shadow-lg border-l-4 bg-white transition-all duration-300 ${toast.type === "success" ? "border-green-500" : "border-red-500"}`}>
           {toast.type === "success" ? <FaCheck className="text-green-500 text-sm" /> : <FaTimes className="text-red-500 text-sm" />}
           <span className="text-sm font-semibold text-gray-800">{toast.message}</span>
+        </div>
+      )}
+
+      {imgZoom && currentImage && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/90 p-4 md:p-8"
+          onClick={() => setImgZoom(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setImgZoom(false)}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center border border-white/30 bg-white/10 text-white transition hover:bg-white hover:text-black"
+            aria-label="Close full image"
+          >
+            <FaTimes className="text-sm" />
+          </button>
+          <div className="flex h-full w-full items-center justify-center">
+            <img
+              src={`${apiUrl}${currentImage}`}
+              alt={`${product.name} full view`}
+              className="max-h-full max-w-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
 
@@ -300,29 +326,82 @@ const ProductDetailPage = () => {
 
             {/* ── LEFT: Image Gallery ── */}
             <div className="lg:sticky lg:top-28 h-fit">
-              <div className="bg-white border border-gray-200">
-                {/* Main Image */}
-                <div className="relative aspect-[2/2] overflow-hidden bg-gray-50 cursor-zoom-in" onClick={() => setImgZoom(!imgZoom)}>
-                  <img src={`${apiUrl}${selectedImage}`} alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
-                  {discount > 0 && (
-                    <span className="absolute top-3 left-3 bg-black text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1">
-                      {discount}% OFF
-                    </span>
-                  )}
-                </div>
-
-                {/* Thumbnails */}
+              <div className={`grid gap-3 ${allImages.length > 1 ? "lg:grid-cols-[88px_minmax(0,1fr)]" : "lg:grid-cols-1"}`}>
                 {allImages.length > 1 && (
-                  <div className="flex gap-2 p-3 border-t border-gray-100 overflow-x-auto hide-scrollbar">
-                    {allImages.map((img, idx) => (
-                      <button key={idx} onClick={() => setSelectedImage(img)}
-                        className={`shrink-0 w-16 h-16 border-2 transition-colors duration-200 overflow-hidden ${selectedImage === img ? "border-black" : "border-gray-200 hover:border-gray-400"}`}>
-                        <img src={`${apiUrl}${img}`} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
+                  <div className="order-2 flex gap-2 overflow-x-auto hide-scrollbar lg:order-1 lg:max-h-[680px] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
+                    {allImages.map((img, idx) => {
+                      const isActive = currentImage === img;
+                      return (
+                        <button
+                          key={`${img}-${idx}`}
+                          type="button"
+                          onClick={() => setSelectedImage(img)}
+                          className={`relative h-20 w-20 shrink-0 border bg-white transition-all duration-200 lg:h-24 lg:w-20 ${isActive
+                            ? "border-black shadow-[0_0_0_1px_#000]"
+                            : "border-gray-200 hover:border-gray-500"
+                            }`}
+                          aria-label={`View image ${idx + 1}`}
+                        >
+                          <img
+                            src={`${apiUrl}${img}`}
+                            alt={`${product.name} view ${idx + 1}`}
+                            className="h-full w-full object-contain p-1.5"
+                          />
+                          <span className={`absolute bottom-1 left-1 h-1 w-5 ${isActive ? "bg-black" : "bg-gray-200"}`} />
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
+
+                <div className="order-1 border border-gray-200 bg-white lg:order-2">
+                  <div
+                    className="relative flex aspect-[4/5] min-h-[360px] cursor-zoom-in items-center justify-center overflow-hidden bg-[#f7f7f4] sm:min-h-[520px]"
+                    onClick={() => setImgZoom(true)}
+                  >
+                    {currentImage ? (
+                      <img
+                        src={`${apiUrl}${currentImage}`}
+                        alt={product.name}
+                        className="h-full w-full object-contain p-3 transition-transform duration-500 hover:scale-[1.02] sm:p-5"
+                      />
+                    ) : (
+                      <div className="text-sm font-semibold uppercase tracking-widest text-gray-400">
+                        Image unavailable
+                      </div>
+                    )}
+
+                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {discount > 0 && (
+                          <span className="bg-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
+                            {discount}% OFF
+                          </span>
+                        )}
+                        {allImages.length > 1 && (
+                          <span className="bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-700 shadow-sm">
+                            {selectedImageIndex + 1} / {allImages.length}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setImgZoom(true);
+                        }}
+                        className="flex h-9 w-9 items-center justify-center border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:text-black"
+                        aria-label="Open full image"
+                      >
+                        <Maximize2 size={15} strokeWidth={1.9} />
+                      </button>
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shadow-sm">
+                      Full Product View
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Trust badges below image */}
