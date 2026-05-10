@@ -34,8 +34,8 @@ router.put('/first-order-discount', isAdmin, async (req, res) => {
     const enabled = Boolean(req.body.enabled);
     const percentage = Number(req.body.percentage);
 
-    if (![10, 15, 20].includes(percentage)) {
-      return res.status(400).json({ message: "Discount percentage must be 10, 15, or 20" });
+    if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100) {
+      return res.status(400).json({ message: "Discount percentage must be between 0 and 100" });
     }
 
     const setting = await DiscountSetting.findOneAndUpdate(

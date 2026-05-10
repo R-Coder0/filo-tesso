@@ -16,7 +16,7 @@ const getFirstOrderDiscountSetting = async () => {
 
   return {
     enabled: Boolean(setting.enabled),
-    percentage: Number(setting.percentage || DEFAULT_SETTING.percentage),
+    percentage: Number(setting.percentage ?? DEFAULT_SETTING.percentage),
   };
 };
 

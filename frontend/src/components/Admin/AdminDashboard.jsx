@@ -11,15 +11,18 @@ const AdminDashboard = () => {
   });
   const [discountSaving, setDiscountSaving] = useState(false);
   const [discountMessage, setDiscountMessage] = useState("");
+  const [discountInput, setDiscountInput] = useState("15");
 
   useEffect(() => {
     const fetchDiscountSetting = async () => {
       try {
         const { data } = await axios.get(`${apiUrl}/api/admin/first-order-discount`);
+        const percentage = Number(data.percentage ?? 15);
         setDiscountSetting({
           enabled: Boolean(data.enabled),
-          percentage: Number(data.percentage || 15),
+          percentage,
         });
+        setDiscountInput(String(percentage));
       } catch {
         setDiscountMessage("Could not load discount settings");
       }
@@ -42,16 +45,53 @@ const AdminDashboard = () => {
         nextSetting,
         { headers: { authorization: import.meta.env.VITE_ADMIN_TOKEN } }
       );
+      const percentage = Number(data.percentage ?? nextSetting.percentage);
       setDiscountSetting({
         enabled: Boolean(data.enabled),
-        percentage: Number(data.percentage || nextSetting.percentage),
+        percentage,
       });
+      setDiscountInput(String(percentage));
       setDiscountMessage("Discount settings updated");
     } catch (err) {
       setDiscountMessage(err.response?.data?.message || "Failed to update discount");
     } finally {
       setDiscountSaving(false);
     }
+  };
+
+  const clampDiscount = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return 15;
+    return Math.min(100, Math.max(0, numericValue));
+  };
+
+  const handleDiscountInputChange = (value) => {
+    if (value === "") {
+      setDiscountInput("");
+      return;
+    }
+
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return;
+
+    setDiscountInput(String(Math.min(100, Math.max(0, numericValue))));
+  };
+
+  const saveDiscountPercentage = () => {
+    const percentage = clampDiscount(discountInput);
+    updateDiscountSetting({
+      ...discountSetting,
+      percentage,
+    });
+  };
+
+  const saveRangeDiscountPercentage = (value) => {
+    const percentage = clampDiscount(value);
+    setDiscountInput(String(percentage));
+    updateDiscountSetting({
+      ...discountSetting,
+      percentage,
+    });
   };
 
   return (
@@ -88,27 +128,53 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {[10, 15, 20].map((percentage) => (
+          <div className="mt-4 space-y-3">
+            <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500">
+              Discount Percentage
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={discountInput}
+                  onChange={(e) => handleDiscountInputChange(e.target.value)}
+                  onBlur={() => setDiscountInput(String(clampDiscount(discountInput)))}
+                  className="w-full border border-gray-300 px-3 py-2 pr-8 text-sm font-semibold outline-none focus:border-black"
+                  disabled={discountSaving}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400">
+                  %
+                </span>
+              </div>
               <button
-                key={percentage}
                 type="button"
                 disabled={discountSaving}
-                onClick={() =>
-                  updateDiscountSetting({
-                    ...discountSetting,
-                    percentage,
-                  })
-                }
-                className={`border px-3 py-2 text-sm font-semibold ${
-                  discountSetting.percentage === percentage
-                    ? "border-black bg-black text-white"
-                    : "border-gray-300 text-gray-700 hover:border-black"
-                } disabled:opacity-50`}
+                onClick={saveDiscountPercentage}
+                className="border border-black bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-white hover:text-black disabled:opacity-50"
               >
-                {percentage}%
+                Save
               </button>
-            ))}
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="0.1"
+              value={clampDiscount(discountInput)}
+              onChange={(e) => setDiscountInput(e.target.value)}
+              onMouseUp={(e) => saveRangeDiscountPercentage(e.currentTarget.value)}
+              onTouchEnd={(e) => saveRangeDiscountPercentage(e.currentTarget.value)}
+              className="w-full accent-black"
+              disabled={discountSaving}
+            />
+            <div className="flex justify-between text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+              <span>0%</span>
+              <span>Current: {discountSetting.percentage}%</span>
+              <span>100%</span>
+            </div>
           </div>
 
           {discountMessage && (

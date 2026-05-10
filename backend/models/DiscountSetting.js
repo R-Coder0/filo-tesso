@@ -6,7 +6,8 @@ const discountSettingSchema = new mongoose.Schema(
     enabled: { type: Boolean, default: true },
     percentage: {
       type: Number,
-      enum: [10, 15, 20],
+      min: 0,
+      max: 100,
       default: 15,
     },
   },
