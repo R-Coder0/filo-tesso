@@ -14,7 +14,7 @@ const Home = () => {
   return (
     <div>
 <Hero/>
-<CategoriesSection/>
+{/* <CategoriesSection/> */}
 <TrustStrip/>
 <LatestProducts/>
 <Bestsellers/>

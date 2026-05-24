@@ -1,1 +1,0 @@
-import{r,A as a,B as s,j as n,Q as u}from"./index-fxOECkhm.js";const c=({children:t})=>{const{user:e}=r.useContext(a),o=s();return e?t:(localStorage.setItem("redirectAfterLogin",o.pathname),n.jsx(u,{to:"/login",replace:!0}))};export{c as default};
