@@ -2,14 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 export default function ContactPage() {
-  const phoneDisplay = "+91 6307694248";
-  const phoneDial = "+916307694248";
+  const phoneDisplay = "+91 9310966458";
+  const phoneDial = "+919310966458";
   const email = "filoteso.rk@gmail.com";
   const instagram =
-    "https://www.instagram.com/filoteso.co.in?igsh=MTZweGhoOGxxemtuZw%3D%3D&utm_source=qr";
+    "https://www.instagram.com/filoteso.co.in/?hl=en";
 
   const waText = "Hi Filo Teso, I need help with my order.";
-  const waLink = `https://wa.me/916307694248?text=${encodeURIComponent(waText)}`;
+  const waLink = `https://wa.me/919310966458?text=${encodeURIComponent(waText)}`;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">

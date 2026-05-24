@@ -89,14 +89,14 @@ export default function Footer() {
           <div className="mt-4 space-y-3 text-gray-300">
             <div className="flex items-start gap-3">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
-              <p className="leading-relaxed">Registered Office, India</p>
+              <p className="leading-relaxed">Okhla, New Delhi, India</p>
             </div>
             <a
-              href="tel:+916307694248"
+              href="tel:+919310966458"
               className="flex items-center gap-3 font-medium text-white hover:underline"
             >
               <Phone className="h-4 w-4 text-gray-500" />
-              +91 6307694248
+              +91 9310966458
             </a>
             <a
               href="mailto:filoteso.rk@gmail.com"
@@ -112,7 +112,7 @@ export default function Footer() {
               Social
             </h4>
             <a
-              href="https://www.instagram.com/filoteso.co.in?igsh=MTZweGhoOGxxemtuZw%3D%3D&utm_source=qr"
+              href="https://www.instagram.com/filoteso.co.in/?hl=en"
               target="_blank"
               rel="noreferrer"
               aria-label="Instagram"
