@@ -8,7 +8,7 @@ import axios from "axios";
 import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp, FaShareAlt } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
 import { Helmet } from "react-helmet-async";
-import { Droplets, Heart, Maximize2, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Droplets, Heart, Maximize2, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 
 const ProductDetailPage = () => {
@@ -253,6 +253,14 @@ const ProductDetailPage = () => {
   const allImages = [...new Set([product.image, ...(product.gallery || [])].filter(Boolean))];
   const currentImage = selectedImage || allImages[0] || "";
   const selectedImageIndex = Math.max(0, allImages.findIndex((img) => img === currentImage));
+  const hasMultipleImages = allImages.length > 1;
+  const showImageAt = (nextIndex) => {
+    if (!hasMultipleImages) return;
+    const wrappedIndex = (nextIndex + allImages.length) % allImages.length;
+    setSelectedImage(allImages[wrappedIndex]);
+  };
+  const showPreviousImage = () => showImageAt(selectedImageIndex - 1);
+  const showNextImage = () => showImageAt(selectedImageIndex + 1);
   const avgRating = product?.ratings?.average || 0;
   const ratingCount = product?.ratings?.count || 0;
 
@@ -331,7 +339,7 @@ const ProductDetailPage = () => {
             {/* ── LEFT: Image Gallery ── */}
             <div className="lg:sticky lg:top-28 h-fit">
               <div className={`grid gap-3 ${allImages.length > 1 ? "lg:grid-cols-[88px_minmax(0,1fr)]" : "lg:grid-cols-1"}`}>
-                {allImages.length > 1 && (
+                {hasMultipleImages && (
                   <div className="order-2 flex gap-2 overflow-x-auto hide-scrollbar lg:order-1 lg:max-h-[680px] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
                     {allImages.map((img, idx) => {
                       const isActive = currentImage === img;
@@ -382,7 +390,7 @@ const ProductDetailPage = () => {
                             {discount}% OFF
                           </span>
                         )}
-                        {allImages.length > 1 && (
+                        {hasMultipleImages && (
                           <span className="bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-700 shadow-sm">
                             {selectedImageIndex + 1} / {allImages.length}
                           </span>
@@ -400,6 +408,33 @@ const ProductDetailPage = () => {
                         <Maximize2 size={15} strokeWidth={1.9} />
                       </button>
                     </div>
+
+                    {hasMultipleImages && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showPreviousImage();
+                          }}
+                          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black/20 sm:left-4 sm:h-11 sm:w-11"
+                          aria-label="Show previous product image"
+                        >
+                          <ChevronLeft size={20} strokeWidth={2.2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showNextImage();
+                          }}
+                          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black/20 sm:right-4 sm:h-11 sm:w-11"
+                          aria-label="Show next product image"
+                        >
+                          <ChevronRight size={20} strokeWidth={2.2} />
+                        </button>
+                      </>
+                    )}
 
                     <div className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shadow-sm">
                       Full Product View
