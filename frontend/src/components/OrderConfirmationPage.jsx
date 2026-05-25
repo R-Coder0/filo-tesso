@@ -9,6 +9,14 @@ const formatINR = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
+const getLineItemTotal = (item) => {
+  const quantity = Number(item?.quantity || 0);
+  const unitPrice = Number(
+    item?.priceAtPurchase ?? item?.price?.sale ?? item?.price ?? 0
+  );
+  return unitPrice * quantity;
+};
+
 const OrderConfirmationPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -189,7 +197,7 @@ const OrderConfirmationPage = () => {
                     </p>
                   </div>
                   <span className="font-semibold text-gray-900">
-                    {formatINR(item.price * item.quantity)}
+                    {formatINR(getLineItemTotal(item))}
                   </span>
                 </div>
               ))}

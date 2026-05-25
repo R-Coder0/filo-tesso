@@ -11,15 +11,12 @@ const CATEGORIES = ["men", "women", "customize"];
 
 export default function Bestsellers({
   chunkSize = 4,
-  rotateMs = 6000,
-  pollMs = 30000,
 }) {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [items, setItems] = useState([]);
-  const [paused, setPaused] = useState(false);
 
   const [visibleCount, setVisibleCount] = useState(() => {
     if (typeof window === "undefined") return chunkSize;
@@ -29,8 +26,6 @@ export default function Bestsellers({
   });
 
   const trackRef = useRef(null);
-  const rotateRef = useRef(null);
-  const pollRef = useRef(null);
 
   const fetchAll = async (cancelToken = null) => {
     setLoading(true);
@@ -85,12 +80,6 @@ export default function Bestsellers({
   }, [apiUrl]);
 
   useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(fetchAll, pollMs);
-    return () => clearInterval(pollRef.current);
-  }, [apiUrl, pollMs]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
     const mqLg = window.matchMedia("(min-width: 1024px)");
     const mqMd = window.matchMedia("(min-width: 768px)");
@@ -104,22 +93,6 @@ export default function Bestsellers({
     mqMd.addEventListener("change", update);
     return () => { mqLg.removeEventListener("change", update); mqMd.removeEventListener("change", update); };
   }, []);
-
-  useEffect(() => {
-    if (rotateRef.current) clearInterval(rotateRef.current);
-    if (paused) return;
-    const track = trackRef.current;
-    if (!track || items.length <= visibleCount) return;
-    rotateRef.current = setInterval(() => {
-      const maxScroll = track.scrollWidth - track.clientWidth;
-      if (Math.abs(track.scrollLeft - maxScroll) <= 2) {
-        track.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
-      }
-    }, rotateMs);
-    return () => clearInterval(rotateRef.current);
-  }, [items.length, visibleCount, rotateMs, paused]);
 
   const goPrev = () => {
     const track = trackRef.current;
@@ -143,13 +116,7 @@ export default function Bestsellers({
   };
 
   return (
-    <section
-      className="max-w-[1700px] mx-auto px-4 md:px-6 pt-10"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setPaused(false)}
-    >
+    <section className="max-w-[1700px] mx-auto px-4 md:px-6 pt-10">
       {/* ── Header ── */}
       <div className="flex items-end justify-between mb-5">
         <div>

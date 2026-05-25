@@ -3,7 +3,7 @@ const Order = require("../models/Order");
 
 const DEFAULT_SETTING = {
   key: "firstOrder",
-  enabled: true,
+  enabled: false,
   percentage: 15,
 };
 
@@ -27,7 +27,7 @@ const isFirstOrderForUser = async (userId) => {
 
 const calculateFirstOrderDiscount = async (userId, amount) => {
   const setting = await getFirstOrderDiscountSetting();
-  const eligible = setting.enabled && await isFirstOrderForUser(userId);
+  const eligible = setting.enabled && (await isFirstOrderForUser(userId));
   const rate = eligible ? setting.percentage / 100 : 0;
   const discountAmount = Math.floor(Math.max(0, Number(amount || 0)) * rate);
 

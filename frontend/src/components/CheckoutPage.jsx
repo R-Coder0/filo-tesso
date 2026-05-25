@@ -4,15 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
-/* -----------------------------
-   DISCOUNT TIERS / HELPERS
-------------------------------*/
-const TIERS = [
-  { threshold: 1000, rate: 0.05, label: "5%" },
-  { threshold: 2000, rate: 0.10, label: "10%" },
-  { threshold: 3000, rate: 0.15, label: "15%" },
-];
-
 // Static referral codes
 const REFERRAL_CODES = {
   RISHABH10: 0.1, // 10% off
@@ -26,19 +17,6 @@ const formatINR = (n) =>
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(n || 0);
-
-function computeDiscount(subtotal) {
-  const active = [...TIERS].filter((t) => subtotal >= t.threshold).pop() || null;
-  const rate = active ? active.rate : 0;
-  const discountAmount = Math.floor(subtotal * rate);
-  const discountedTotal = Math.max(subtotal - discountAmount, 0);
-  return {
-    activeTier: active,
-    discountRate: rate,
-    discountAmount,
-    discountedTotal,
-  };
-}
 
 const loadRazorpayScript = () =>
   new Promise((resolve) => {
@@ -63,16 +41,10 @@ const CheckoutPage = () => {
   const {
     cartItems: initialCartItems,
     subtotal: initialSubtotal,
-    discountRate: initialDiscountRate,
-    discountAmount: initialDiscountAmount,
-    totalAmount: initialFinalTotal,
     customUploads, // { isCustomize, singleFile }
   } = state || {
     cartItems: [],
     subtotal: 0,
-    discountRate: 0,
-    discountAmount: 0,
-    totalAmount: 0,
     customUploads: null,
   };
 
@@ -163,31 +135,33 @@ const CheckoutPage = () => {
   /* -----------------------------
      PRICING
   ------------------------------*/
-    const saleBaseTotal = (cartItems || []).reduce(
-    (acc, item) => acc + (item.price?.sale || 0) * (item.quantity || 0),
-    0
-  );
   const { subtotal, discountRate, discountAmount, discountedTotal } = useMemo(() => {
-    // re-evaluate subtotal in case qty changed here
-    const sub =
-      (cartItems || []).reduce(
-        (acc, item) => acc + (item.price?.original || item.price?.sale || 0) * (item.quantity || 0),
-        0
-      ) || initialSubtotal || 0;
+    const totals = (cartItems || []).reduce(
+      (acc, item) => {
+        const quantity = Number(item.quantity || 0);
+        const salePrice = Number(item.price?.sale ?? item.price ?? 0);
+        const originalPrice = Number(item.price?.original ?? salePrice);
 
-    const { discountRate, discountAmount } = computeDiscount(saleBaseTotal);
+        acc.saleTotal += salePrice * quantity;
+        acc.originalTotal += Math.max(originalPrice, salePrice) * quantity;
+        return acc;
+      },
+      { originalTotal: 0, saleTotal: 0 }
+    );
 
-    const discountedTotal = saleBaseTotal - discountAmount;
-    return { subtotal: sub, discountRate, discountAmount, discountedTotal };
+    const saleTotal = totals.saleTotal || Number(initialSubtotal || 0);
+    const originalTotal = totals.originalTotal || saleTotal;
+    const productDiscount = Math.max(0, originalTotal - saleTotal);
+
+    return {
+      subtotal: originalTotal,
+      discountRate: 0,
+      discountAmount: productDiscount,
+      discountedTotal: saleTotal,
+    };
   }, [cartItems, initialSubtotal]);
 
-  const saleDiscount = (cartItems || []).reduce(
-    (acc, item) =>
-      acc +
-      ((item.price?.original || 0) - (item.price?.sale || 0)) *
-      (item.quantity || 0),
-    0
-  );
+  const saleDiscount = discountAmount;
   const firstOrderDiscountRate =
     firstOrderDiscount.enabled && firstOrderDiscount.eligible
       ? firstOrderDiscount.percentage / 100

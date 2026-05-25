@@ -248,7 +248,7 @@ const ProductList = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 lg:px-8 py-8">
+      <div className="container mx-auto px-2 lg:px-8 py-8">
         {/* Navigation Pills */}
         <div className="mb-12">
           {cat === "all" ? (
@@ -364,7 +364,7 @@ const ProductList = () => {
         sm:grid-cols-3
         md:grid-cols-4
         lg:grid-cols-4
-        gap-6
+        gap-2
       "
             >
               {visibleProducts.map((prod) => (

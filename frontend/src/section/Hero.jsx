@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import imageone from "../assets/1hero.webp"
 import imagetwo from "../assets/2hero.webp"
 import imagethree from "../assets/3hero.webp"
@@ -11,15 +11,6 @@ const Hero = () => {
     { id: 2, image: imagetwo },
     { id: 3, image: imagethree }
   ];
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
-
-  useEffect(() => {
-    const timer = setInterval(nextSlide, 5000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <section className="relative h- lg:h-[100vh] md:h-[400px] h-[200px] overflow-hidden bg-white">
