@@ -4,6 +4,7 @@ import axios from "axios";
 import ProductCard from "./ProductCard";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaFilter, FaSearch } from "react-icons/fa";
+import { useSsrData } from "../context/SsrDataContext";
 
 const CATS = ["all", "men", "women", "customize"];
 
@@ -54,10 +55,17 @@ const ProductList = () => {
 
   const cat = normalize(catParam) || "all";
   const urlSub = normalize(subParam) || "all";
+  const ssrProductList = useSsrData("productList");
+  const routeKey = `${cat}:${urlSub}`;
+  const hasSsrProducts =
+    ssrProductList?.routeKey === routeKey &&
+    Array.isArray(ssrProductList.products);
 
   const [sub, setSub] = useState(urlSub);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState(() =>
+    hasSsrProducts ? ssrProductList.products : []
+  );
+  const [loading, setLoading] = useState(!hasSsrProducts);
   const [visibleCount, setVisibleCount] = useState(20);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -114,6 +122,8 @@ const ProductList = () => {
       return;
     }
 
+    if (hasSsrProducts) return;
+
     const fetchProducts = async () => {
       setLoading(true);
       try {
@@ -134,7 +144,7 @@ const ProductList = () => {
     };
 
     fetchProducts();
-  }, [apiUrl, cat, sub, validCat, validSub, navigate]);
+  }, [apiUrl, cat, sub, validCat, validSub, navigate, hasSsrProducts]);
 
   // Filter + sort on client
   const filteredProducts = useMemo(() => {

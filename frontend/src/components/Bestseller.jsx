@@ -6,6 +6,7 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ShoppingBag } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
+import { useSsrData } from "../context/SsrDataContext";
 
 const CATEGORIES = ["men", "women", "customize"];
 
@@ -13,10 +14,12 @@ export default function Bestsellers({
   chunkSize = 4,
 }) {
   const apiUrl = import.meta.env.VITE_API_URL;
+  const ssrProducts = useSsrData("homeBestsellerProducts");
+  const hasSsrProducts = Array.isArray(ssrProducts);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasSsrProducts);
   const [err, setErr] = useState("");
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => (hasSsrProducts ? ssrProducts : []));
 
   const [visibleCount, setVisibleCount] = useState(() => {
     if (typeof window === "undefined") return chunkSize;
@@ -74,10 +77,12 @@ export default function Bestsellers({
   };
 
   useEffect(() => {
+    if (hasSsrProducts) return;
+
     const source = axios.CancelToken.source?.() ?? null;
     fetchAll(source?.token);
     return () => source?.cancel("Unmount");
-  }, [apiUrl]);
+  }, [apiUrl, hasSsrProducts]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

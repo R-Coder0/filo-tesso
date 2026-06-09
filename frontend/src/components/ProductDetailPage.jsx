@@ -10,17 +10,22 @@ import { useWishlist } from "../context/WishlistContext";
 import { Helmet } from "react-helmet-async";
 import { ChevronLeft, ChevronRight, Droplets, Heart, Maximize2, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
+import { useSsrData } from "../context/SsrDataContext";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
+  const ssrProductDetail = useSsrData("productDetail");
+  const hasSsrProduct =
+    ssrProductDetail?.id === id && Boolean(ssrProductDetail.product);
+  const initialProduct = hasSsrProduct ? ssrProductDetail.product : null;
   const [selectedSide, setSelectedSide] = useState("");
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(initialProduct);
+  const [loading, setLoading] = useState(!hasSsrProduct);
   const { addToCart } = useContext(CartContext);
   const { user, token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [toast, setToast] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(initialProduct?.image || null);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
@@ -46,8 +51,12 @@ const ProductDetailPage = () => {
   const shippingPolicy = "Free shipping on orders above ₹999. Standard delivery 3-5 business days. Express shipping available. Orders dispatched within 24 hours on business days.";
 
   useEffect(() => {
+    if (hasSsrProduct) return;
+
     const fetchProduct = async () => {
       try {
+        setLoading(true);
+        setProduct(null);
         const { data } = await axios.get(`${apiUrl}/api/products/${id}`);
         setProduct(data);
         setSelectedImage(data.image);
@@ -58,7 +67,7 @@ const ProductDetailPage = () => {
       }
     };
     fetchProduct();
-  }, [id, apiUrl]);
+  }, [id, apiUrl, hasSsrProduct]);
 
   useEffect(() => {
     if (product) { fetchReviews(); fetchRelatedProducts(); }

@@ -6,24 +6,27 @@ import { CartProvider } from './context/CartContext'; // Import CartProvider
 import { AuthProvider } from './context/AuthContext'; // Import AuthProvider
 import { UIProvider } from './context/UIContext'; // Import UIProvider
 import { WishlistProvider } from './context/WishlistContext';
+import { SsrDataProvider } from './context/SsrDataContext';
 
 import App from './App';
 
-export function render(url, options) {
+export function render(url, options, ssrData = {}) {
   return renderToPipeableStream(
     <StrictMode>
       <HelmetProvider>
-        <StaticRouter location={url}>
-          <AuthProvider>
-            <CartProvider>
-              <UIProvider>
-                <WishlistProvider>
-                  <App />
-                </WishlistProvider>
-              </UIProvider>
-            </CartProvider>
-          </AuthProvider>
-        </StaticRouter>
+        <SsrDataProvider data={ssrData}>
+          <StaticRouter location={url}>
+            <AuthProvider>
+              <CartProvider>
+                <UIProvider>
+                  <WishlistProvider>
+                    <App />
+                  </WishlistProvider>
+                </UIProvider>
+              </CartProvider>
+            </AuthProvider>
+          </StaticRouter>
+        </SsrDataProvider>
       </HelmetProvider>
     </StrictMode>,
     options

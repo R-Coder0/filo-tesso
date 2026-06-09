@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { UIProvider } from './context/UIContext';
 import { WishlistProvider } from './context/WishlistContext';
+import { SsrDataProvider } from './context/SsrDataContext';
 
 import App from './App';
 
@@ -17,17 +18,19 @@ hydrateRoot(
   rootElement,
   <StrictMode>
     <HelmetProvider> {/* ✅ YE ADD KARNA HAI */}
-      <BrowserRouter>
-        <AuthProvider>
-          <CartProvider>
-            <UIProvider>
-              <WishlistProvider>
-                <App />
-              </WishlistProvider>
-            </UIProvider>
-          </CartProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <SsrDataProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <CartProvider>
+              <UIProvider>
+                <WishlistProvider>
+                  <App />
+                </WishlistProvider>
+              </UIProvider>
+            </CartProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </SsrDataProvider>
     </HelmetProvider>
   </StrictMode>
 );

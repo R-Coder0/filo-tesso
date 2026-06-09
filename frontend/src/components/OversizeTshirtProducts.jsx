@@ -2,13 +2,18 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
+import { useSsrData } from "../context/SsrDataContext";
 
 const OversizeTshirtProducts = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const ssrProducts = useSsrData("homeOversizeProducts");
+  const hasSsrProducts = Array.isArray(ssrProducts);
+  const [products, setProducts] = useState(() => (hasSsrProducts ? ssrProducts : []));
+  const [loading, setLoading] = useState(!hasSsrProducts);
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
+    if (hasSsrProducts) return;
+
     const fetchProducts = async () => {
       try {
         const { data } = await axios.get(
@@ -24,7 +29,7 @@ const OversizeTshirtProducts = () => {
     };
 
     fetchProducts();
-  }, [apiUrl]);
+  }, [apiUrl, hasSsrProducts]);
 
   return (
     <section className="relative overflow-hidden bg-white py-10 md:py-12">

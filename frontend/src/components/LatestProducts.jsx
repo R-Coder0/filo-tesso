@@ -6,10 +6,15 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ShoppingBag } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
+import { useSsrData } from "../context/SsrDataContext";
 
 const LatestProducts = () => {
-  const [latestProducts, setLatestProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const ssrProducts = useSsrData("homeLatestProducts");
+  const hasSsrProducts = Array.isArray(ssrProducts);
+  const [latestProducts, setLatestProducts] = useState(() =>
+    hasSsrProducts ? ssrProducts : []
+  );
+  const [loading, setLoading] = useState(!hasSsrProducts);
 
   const { addToCart } = useContext(CartContext);
   const { setShowCartSidebar } = useUI();
@@ -18,8 +23,9 @@ const LatestProducts = () => {
   const trackRef = useRef(null);
 
   useEffect(() => {
+    if (hasSsrProducts) return;
     fetchLatestProducts();
-  }, []);
+  }, [hasSsrProducts]);
 
   const fetchLatestProducts = async () => {
     try {
