@@ -1,7 +1,8 @@
 import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }) => {
-  const isAdmin = localStorage.getItem("isAdmin");
+  const isAdmin =
+    typeof window !== "undefined" ? localStorage.getItem("isAdmin") : null;
 
   if (!isAdmin) {
     return <Navigate to="/admin" replace />;

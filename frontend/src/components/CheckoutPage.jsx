@@ -693,14 +693,15 @@ const CheckoutPage = () => {
                     </div>
                   </button>
 
-                  {/* Divider */}
+                  {/* COD temporarily hidden */}
+                  {/* Divider
                   <div className="relative flex items-center py-2">
                     <div className="flex-grow border-t border-gray-200"></div>
                     <span className="flex-shrink mx-4 text-xs text-gray-400 uppercase tracking-wider">or</span>
                     <div className="flex-grow border-t border-gray-200"></div>
                   </div>
 
-                  {/* COD Option */}
+                  COD Option
                   <button
                     onClick={handlePlaceOrder}
                     disabled={!isFormValid || !token}
@@ -736,6 +737,7 @@ const CheckoutPage = () => {
                       </div>
                     </div>
                   </button>
+                  */}
                 </div>
               </div>
             )}

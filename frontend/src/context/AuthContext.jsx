@@ -3,15 +3,21 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import axios from "axios";
 
 export const AuthContext = createContext();
+const isBrowser = typeof window !== "undefined";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isBrowser);
 
   // ✅ Load auth safely from localStorage
   useEffect(() => {
     const loadAuth = async () => {
+      if (!isBrowser) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const stored = localStorage.getItem("auth");
         console.log("🔄 Loading auth from storage:", stored);
@@ -70,6 +76,7 @@ useEffect(() => {
         id: data.id || data._id,
         name: data.name,
         email: data.email,
+        phone: data.phone,
         coinsBalance: Number(data.coinsBalance ?? 0),
       };
       
@@ -111,6 +118,7 @@ useEffect(() => {
       id: userData.id || userData._id,
       name: userData.name,
       email: userData.email,
+      phone: userData.phone,
       coinsBalance: Number(userData.coinsBalance ?? 0),
     };
 
@@ -126,11 +134,11 @@ useEffect(() => {
 
   // ✅ Login
   // ✅ FIXED LOGIN FUNCTION
-const login = async (email, password) => {
-  console.log("🔐 Logging in with:", email);
+const login = async (identifier, password) => {
+  console.log("🔐 Logging in with:", identifier);
   const res = await axios.post(
     `${import.meta.env.VITE_API_URL}/api/users/login`,
-    { email, password }
+    { identifier, password }
   );
   console.log("✅ Login response:", res.data);
   
@@ -142,11 +150,11 @@ const login = async (email, password) => {
 };
 
   // ✅ Register
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, phone = "") => {
     console.log("📝 Registering user:", name, email);
     const res = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/users/register`,
-      { name, email, password }
+      { name, email, password, phone }
     );
     console.log("✅ Register response:", res.data);
     const { user: userData, token: jwtToken } = res.data;
@@ -201,23 +209,12 @@ const login = async (email, password) => {
     });
   };
 
-  // ✅ Show loading while initializing
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
+        loading,
         login,
         register,
         googleLogin,

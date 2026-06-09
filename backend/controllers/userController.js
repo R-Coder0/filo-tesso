@@ -16,19 +16,42 @@ function generateOTP(len = 6) {
   return s;
 }
 
+function normalizePhone(phone = "") {
+  const digits = String(phone).replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+  if (digits.length >= 12 && digits.startsWith("91")) return digits.slice(-10);
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
+function isValidPhone(phone = "") {
+  return /^\d{10}$/.test(normalizePhone(phone));
+}
+
 // -------- REGISTER WITH OTP ----------
 // -------- REGISTER WITH OTP (FIXED) ----------
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
     if (!name || !email || !password)
       return res.status(400).json({ message: "Name, email and password are required." });
     if (!validator.isEmail(email))
       return res.status(400).json({ message: "Invalid email." });
 
+    const normalizedPhone = normalizePhone(phone);
+    if (phone && !isValidPhone(phone))
+      return res.status(400).json({ message: "Please enter a valid 10-digit phone number." });
+
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing && existing.isVerified)
       return res.status(400).json({ message: "Email already registered. Please login." });
+
+    if (normalizedPhone) {
+      const phoneOwner = await User.findOne({ phone: normalizedPhone });
+      if (phoneOwner && (!existing || phoneOwner._id.toString() !== existing._id.toString())) {
+        return res.status(400).json({ message: "Phone number already registered. Please login." });
+      }
+    }
 
     const otp = generateOTP(6);
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -47,6 +70,7 @@ exports.register = async (req, res) => {
     if (existing) {
       existing.name = name;
       existing.password = hashedPassword; // ✅ Same hashing method use karo
+      existing.phone = normalizedPhone || undefined;
       existing.emailOTP = otp;
       existing.otpExpires = otpExpires;
       existing.isVerified = false;
@@ -55,6 +79,7 @@ exports.register = async (req, res) => {
       user = await User.create({
         name,
         email: email.toLowerCase(),
+        phone: normalizedPhone || undefined,
         password: hashedPassword, // ✅ Same hashing method use karo
         isVerified: false,
         emailOTP: otp,
@@ -103,7 +128,7 @@ exports.verifyEmail = async (req, res) => {
     res.json({
       message: "Email verified.",
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, phone: user.phone },
     });
   } catch (err) {
     console.error("verifyEmail error:", err);
@@ -142,62 +167,51 @@ exports.resendOTP = async (req, res) => {
 };
 
 
-// -------- LOGIN (WITH MORE DEBUG) ----------
+// -------- LOGIN ----------
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    console.log("🔐 Login attempt for:", email);
-    console.log("📥 Input password:", password);
-    
-    const user = await User.findOne({ email: email.toLowerCase() });
-    
-    if (!user) {
-      console.log("❌ User not found");
-      return res.status(400).json({ message: "Invalid email or password." });
+    const { email, identifier, password } = req.body;
+    const loginId = String(identifier || email || "").trim();
+
+    if (!loginId || !password) {
+      return res.status(400).json({ message: "Email/phone and password are required." });
     }
 
-    console.log("📋 User found:", {
-      id: user._id,
-      email: user.email,
-      hasPassword: !!user.password,
-      isVerified: user.isVerified,
-      storedHash: user.password
-    });
+    const query = validator.isEmail(loginId)
+      ? { email: loginId.toLowerCase() }
+      : { phone: normalizePhone(loginId) };
+
+    if (!validator.isEmail(loginId) && !isValidPhone(loginId)) {
+      return res.status(400).json({ message: "Please enter a valid email or phone number." });
+    }
+
+    const user = await User.findOne(query);
+    
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email/phone or password." });
+    }
 
     // ✅ FIX: Check if user has password field
     if (!user.password) {
-      console.log("❌ No password field - Google user");
       return res.status(400).json({ 
-        message: "This email is registered with Google. Please use Google login." 
+        message: "This account is registered with Google. Please use Google login." 
       });
     }
 
     if (!user.isVerified) {
-      console.log("❌ User not verified");
       return res.status(403).json({ message: "Please verify your email before login." });
     }
 
-    console.log("🔑 Comparing password...");
-    console.log("Input:", password);
-    console.log("Stored hash:", user.password);
-    
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match result:", isMatch);
 
     if (!isMatch) {
-      console.log("❌ Password doesn't match");
-      // ✅ TEMPORARY: Direct string compare for debugging
-      if (password === "1234") {
-        console.log("⚠️ But direct string match found - Hashing issue confirmed");
-      }
-      return res.status(400).json({ message: "Invalid email or password." });
+      return res.status(400).json({ message: "Invalid email/phone or password." });
     }
 
     const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET, { 
       expiresIn: "7d" 
     });
     
-    console.log("✅ Login successful");
     res.json({ 
       message: "Login successful", 
       token, 
@@ -205,6 +219,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         coinsBalance: user.coinsBalance || 0
       }
     });
@@ -246,6 +261,7 @@ exports.googleLogin = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         coinsBalance: user.coinsBalance || 0,
       },
     });
@@ -275,13 +291,15 @@ exports.getMe = async (req, res) => {
     console.log("✅ GetMe - User found:", {
       id: user._id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      phone: user.phone,
     });
 
     res.json({
       id: user._id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       coinsBalance: user.coinsBalance || 0,
     });
   } catch (err) {
@@ -348,6 +366,7 @@ exports.googleAuth = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         coinsBalance: user.coinsBalance || 0,
       },
     });
@@ -391,6 +410,7 @@ exports.updateProfile = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         coinsBalance: user.coinsBalance || 0,
       },
     });

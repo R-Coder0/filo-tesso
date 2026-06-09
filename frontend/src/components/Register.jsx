@@ -9,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const Register = () => {
   const [step, setStep] = useState("form");
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "" });
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,10 +36,11 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { name, email, password } = formData;
+      const { name, email, phone, password } = formData;
       const res = await axios.post(`${API_BASE_URL}/api/users/register`, {
         name,
         email,
+        phone,
         password,
       });
 
@@ -135,6 +136,7 @@ const Register = () => {
           id: user.id || user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           coinsBalance: Number(user.coinsBalance ?? 0),
         }, 
         token 
@@ -231,6 +233,19 @@ const Register = () => {
                   required
                   type="email"
                   placeholder="Enter your email"
+                  className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="Enter your phone number"
                   className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
                 />
               </div>

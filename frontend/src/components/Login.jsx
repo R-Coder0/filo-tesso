@@ -5,7 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 const Login = () => {
   const { login, googleLogin } = useContext(AuthContext);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -185,21 +185,21 @@ const Login = () => {
     };
   }, []);
 
-  // ✅ Email-Password login (Improved)
+  // ✅ Email/Phone-Password login (Improved)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     
     // Basic validation
-    if (!email || !password) {
-      setError("Please enter both email and password");
+    if (!identifier || !password) {
+      setError("Please enter your email/phone and password");
       setLoading(false);
       return;
     }
 
     try {
-      await login(email, password);
+      await login(identifier, password);
       const dest = localStorage.getItem("redirectAfterLogin") || "/";
       localStorage.removeItem("redirectAfterLogin");
       navigate(dest);
@@ -237,12 +237,13 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email or Phone Number</label>
             <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              inputMode="text"
+              placeholder="Enter your email or phone number"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
               disabled={loading || googleLoading}
