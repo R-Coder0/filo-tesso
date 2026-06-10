@@ -204,9 +204,9 @@ export default function Footer() {
       <div className="max-w-[1700px] mx-auto border-b border-gray-800 px-4 sm:px-6 lg:px-8 py-10">
         <div className="space-y-8">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+            <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
               Premium Streetwear Brand in India for Bold Everyday Style
-            </h2>
+            </h1>
 
             <div className="mt-4 space-y-4 leading-7 text-gray-400">
               <p>
