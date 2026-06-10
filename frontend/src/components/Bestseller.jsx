@@ -7,8 +7,9 @@ import { ShoppingBag } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 import { useSsrData } from "../context/SsrDataContext";
+import { extractProducts, getProductPath } from "../utils/products";
 
-const CATEGORIES = ["men", "women", "customize"];
+const CATEGORIES = ["men", "women"];
 
 export default function Bestsellers({
   chunkSize = 4,
@@ -41,7 +42,7 @@ export default function Bestsellers({
               params: { category: cat },
               cancelToken,
             })
-            .then((r) => (Array.isArray(r.data) ? r.data : r.data?.products || []))
+            .then((r) => extractProducts(r.data))
             .catch((error) => {
               if (axios.isCancel?.(error)) throw error;
               console.warn(`Error fetching ${cat}:`, error?.message);
@@ -129,7 +130,7 @@ export default function Bestsellers({
             Bestsellers
           </h2>
           <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-widest">
-            Top picks across Men, Women & Customize
+            Top picks across Men & Women
           </p>
         </div>
 
@@ -231,7 +232,7 @@ function BestCard({ product, apiUrl }) {
   const { addToCart } = useContext(CartContext);
   const { setShowCartSidebar } = useUI();
 
-  const id = product._id || product.id;
+  const id = product._id || product.id || product.productId;
   const name = product.name || "Product";
   const img = product.image ? `${apiUrl}${product.image}` : "/placeholder.png";
   const category = product.category || product.gender || product.segment || product.type || "";
@@ -261,7 +262,7 @@ function BestCard({ product, apiUrl }) {
     <div className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 flex flex-col">
 
       {/* Image */}
-      <Link to={`/product/${id}`} className="block relative overflow-hidden bg-gray-50">
+      <Link to={getProductPath(product)} className="block relative overflow-hidden bg-gray-50">
         <div className="aspect-[3/4] w-full">
           <img
             src={img}
@@ -288,7 +289,7 @@ function BestCard({ product, apiUrl }) {
       </Link>
 
       {/* Info */}
-      <Link to={`/product/${id}`} className="px-3 pt-2.5 pb-1 flex flex-col gap-1 flex-1">
+      <Link to={getProductPath(product)} className="px-3 pt-2.5 pb-1 flex flex-col gap-1 flex-1">
         {category && (
           <p className="text-[10px] uppercase tracking-widest text-gray-400 truncate">
             {category}

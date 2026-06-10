@@ -11,6 +11,7 @@ import { Helmet } from "react-helmet-async";
 import { ChevronLeft, ChevronRight, Droplets, Heart, Maximize2, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useSsrData } from "../context/SsrDataContext";
+import { extractProducts } from "../utils/products";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -91,7 +92,7 @@ const ProductDetailPage = () => {
     try {
       setRelatedLoading(true);
       const { data } = await axios.get(`${apiUrl}/api/products?category=${encodeURIComponent(product.category)}`);
-      setRelatedProducts((Array.isArray(data) ? data : data?.products || []).filter(p => p._id !== product._id).slice(0, 8));
+      setRelatedProducts(extractProducts(data).filter(p => p._id !== product._id).slice(0, 8));
     } catch { setRelatedProducts([]); }
     finally { setRelatedLoading(false); }
   };

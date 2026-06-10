@@ -44,7 +44,7 @@ const AdminLogin = () => {
         <div className="mb-7">
           <div className="mb-5 inline-flex h-14 w-14 items-center justify-center border border-black bg-black p-2">
             <img
-              src="/icon.png"
+              src="/logo_white.png"
               alt="Filoteso admin"
               className="h-full w-full object-contain"
             />

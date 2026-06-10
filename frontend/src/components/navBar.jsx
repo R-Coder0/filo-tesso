@@ -7,34 +7,12 @@ import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
 import logoImg from "../assets/logo.png";
-
-const GENDER_TABS = [
-  { label: "Men", value: "men", path: "/products/men" },
-  { label: "Women", value: "women", path: "/products/women" },
-];
-
-const CATEGORY_LINKS_BY_GENDER = {
-  men: [
-    { label: "OverSize Tshirt", path: "/products/men/oversize-tshirt" },
-    { label: "Polo Tshirt", path: "/products/men/polo-tshirt" },
-    { label: "Tshirt", path: "/products/men/regular-tshirt" },
-    { label: "Shirt", path: "/products/men/regular-shirt" },
-    { label: "Oversize Shirt", path: "/products/men/oversize-shirt" },
-    { label: "Jeans", path: "/products/men/jeans" },
-    { label: "Trouser", path: "/products/men/trousers" },
-  ],
-  women: [
-    { label: "Tshirt", path: "/products/women/regular-tshirt" },
-    { label: "OverSize Tshirt", path: "/products/women/oversize-tshirt" },
-    { label: "Polo Tshirt", path: "/products/women/polo-tshirt" },
-    { label: "Top", path: "/products/women/top" },
-    { label: "Co-ord Set", path: "/products/women/co-ord-set" },
-    { label: "Joggers", path: "/products/women/joggers" },
-    { label: "Trouser", path: "/products/women/trousers" },
-    { label: "Jeans", path: "/products/women/jeans" },
-    { label: "Sports", path: "/products/women/sports" },
-  ],
-};
+import { extractProducts, getProductPath } from "../utils/products";
+import {
+  CATEGORY_LINKS_BY_GENDER,
+  GENDER_TABS,
+  setStoredShopGender,
+} from "../utils/navigationCategories";
 
 const SIDE_MENU_LINKS = [
   { label: "About", path: "/#about" },
@@ -58,11 +36,16 @@ const Navbar = () => {
 
 const [selectedGender, setSelectedGender] = useState("men");
 
+const selectGender = (gender) => {
+  const nextGender = setStoredShopGender(gender);
+  setSelectedGender(nextGender);
+};
+
 useEffect(() => {
   if (location.pathname.startsWith("/products/women")) {
-    setSelectedGender("women");
+    selectGender("women");
   } else if (location.pathname.startsWith("/products/men")) {
-    setSelectedGender("men");
+    selectGender("men");
   }
 }, [location.pathname]);
 
@@ -167,11 +150,7 @@ const isCategoryActive = (item) => {
 
           const lowerQuery = nextQuery.toLowerCase();
 
-          const list = (
-            Array.isArray(response.data)
-              ? response.data
-              : response.data?.products || []
-          ).sort((a, b) => {
+          const list = extractProducts(response.data).sort((a, b) => {
             const aName = (a.name || "").toLowerCase();
             const bName = (b.name || "").toLowerCase();
 
@@ -203,7 +182,7 @@ const isCategoryActive = (item) => {
 
     const handleSuggestionClick = (product) => {
       clearSearch();
-      navigate(`/product/${product._id}`);
+      navigate(getProductPath(product));
 
       if (isMobile) setShowSearch(false);
     };
@@ -408,7 +387,7 @@ const isCategoryActive = (item) => {
     <button
       key={tab.value}
       type="button"
-      onClick={() => setSelectedGender(tab.value)}
+      onClick={() => selectGender(tab.value)}
       className={`flex h-full items-center justify-center rounded-full text-sm font-black uppercase tracking-wide transition md:text-base ${
         isActive
           ? "bg-black text-white"

@@ -90,7 +90,7 @@ const Hero = () => {
 
   return (
     <section
-      className="bg-white pb-2"
+      className="bg-white pb-4"
       aria-label="Featured collections"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -107,7 +107,7 @@ const Hero = () => {
             <Link
               key={banner.id}
               to={banner.to}
-              className="group relative block h-[86vw] max-h-[520px] w-[86vw] max-w-[520px] shrink-0 snap-start overflow-hidden bg-gray-100 sm:h-[520px] sm:w-[520px]"
+              className="group relative block h-[92vw] max-h-[620px] w-[88vw] max-w-[620px] shrink-0 snap-start overflow-hidden bg-gray-100 sm:h-[600px] sm:w-[600px] xl:h-[620px] xl:w-[620px]"
               aria-label={`Shop ${banner.id.replaceAll("-", " ")}`}
             >
               <img

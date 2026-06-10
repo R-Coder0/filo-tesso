@@ -2,9 +2,11 @@
 import React, { lazy, Suspense, memo } from "react";
 import { useLocation } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import { useUI } from "./context/UIContext"; // ✅ add this
 import Profile from "./pages/Profile";
 import Footer from "./components/Footer";
+import HomeSeoContent from "./components/HomeSeoContent";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import ReviewSubmissionPage from "./pages/Reveiwpage";
 import WishlistPage from "./pages/WishlistPage";
@@ -32,8 +34,10 @@ const Login = lazy(() => import("./components/Login"));
 const Register = lazy(() => import("./components/Register"));
 const MyOrders = lazy(() => import("./pages/MyOrders"));
 const AdminLogin = lazy(() => import("./components/Admin/AdminLogin"));
+const AdminLayout = lazy(() => import("./components/Admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./components/Admin/AdminDashboard"));
 const ManageProducts = lazy(() => import("./components/Admin/ManageProducts"));
+const InventoryPage = lazy(() => import("./components/Admin/InventoryPage"));
 const ManageOrders = lazy(() => import("./components/Admin/ManageOrders"));
 const CartSidebar = lazy(() => import("./components/CartSidebar"));
 const RequireAuth = lazy(() => import("./components/RequireAuth"));
@@ -62,10 +66,32 @@ const location = useLocation();
 
   // ✅ Check if route starts with /admin
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isHomeRoute = location.pathname === "/";
 
   return (
     <>
       {/* <MarqueeOffers/> */}
+      <Toaster
+        position="top-right"
+        gutter={10}
+        toastOptions={{
+          duration: 3200,
+          style: {
+            border: "1px solid #111827",
+            borderRadius: "10px",
+            background: "#ffffff",
+            color: "#111827",
+            fontWeight: 600,
+            boxShadow: "0 18px 45px rgba(15, 23, 42, 0.16)",
+          },
+          success: {
+            iconTheme: { primary: "#16a34a", secondary: "#ffffff" },
+          },
+          error: {
+            iconTheme: { primary: "#dc2626", secondary: "#ffffff" },
+          },
+        }}
+      />
       <Suspense fallback={<LoadingSpinner />}>
          {/* ✅ Hide Navbar on admin routes */}
           {!isAdminRoute && <Navbar />}
@@ -119,7 +145,9 @@ const location = useLocation();
               path="/admin/dashboard"
               element={
                 <ProtectedRoute needsLoginSource>
-                  <AdminDashboard />
+                  <AdminLayout>
+                    <AdminDashboard />
+                  </AdminLayout>
                 </ProtectedRoute>
               }
             />
@@ -127,7 +155,19 @@ const location = useLocation();
               path="/admin/products"
               element={
                 <ProtectedRoute needsDashboardSource>
-                  <ManageProducts />
+                  <AdminLayout>
+                    <ManageProducts />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/inventory"
+              element={
+                <ProtectedRoute needsDashboardSource>
+                  <AdminLayout>
+                    <InventoryPage />
+                  </AdminLayout>
                 </ProtectedRoute>
               }
             />
@@ -135,7 +175,29 @@ const location = useLocation();
               path="/admin/orders"
               element={
                 <ProtectedRoute needsDashboardSource>
-                  <ManageOrders />
+                  <AdminLayout>
+                    <ManageOrders view="all" />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/cancellations"
+              element={
+                <ProtectedRoute needsDashboardSource>
+                  <AdminLayout>
+                    <ManageOrders view="cancellations" />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/returns"
+              element={
+                <ProtectedRoute needsDashboardSource>
+                  <AdminLayout>
+                    <ManageOrders view="returns" />
+                  </AdminLayout>
                 </ProtectedRoute>
               }
             />

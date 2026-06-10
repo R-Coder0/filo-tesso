@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Star, Send, CheckCircle, MessageSquare, Lightbulb, User } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function ReviewSubmissionPage() {
   const [rating, setRating] = useState(0);
@@ -21,16 +22,17 @@ export default function ReviewSubmissionPage() {
 
   const handleSubmit = () => {
     if (rating === 0) {
-      alert('Please select a rating');
+      toast.error('Please select a rating');
       return;
     }
     if (!formData.name || !formData.email || !formData.review) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     
     console.log('Submitted:', { ...formData, rating });
     setSubmitted(true);
+    toast.success('Review submitted successfully');
     
     setTimeout(() => {
       setSubmitted(false);

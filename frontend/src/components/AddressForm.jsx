@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 
 const AddressForm = ({ onSave, onClose, initialData }) => {
   const [formData, setFormData] = useState({
@@ -22,7 +23,7 @@ const AddressForm = ({ onSave, onClose, initialData }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone || !formData.address)
-      return alert("Please fill all required fields");
+      return toast.error("Please fill all required fields");
     onSave(formData);
     onClose();
   };

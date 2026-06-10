@@ -1,21 +1,27 @@
 // src/components/Admin/ManageOrders.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Package, User, Calendar, CreditCard, CheckCircle, XCircle, Clock, Ban, AlertCircle, Loader, RefreshCw } from "lucide-react";
+import { Package, Calendar, CreditCard, CheckCircle, XCircle, Clock, Ban, AlertCircle, Loader, RefreshCw } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { showToastConfirm } from "../../utils/toastConfirm";
 
-const ManageOrders = () => {
+const pageTitle = {
+  all: "All Orders",
+  cancellations: "Cancellation Requests",
+  returns: "Return Requests",
+};
+
+const ManageOrders = ({ view = "all" }) => {
   const [orders, setOrders] = useState([]);
   const [cancellationRequests, setCancellationRequests] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]); // ✅ ADDED
-  const [activeTab, setActiveTab] = useState("all"); // 'all', 'cancellations', or 'returns'
+  const activeTab = view;
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [processingCancellation, setProcessingCancellation] = useState(null);
   const [processingReturn, setProcessingReturn] = useState(null); // ✅ ADDED
   const [deletingOrderId, setDeletingOrderId] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
-const navigate = useNavigate();
   // Axios instance with admin token auth
   const axiosAdmin = axios.create({
     baseURL: `${apiUrl}/api/orders`,
@@ -77,11 +83,11 @@ const navigate = useNavigate();
       await fetchCancellationRequests();
       
       setProcessingCancellation(null);
-      alert(`Cancellation ${status} successfully`);
+      toast.success(`Cancellation ${status} successfully`);
     } catch (error) {
       console.error("Error updating cancellation status", error);
       setProcessingCancellation(null);
-      alert("Failed to update cancellation status");
+      toast.error("Failed to update cancellation status");
     }
   };
 
@@ -95,27 +101,38 @@ const navigate = useNavigate();
       await fetchReturnRequests();
       
       setProcessingReturn(null);
-      alert(`Return ${status} successfully`);
+      toast.success(`Return ${status} successfully`);
     } catch (error) {
       console.error("Error updating return status", error);
       setProcessingReturn(null);
-      alert("Failed to update return status");
+      toast.error("Failed to update return status");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this order?")) return;
+  const deleteOrder = async (id) => {
     try {
       setDeletingOrderId(id);
       await axiosAdmin.delete(`/${id}`);
       await fetchOrders();
       await fetchCancellationRequests();
       await fetchReturnRequests(); // ✅ ADDED
+      toast.success("Order deleted successfully");
       setDeletingOrderId(null);
     } catch (err) {
       console.error("Failed to delete order", err);
+      toast.error("Failed to delete order");
       setDeletingOrderId(null);
     }
+  };
+
+  const handleDelete = (id) => {
+    showToastConfirm({
+      title: "Delete this order?",
+      message: "This order will be removed from the admin list.",
+      confirmText: "Delete",
+      confirmClassName: "bg-red-600 hover:bg-red-700",
+      onConfirm: () => deleteOrder(id),
+    });
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -129,11 +146,11 @@ const navigate = useNavigate();
       await fetchOrders();
       
       setUpdatingOrderId(null);
-      alert(`Order status updated to ${newStatus}`);
+      toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
       console.error("Error updating order status", error);
       setUpdatingOrderId(null);
-      alert("Failed to update order status");
+      toast.error("Failed to update order status");
     }
   };
 
@@ -227,62 +244,15 @@ const navigate = useNavigate();
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-9">
+    <div className="space-y-6">
       
-      <h2 className="text-4xl font-bold mb-8 text-center text-orange-500 uppercase">Manage Orders</h2>
-{/* Back Button */}
-<div className="mb-4">
-  <button
-    onClick={() => navigate("/admin/dashboard")}
-    className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg transition text-sm"
-  >
-    ← Back to Dashboard
-  </button>
-</div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6">
-        <button
-          className={`px-6 py-3 font-medium text-lg ${
-            activeTab === "all"
-              ? "border-b-2 border-orange-500 text-orange-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("all")}
-        >
-          All Orders ({orders.length})
-        </button>
-        <button
-          className={`px-6 py-3 font-medium text-lg relative ${
-            activeTab === "cancellations"
-              ? "border-b-2 border-orange-500 text-orange-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("cancellations")}
-        >
-          Cancellation Requests 
-          {cancellationRequests.length > 0 && (
-            <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-              {cancellationRequests.length}
-            </span>
-          )}
-        </button>
-        {/* ✅ ADDED: Return Requests Tab */}
-        <button
-          className={`px-6 py-3 font-medium text-lg relative ${
-            activeTab === "returns"
-              ? "border-b-2 border-orange-500 text-orange-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("returns")}
-        >
-          Return Requests 
-          {returnRequests.length > 0 && (
-            <span className="absolute -top-1 -right-2 bg-blue-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-              {returnRequests.length}
-            </span>
-          )}
-        </button>
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-bold uppercase tracking-[0.28em] text-gray-400">
+          Order Operations
+        </p>
+        <h2 className="text-2xl font-bold text-gray-950 md:text-3xl">
+          {pageTitle[activeTab] || "Orders"}
+        </h2>
       </div>
 
       {activeTab === "all" ? (

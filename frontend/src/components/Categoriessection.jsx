@@ -2,14 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 /* MEN IMAGES */
 import one from "../assets/mensimage/1.png";
-import two from "../assets/mensimage/2.png";
 import three from "../assets/mensimage/3.png";
-import four from "../assets/mensimage/4.png";
-import five from "../assets/mensimage/5.png";
 import six from "../assets/mensimage/6.png";
 import seven from "../assets/mensimage/7.png";
-import eight from "../assets/mensimage/8.png";
-import eleven from "../assets/mensimage/11.png";
 import menRegularTshirt from "../assets/regulartshirt.avif";
 import menOversizeTshirt from "../assets/oversizetshirt.avif";
 import menPoloTshirt from "../assets/Polo.avif";
@@ -26,13 +21,6 @@ import womenRegularTshirt from "../assets/womentshirt.avif";
 import womenOversizeTshirt from "../assets/womenoversize.avif";
 import womenPoloTshirt from "../assets/womenpolo.avif";
 
-/* CUSTOM IMAGES */
-import thirteen from "../assets/mensimage/13.svg";
-import ten from "../assets/mensimage/10.svg";
-import imagetwentyone from "../assets/custom/1.svg";
-import imagetwentytwo from "../assets/custom/2.svg";
-import imagetwentythree from "../assets/custom/3.svg";
-
 const DATA = [
   {
     key: "men",
@@ -41,14 +29,10 @@ const DATA = [
       { label: "Regular T-shirt", slug: "regular-tshirt", img: menRegularTshirt },
       { label: "Oversize T-shirt", slug: "oversize-tshirt", img: menOversizeTshirt },
       { label: "Polo T-shirts", slug: "polo-tshirt", img: menPoloTshirt },
-      { label: "Jackets", slug: "jacket", img: eleven },
       { label: "Shirts", slug: "regular-shirt", img: six },
+      { label: "Oversize Shirt", slug: "oversize-shirt", img: three },
       { label: "Trousers", slug: "trousers", img: one },
       { label: "Jeans", slug: "jeans", img: seven },
-      { label: "Oversize Shirt", slug: "oversize-shirt", img: three },
-      { label: "Plus Size", slug: "plus-size", img: two },
-      { label: "Cargos", slug: "cargos", img: eight },
-      { label: "Shoes", slug: "shoes", img: five },
     ],
   },
   {
@@ -65,17 +49,6 @@ const DATA = [
       { label: "Trousers", slug: "trousers", img: imageeighteen },
       { label: "Jeans", slug: "jeans", img: imagenineteen },
       { label: "Sports", slug: "sports", img: imagetwenty },
-    ],
-  },
-  {
-    key: "customize",
-    title: "Customize",
-    subs: [
-      { label: "Hoodies", slug: "hoodies", img: thirteen },
-      { label: "Sweatshirt", slug: "sweatshirt", img: ten },
-      { label: "Regular Couple T-shirt", slug: "regular-coupletshirt", img: imagetwentyone },
-      { label: "Oversize Couple T-shirt", slug: "oversize-coupletshirt", img: imagetwentytwo },
-      { label: "Couple Hoodies", slug: "couple-hoodies", img: imagetwentythree },
     ],
   },
 ];

@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import {
   User,
   Coins,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import MyOrders from "./MyOrders";
 import { FaHeart } from "react-icons/fa";
+import { showToastConfirm } from "../utils/toastConfirm";
 
 const AddressForm = ({ onSave, onClose, initialData }) => {
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ const AddressForm = ({ onSave, onClose, initialData }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone || !formData.address)
-      return alert("Please fill all required fields");
+      return toast.error("Please fill all required fields");
     onSave(formData);
     onClose();
   };
@@ -153,7 +155,7 @@ useEffect(() => {
     console.log("💾 Saving name:", tempName);
     
     if (!tempName.trim()) {
-      alert("Name cannot be empty");
+      toast.error("Name cannot be empty");
       return;
     }
 
@@ -175,6 +177,7 @@ useEffect(() => {
         };
         localStorage.setItem("auth", JSON.stringify(updatedAuth));
         console.log("✅ LocalStorage updated with new name:", tempName.trim());
+        toast.success("Name updated successfully");
         
         // Page refresh for changes to take effect
         setTimeout(() => {
@@ -185,7 +188,7 @@ useEffect(() => {
       setEditingName(false);
     } catch (error) {
       console.error("❌ Profile update error:", error);
-      alert("Failed to update profile. Please try again.");
+      toast.error("Failed to update profile. Please try again.");
     } finally {
       setUpdating(false);
     }
@@ -224,10 +227,19 @@ useEffect(() => {
     setShowForm(false);
   };
 
+  const deleteAddress = (id) => {
+    saveToStorage(addresses.filter((a) => a.id !== id));
+    toast.success("Address deleted successfully");
+  };
+
   const handleDelete = (id) => {
-    if (window.confirm("Delete this address?")) {
-      saveToStorage(addresses.filter((a) => a.id !== id));
-    }
+    showToastConfirm({
+      title: "Delete this address?",
+      message: "This saved address will be removed from your profile.",
+      confirmText: "Delete",
+      confirmClassName: "bg-red-600 hover:bg-red-700",
+      onConfirm: () => deleteAddress(id),
+    });
   };
 
   useEffect(() => {
@@ -662,7 +674,7 @@ useEffect(() => {
                       />
                       <button
                         onClick={() => {
-                          if (!orderId.trim()) return alert("Please enter an order ID");
+                          if (!orderId.trim()) return toast.error("Please enter an order ID");
                           window.open(
                             `https://shiprocket.co/tracking/${orderId.trim()}`,
                             "_blank"

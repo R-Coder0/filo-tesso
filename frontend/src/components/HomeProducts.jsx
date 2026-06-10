@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 import { useSsrData } from "../context/SsrDataContext";
+import { extractProducts } from "../utils/products";
 
 const HomeProducts = () => {
   const ssrProducts = useSsrData("homeProducts");
@@ -17,7 +18,7 @@ const HomeProducts = () => {
     const fetchProducts = async () => {
       try {
         const { data } = await axios.get(`${apiUrl}/api/products`);
-        const list = Array.isArray(data) ? data : data?.products || [];
+        const list = extractProducts(data);
         setProducts(list.slice(0, 8));
       } catch (error) {
         console.error("Error fetching home products:", error);

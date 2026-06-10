@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FaHandshake, FaPaperPlane } from "react-icons/fa";
-import { toast } from "react-hot-toast"; // Agar toast notification use krte ho, warna alert use kr lena
+import { toast } from "react-hot-toast";
 
 const Collaborate = () => {
   // Apni Google Apps Script URL yahan paste karein
@@ -26,7 +26,7 @@ const Collaborate = () => {
 
     try {
       // Google Apps Script ko request bhejna
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
+      await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         // Cors mode 'no-cors' zaroori hai Google Scripts ke liye client side se
         mode: "no-cors", 
@@ -48,13 +48,11 @@ const Collaborate = () => {
         message: "",
       });
       
-      // Success Message (Alert ya Toast)
-      alert("Thanks for contacting! We will get back to you soon.");
-      // toast.success("Request sent successfully!"); 
+      toast.success("Thanks for contacting! We will get back to you soon.");
 
     } catch (error) {
       console.error("Error!", error.message);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

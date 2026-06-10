@@ -1,8 +1,10 @@
 // controllers/productController.js
 const Product = require("../models/Product");
-const { CATEGORY_MAP, MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES } = require("../config/categories");
+const { CATEGORY_MAP, ALL_CATEGORIES } = require("../config/categories");
 
-const movedCustomizeTshirtSet = new Set(MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES);
+const BRAND_VENDOR = "Filo Teso";
+const DEFAULT_COLLECTION_IMAGE = "/uploads/products/productone.jpg";
+const COLLECTION_TIMESTAMP = new Date("2024-01-01T00:00:00.000Z");
 
 const SUBCATEGORY_ALIASES = {
   "co-ord-set": ["co-ord-set", "co-ord set"],
@@ -23,6 +25,41 @@ const canonicalizeSubcategory = (subcategory) => {
   const normalized = String(subcategory || "").toLowerCase().trim();
   return SUBCATEGORY_ALIASES[normalized]?.[0] || normalized;
 };
+
+const slugify = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const titleCase = (value) =>
+  String(value || "")
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const escapeHtml = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const objectIdToNumericId = (id) => {
+  const hex = String(id || "").replace(/[^a-fA-F0-9]/g, "");
+  if (!hex) return Math.floor(100000000 + Math.random() * 900000000);
+  return 100000000 + (parseInt(hex.slice(-8), 16) % 900000000);
+};
+
+const getProductNumericId = (product) =>
+  Number(product?.productId) || objectIdToNumericId(product?._id);
+
+const getProductSlug = (product) =>
+  product?.slug || slugify(product?.name) || `product-${getProductNumericId(product)}`;
 
 const buildSubcategoryMatch = (subcategoryValues) => ({
   $or: [
@@ -46,43 +83,8 @@ const buildProductFilter = (category, subcategory) => {
     return hasSubcategory ? buildSubcategoryMatch(subcategoryValues) : {};
   }
 
-  if (category === "customize") {
-    if (subcategoryValues?.some((value) => movedCustomizeTshirtSet.has(value))) {
-      return emptyFilter();
-    }
-
-    return {
-      category,
-      ...(subcategoryValues
-        ? buildSubcategoryMatch(subcategoryValues)
-        : {
-            subcategory: { $nin: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES },
-            subcategories: { $nin: MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES },
-          }),
-    };
-  }
-
-  if (category === "men" || category === "women") {
-    if (!subcategoryValues) {
-      return {
-        $or: [
-          { category },
-          {
-            category: "customize",
-            ...buildSubcategoryMatch(MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES),
-          },
-        ],
-      };
-    }
-
-    if (movedCustomizeTshirtSet.has(subcategory)) {
-      return {
-        $or: [
-          withCategoryAndSubcategory(category, subcategoryValues),
-          withCategoryAndSubcategory("customize", subcategoryValues),
-        ],
-      };
-    }
+  if (!ALL_CATEGORIES.includes(category)) {
+    return emptyFilter();
   }
 
   return {
@@ -92,22 +94,247 @@ const buildProductFilter = (category, subcategory) => {
   };
 };
 
+const getAssetBaseUrl = (req) => {
+  const configured = process.env.PUBLIC_API_URL || process.env.BASE_URL;
+  if (configured) return String(configured).replace(/\/+$/, "");
+
+  const proto = req.get("x-forwarded-proto") || req.protocol || "http";
+  const host = req.get("x-forwarded-host") || req.get("host");
+  return host ? `${proto}://${host}` : "";
+};
+
+const toAbsoluteUrl = (req, value) => {
+  if (!value) return "";
+  const src = String(value);
+  if (/^https?:\/\//i.test(src)) return src;
+  const normalized = src.startsWith("/") ? src : `/${src}`;
+  return `${getAssetBaseUrl(req)}${normalized}`;
+};
+
+const formatMoney = (value) => Number(value || 0).toFixed(2);
+
+const toIsoDate = (value) => {
+  const date = value ? new Date(value) : new Date();
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+};
+
+const getProductSubcategories = (product) => {
+  if (Array.isArray(product?.subcategories) && product.subcategories.length) {
+    return product.subcategories;
+  }
+  return product?.subcategory ? [product.subcategory] : [];
+};
+
+const getProductType = (product) => {
+  const [primarySubcategory] = getProductSubcategories(product);
+  return primarySubcategory ? titleCase(primarySubcategory) : titleCase(product?.category);
+};
+
+const getProductTags = (product) =>
+  Array.isArray(product?.tags) ? product.tags.filter(Boolean).join(", ") : "";
+
+const getProductBodyHtml = (product) => {
+  const description = product?.description || "";
+  if (/<[a-z][\s\S]*>/i.test(description)) return description;
+  return description ? `<p>${escapeHtml(description)}</p>` : "";
+};
+
+const getVariantNumericId = (product, index) => {
+  const base = getProductNumericId(product);
+  return Number(`${String(base).slice(0, 8)}${index + 1}`);
+};
+
+const toShiprocketVariant = (req, product, variant, index) => {
+  const size = String(variant?.size || "").trim();
+  const optionValues = {};
+  if (size) optionValues.Size = size;
+
+  return {
+    id: getVariantNumericId(product, index),
+    title: size || "Default",
+    price: formatMoney(product?.price?.sale),
+    compare_at_price: formatMoney(product?.price?.original),
+    sku: `FT-${getProductNumericId(product)}-${size || "DEFAULT"}`,
+    quantity: Math.max(0, Number(variant?.stock ?? product?.stock ?? 0)),
+    created_at: toIsoDate(product?.createdAt),
+    updated_at: toIsoDate(product?.updatedAt || product?.createdAt),
+    taxable: true,
+    option_values: optionValues,
+    grams: 500,
+    image: {
+      src: toAbsoluteUrl(req, product?.image),
+    },
+    weight: 0.5,
+    weight_unit: "kg",
+  };
+};
+
+const toShiprocketProduct = (req, product) => {
+  const sizeVariants = Array.isArray(product?.sizeVariants) ? product.sizeVariants : [];
+  const fallbackSizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  const variants = sizeVariants.length
+    ? sizeVariants
+    : fallbackSizes.length
+      ? fallbackSizes.map((size) => ({ size, stock: product?.stock || 0 }))
+      : [{ size: "", stock: product?.stock || 0 }];
+
+  const optionValues = variants
+    .map((variant) => String(variant?.size || "").trim())
+    .filter(Boolean);
+
+  return {
+    id: getProductNumericId(product),
+    title: product?.name || "",
+    body_html: getProductBodyHtml(product),
+    vendor: BRAND_VENDOR,
+    product_type: getProductType(product),
+    created_at: toIsoDate(product?.createdAt),
+    handle: getProductSlug(product),
+    updated_at: toIsoDate(product?.updatedAt || product?.createdAt),
+    tags: getProductTags(product),
+    status: "active",
+    variants: variants.map((variant, index) => toShiprocketVariant(req, product, variant, index)),
+    image: {
+      src: toAbsoluteUrl(req, product?.image),
+    },
+    options: optionValues.length
+      ? [
+          {
+            name: "Size",
+            values: [...new Set(optionValues)],
+          },
+        ]
+      : [],
+  };
+};
+
+const collectionIdFromHandle = (handle) => {
+  const normalized = slugify(handle);
+  let hash = 0;
+  for (let index = 0; index < normalized.length; index += 1) {
+    hash = (hash * 31 + normalized.charCodeAt(index)) >>> 0;
+  }
+  return 100000000 + (hash % 900000000);
+};
+
+const collectionToResponse = (req, collection) => ({
+  id: collection.id,
+  updated_at: toIsoDate(collection.updatedAt),
+  body_html: `<p>${escapeHtml(collection.description)}</p>`,
+  handle: collection.handle,
+  image: {
+    src: toAbsoluteUrl(req, collection.image || DEFAULT_COLLECTION_IMAGE),
+  },
+  title: collection.title,
+  created_at: toIsoDate(collection.createdAt),
+});
+
+const buildCollections = () => {
+  return ALL_CATEGORIES.flatMap((category) => {
+    const categoryCollection = {
+      id: collectionIdFromHandle(category),
+      category,
+      subcategory: null,
+      handle: category,
+      title: titleCase(category),
+      description: `${titleCase(category)} collection`,
+      image: DEFAULT_COLLECTION_IMAGE,
+      createdAt: COLLECTION_TIMESTAMP,
+      updatedAt: COLLECTION_TIMESTAMP,
+    };
+
+    const subcategoryCollections = (CATEGORY_MAP[category] || []).map((subcategory) => {
+      const handle = `${category}-${subcategory}`;
+      return {
+        id: collectionIdFromHandle(handle),
+        category,
+        subcategory,
+        handle,
+        title: `${titleCase(category)} ${titleCase(subcategory)}`,
+        description: `${titleCase(category)} ${titleCase(subcategory)} collection`,
+        image: DEFAULT_COLLECTION_IMAGE,
+        createdAt: COLLECTION_TIMESTAMP,
+        updatedAt: COLLECTION_TIMESTAMP,
+      };
+    });
+
+    return [categoryCollection, ...subcategoryCollections];
+  });
+};
+
+const findCollection = (identifier) => {
+  if (!identifier) return null;
+  const normalized = slugify(identifier);
+  const numericId = Number(identifier);
+
+  return buildCollections().find(
+    (collection) =>
+      collection.handle === normalized ||
+      collection.id === numericId ||
+      `${collection.id}` === `${identifier}`
+  );
+};
+
+const productListResponse = (products) => ({
+  data: {
+    total: products.length,
+    products,
+  },
+});
+
+const toAppProduct = (product) => {
+  const plain =
+    typeof product?.toObject === "function"
+      ? product.toObject({ virtuals: false })
+      : { ...product };
+  const numericId = getProductNumericId(plain);
+  const slug = getProductSlug(plain);
+
+  return {
+    ...plain,
+    id: numericId,
+    productId: numericId,
+    slug,
+    handle: slug,
+  };
+};
+
 // GET /api/products?category=men&subcategory=tshirts
 const getProducts = async (req, res) => {
   try {
     const rawCat = req.query.category;
     const rawSub = req.query.subcategory;
+    const rawSearch = req.query.q || req.query.search;
 
     const category = rawCat ? String(rawCat).toLowerCase().trim() : null;
     const subcategory = rawSub ? String(rawSub).toLowerCase().trim() : null;
+    const search = rawSearch ? String(rawSearch).trim() : "";
 
     const filter = buildProductFilter(category, subcategory);
+    const finalFilter = search
+      ? {
+          $and: [
+            filter,
+            {
+              $or: [
+                { name: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } },
+                { tags: { $regex: search, $options: "i" } },
+              ],
+            },
+          ],
+        }
+      : filter;
 
     const products = await Product
-      .find(filter)
+      .find(finalFilter)
       .sort({ createdAt: -1 });   // 🔥 newest first
 
-    res.json(products);
+    if (String(req.query.format || "").toLowerCase() === "shiprocket") {
+      return res.json(productListResponse(products.map((product) => toShiprocketProduct(req, product))));
+    }
+
+    res.json(products.map(toAppProduct));
   } catch (err) {
     console.error("❌ Failed to fetch products:", err);
     res.status(500).json({ message: "Failed to fetch products" });
@@ -117,9 +344,16 @@ const getProducts = async (req, res) => {
 // GET /api/products/:id
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const identifier = String(req.params.id || "").trim();
+    const lookup = /^[a-f\d]{24}$/i.test(identifier)
+      ? { _id: identifier }
+      : /^\d+$/.test(identifier)
+        ? { productId: Number(identifier) }
+        : { slug: slugify(identifier) };
+
+    const product = await Product.findOne(lookup);
     if (!product) return res.status(404).json({ message: "Product not found" });
-    res.json(product);
+    res.json(toAppProduct(product));
   } catch (err) {
     console.error("❌ Invalid product ID:", err);
     res.status(400).json({ message: "Invalid product ID" });
@@ -219,6 +453,32 @@ const getTotalVariantStock = (variants) =>
 const getUploadedFiles = (files, fieldNames) =>
   fieldNames.flatMap((fieldName) => files?.[fieldName] || []);
 
+const parseStringList = (raw) => {
+  if (typeof raw === "undefined" || raw === null) return undefined;
+  if (Array.isArray(raw)) return raw.map((item) => String(item).trim()).filter(Boolean);
+
+  const value = String(raw).trim();
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+  } catch {
+    // Fall back to comma-separated parsing below.
+  }
+
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+};
+
+const normalizeGalleryInput = (raw) => {
+  const values = parseStringList(raw);
+  if (typeof values === "undefined") return undefined;
+
+  return values.filter((item) => item.startsWith("/uploads/") || /^https?:\/\//i.test(item));
+};
+
 // POST /api/products  (multipart: image + images[])
 const addProduct = async (req, res) => {
   try {
@@ -233,6 +493,7 @@ const addProduct = async (req, res) => {
     }
     const description = String(req.body.description || "");
     const category = String(req.body.category || "").toLowerCase().trim();
+    const slug = slugify(req.body.slug || req.body.handle || name);
     const subcategories = normalizeSubcategories(req.body.subcategories, req.body.subcategory);
     const subcategory = subcategories[0] || "";
     const details = normalizeDetails(
@@ -302,6 +563,7 @@ const keywords = req.body.keywords
   },
       image: mainImage,
       gallery: galleryImages,
+      slug,
       category,
       subcategory,
       subcategories,
@@ -326,6 +588,9 @@ const updateProduct = async (req, res) => {
     const body = req.body;
 
     if (typeof body.name !== "undefined") product.name = String(body.name).trim();
+    if (typeof body.slug !== "undefined" || typeof body.handle !== "undefined") {
+      product.slug = slugify(body.slug || body.handle || product.name);
+    }
     if (typeof body.originalPrice !== "undefined") {
       product.price.original = Number(body.originalPrice);
     }
@@ -410,8 +675,12 @@ if (typeof body.keywords !== "undefined") {
     if (mainImageFile) {
       product.image = `/uploads/${mainImageFile.filename}`;
     }
-    if (galleryFiles.length) {
-      product.gallery = galleryFiles.map(file => `/uploads/${file.filename}`);
+    const existingGallery = normalizeGalleryInput(body.existingGallery);
+    if (typeof existingGallery !== "undefined" || galleryFiles.length) {
+      product.gallery = [
+        ...(existingGallery || []),
+        ...galleryFiles.map(file => `/uploads/${file.filename}`),
+      ];
     }
 
     const updatedProduct = await product.save();
@@ -445,10 +714,73 @@ const getLatestProducts = async (req, res) => {
       .sort({ createdAt: -1 }) // Newest first
       .limit(limit);
 
-    res.json(latestProducts);
+    if (String(req.query.format || "").toLowerCase() === "shiprocket") {
+      return res.json(productListResponse(latestProducts.map((product) => toShiprocketProduct(req, product))));
+    }
+
+    res.json(latestProducts.map(toAppProduct));
   } catch (err) {
     console.error("❌ Failed to fetch latest products:", err);
     res.status(500).json({ message: "Failed to fetch latest products" });
+  }
+};
+
+const getShiprocketProducts = async (req, res) => {
+  try {
+    const rawCat = req.query.category;
+    const rawSub = req.query.subcategory;
+    const category = rawCat ? String(rawCat).toLowerCase().trim() : null;
+    const subcategory = rawSub ? String(rawSub).toLowerCase().trim() : null;
+    const filter = buildProductFilter(category, subcategory);
+
+    const products = await Product.find(filter).sort({ createdAt: -1 });
+    res.json(productListResponse(products.map((product) => toShiprocketProduct(req, product))));
+  } catch (err) {
+    console.error("❌ Failed to fetch Shiprocket products:", err);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+
+const getShiprocketCollections = async (req, res) => {
+  try {
+    const collections = buildCollections().map((collection) =>
+      collectionToResponse(req, collection)
+    );
+
+    res.json({
+      data: {
+        total: collections.length,
+        collections,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Failed to fetch Shiprocket collections:", err);
+    res.status(500).json({ message: "Failed to fetch collections" });
+  }
+};
+
+const getShiprocketProductsByCollection = async (req, res) => {
+  try {
+    const identifier =
+      req.params.collection ||
+      req.params.collectionId ||
+      req.query.collection_id ||
+      req.query.collectionId ||
+      req.query.collection_handle ||
+      req.query.handle;
+
+    const collection = findCollection(identifier);
+    if (!collection) {
+      return res.json(productListResponse([]));
+    }
+
+    const filter = buildProductFilter(collection.category, collection.subcategory || null);
+    const products = await Product.find(filter).sort({ createdAt: -1 });
+
+    res.json(productListResponse(products.map((product) => toShiprocketProduct(req, product))));
+  } catch (err) {
+    console.error("❌ Failed to fetch Shiprocket collection products:", err);
+    res.status(500).json({ message: "Failed to fetch products by collection" });
   }
 };
 
@@ -459,5 +791,8 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getLatestProducts, // ✅ YEH ADD KARO
+  getShiprocketProducts,
+  getShiprocketCollections,
+  getShiprocketProductsByCollection,
 
 };

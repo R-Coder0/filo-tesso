@@ -27,7 +27,8 @@ const getApiUrl = () =>
       'http://localhost:5000',
   )
 
-const toProductList = (data) => (Array.isArray(data) ? data : data?.products || [])
+const toProductList = (data) =>
+  Array.isArray(data) ? data : data?.products || data?.data?.products || []
 
 const buildApiPath = (pathname, params = {}) => {
   const search = new URLSearchParams()

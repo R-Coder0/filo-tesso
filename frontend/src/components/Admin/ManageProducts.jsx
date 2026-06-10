@@ -1,7 +1,9 @@
 // src/components/Admin/ManageProducts.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { extractProducts } from "../../utils/products";
+import { showToastConfirm } from "../../utils/toastConfirm";
 
 // Central map: yahi se options aayenge
 const CATEGORY_MAP = {
@@ -26,21 +28,16 @@ const CATEGORY_MAP = {
     "jeans",
     "sports",
   ],
-  customize: [
-    "hoodies",
-    "sweatshirt",
-    "regular-coupletshirt",
-    "oversize-coupletshirt",
-    "couple-hoodies",
-  ],
 };
 
 const MAX_GALLERY_IMAGES = 10;
 
 const emptyProduct = {
   name: "",
+  slug: "",
   image: null,
   images: [],
+  existingGallery: [],
   originalPrice: "",
   salePrice: "",
   stock: "",
@@ -60,7 +57,6 @@ const emptyProduct = {
 };
 
 const ManageProducts = () => {
-  const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const [products, setProducts] = useState([]);
@@ -123,7 +119,7 @@ const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
     setIsLoading(true);
     try {
       const res = await axiosAdmin.get("/");
-      setProducts(res.data);
+      setProducts(extractProducts(res.data));
     } catch (err) {
       setError("Failed to load products");
     } finally {
@@ -320,14 +316,15 @@ const removeSizeVariant = (size) => {
 
     setNewProduct({
       name: product.name || "",
-originalPrice: product.price?.original || "",
-salePrice: product.price?.sale || "",
-stock: product.stock ?? "",
-sizeVariants: existingVariants,
-tags: product.tags?.join(", ") || "",
-metaTitle: product.seo?.metaTitle || "",
-metaDescription: product.seo?.metaDescription || "",
-keywords: product.seo?.keywords?.join(", ") || "",
+      slug: product.slug || product.handle || "",
+      originalPrice: product.price?.original || "",
+      salePrice: product.price?.sale || "",
+      stock: product.stock ?? "",
+      sizeVariants: existingVariants,
+      tags: product.tags?.join(", ") || "",
+      metaTitle: product.seo?.metaTitle || "",
+      metaDescription: product.seo?.metaDescription || "",
+      keywords: product.seo?.keywords?.join(", ") || "",
       description: product.description || "",
       details: existingDetails.join(", "),
       detailsArray: existingDetails,
@@ -335,6 +332,7 @@ keywords: product.seo?.keywords?.join(", ") || "",
       washCareArray: existingWashCare,
       image: null,
       images: [],
+      existingGallery: product.gallery || [],
       category: product.category || "",
       subcategory: selectedSubcategories[0] || "",
       subcategories: selectedSubcategories,
@@ -342,7 +340,15 @@ keywords: product.seo?.keywords?.join(", ") || "",
 
     setExistingMainImage(product.image ? `${apiUrl}${product.image}` : "");
     setMainPreview(""); // only show existing until user selects new
-    setGalleryPreviews([]); // fresh
+    setGalleryPreviews(
+      (product.gallery || []).map((path, index) => ({
+        id: `existing-${index}-${path}`,
+        file: null,
+        path,
+        existing: true,
+        url: /^https?:\/\//i.test(path) ? path : `${apiUrl}${path}`,
+      }))
+    );
     setDetailInput("");
     setWashCareInput("");
     setSizeDraft({ size: "", stock: "" });
@@ -367,15 +373,17 @@ keywords: product.seo?.keywords?.join(", ") || "",
 
   const handleGalleryChange = (fileList) => {
     const selectedFiles = fileList ? Array.from(fileList) : [];
-    const files = selectedFiles.slice(0, MAX_GALLERY_IMAGES);
+    const existingItems = galleryPreviews.filter((g) => g.existing);
+    const availableSlots = Math.max(0, MAX_GALLERY_IMAGES - existingItems.length);
+    const files = selectedFiles.slice(0, availableSlots);
 
-    // cleanup old previews
+    // cleanup old newly selected previews; keep existing image URLs intact
     galleryPreviews.forEach((g) => {
-      if (g.url?.startsWith("blob:")) URL.revokeObjectURL(g.url);
+      if (!g.existing && g.url?.startsWith("blob:")) URL.revokeObjectURL(g.url);
     });
 
-    if (selectedFiles.length > MAX_GALLERY_IMAGES) {
-      setError(`Maximum ${MAX_GALLERY_IMAGES} gallery images allowed. First ${MAX_GALLERY_IMAGES} selected images will be uploaded.`);
+    if (selectedFiles.length > availableSlots) {
+      setError(`Maximum ${MAX_GALLERY_IMAGES} gallery images allowed. Remove existing images to add more.`);
     } else {
       setError(null);
     }
@@ -386,8 +394,13 @@ keywords: product.seo?.keywords?.join(", ") || "",
       url: URL.createObjectURL(file),
     }));
 
-    setNewProduct((p) => ({ ...p, images: files }));
-    setGalleryPreviews(mapped);
+    const nextPreviews = [...existingItems, ...mapped];
+    setNewProduct((p) => ({
+      ...p,
+      images: files,
+      existingGallery: existingItems.map((item) => item.path).filter(Boolean),
+    }));
+    setGalleryPreviews(nextPreviews);
   };
 
   const removeGalleryItem = (id) => {
@@ -396,7 +409,51 @@ keywords: product.seo?.keywords?.join(", ") || "",
 
     const nextPreviews = galleryPreviews.filter((g) => g.id !== id);
     setGalleryPreviews(nextPreviews);
-    setNewProduct((p) => ({ ...p, images: nextPreviews.map((x) => x.file) }));
+    setNewProduct((p) => ({
+      ...p,
+      images: nextPreviews.filter((x) => !x.existing && x.file).map((x) => x.file),
+      existingGallery: nextPreviews.filter((x) => x.existing && x.path).map((x) => x.path),
+    }));
+  };
+
+  const appendProductFormData = (formData, { includeExistingGallery = false } = {}) => {
+    const detailsForSubmit = getDetailsForSubmit();
+    const washCareForSubmit = getWashCareForSubmit();
+    const subcategoriesForSubmit = newProduct.subcategories || [];
+    const primarySubcategory = subcategoriesForSubmit[0] || "";
+
+    formData.append("name", newProduct.name);
+    formData.append("slug", newProduct.slug);
+    formData.append("originalPrice", newProduct.originalPrice);
+    formData.append("salePrice", newProduct.salePrice);
+    formData.append("stock", newProduct.stock);
+    formData.append("sizeVariants", JSON.stringify(newProduct.sizeVariants || []));
+    formData.append("tags", newProduct.tags);
+    formData.append("metaTitle", newProduct.metaTitle);
+    formData.append("metaDescription", newProduct.metaDescription);
+    formData.append("keywords", newProduct.keywords);
+    formData.append("description", newProduct.description);
+    formData.append("category", newProduct.category);
+    formData.append("subcategory", primarySubcategory);
+    formData.append("subcategories", JSON.stringify(subcategoriesForSubmit));
+
+    detailsForSubmit.forEach((detail) => formData.append("details", detail));
+    washCareForSubmit.forEach((item) => formData.append("washCare", item));
+
+    if (includeExistingGallery) {
+      formData.append("existingGallery", JSON.stringify(newProduct.existingGallery || []));
+    }
+
+    if (newProduct.image) formData.append("image", newProduct.image);
+
+    if (newProduct.images?.length > 0) {
+      newProduct.images.slice(0, MAX_GALLERY_IMAGES).forEach((img) => formData.append("images", img));
+    }
+
+    return {
+      subcategoriesForSubmit,
+      primarySubcategory,
+    };
   };
 
   const handleAddOrUpdate = async (e) => {
@@ -407,83 +464,53 @@ keywords: product.seo?.keywords?.join(", ") || "",
     try {
       if (!newProduct.category) throw new Error("Please select a category");
       if (!newProduct.subcategories?.length) throw new Error("Please select at least one subcategory");
-      const detailsForSubmit = getDetailsForSubmit();
-      const washCareForSubmit = getWashCareForSubmit();
-      const subcategoriesForSubmit = newProduct.subcategories || [];
-      const primarySubcategory = subcategoriesForSubmit[0] || "";
 
       if (editingId) {
-        // ✅ Update via JSON (images optional)
-        await axiosAdmin.put(`/${editingId}`, {
-          name: newProduct.name,
-          originalPrice: newProduct.originalPrice,
-salePrice: newProduct.salePrice,
-stock: newProduct.stock,
-sizeVariants: newProduct.sizeVariants,
-tags: newProduct.tags,
-metaTitle: newProduct.metaTitle,
-          metaDescription: newProduct.metaDescription,
-keywords: newProduct.keywords,  
-          description: newProduct.description,
-          details: detailsForSubmit,
-          washCare: washCareForSubmit,
-          category: newProduct.category,
-          subcategory: primarySubcategory,
-          subcategories: subcategoriesForSubmit,
-        });
-
-        // NOTE: If you want to update main/gallery images in edit mode,
-        // you need backend endpoint for multipart update. Currently edit = JSON only (as you had).
+        const formData = new FormData();
+        appendProductFormData(formData, { includeExistingGallery: true });
+        await axiosAdmin.put(`/${editingId}`, formData);
       } else {
         // ✅ Create with multipart (images + fields)
         const formData = new FormData();
-        formData.append("name", newProduct.name);
-       formData.append("originalPrice", newProduct.originalPrice);
-formData.append("salePrice", newProduct.salePrice);
-formData.append("stock", newProduct.stock);
-formData.append("sizeVariants", JSON.stringify(newProduct.sizeVariants || []));
-formData.append("tags", newProduct.tags);
-formData.append("metaTitle", newProduct.metaTitle);
-formData.append("metaDescription", newProduct.metaDescription);
-formData.append("keywords", newProduct.keywords);
-        formData.append("description", newProduct.description);
-        formData.append("category", newProduct.category);
-        formData.append("subcategory", primarySubcategory);
-        formData.append("subcategories", JSON.stringify(subcategoriesForSubmit));
-
-        detailsForSubmit.forEach((detail) => formData.append("details", detail));
-        washCareForSubmit.forEach((item) => formData.append("washCare", item));
-
-        if (newProduct.image) formData.append("image", newProduct.image);
-
-        if (newProduct.images?.length > 0) {
-          newProduct.images.slice(0, MAX_GALLERY_IMAGES).forEach((img) => formData.append("images", img));
-        }
+        appendProductFormData(formData);
 
         await axiosAdmin.post(`/`, formData);
       }
 
       await fetchProducts();
       closeModal();
+      toast.success(editingId ? "Product updated successfully" : "Product added successfully");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Failed to save product");
+      toast.error(err.response?.data?.message || err.message || "Failed to save product");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
+  const deleteProduct = async (id) => {
     setIsLoading(true);
     setError(null);
     try {
       await axiosAdmin.delete(`/${id}`);
       fetchProducts();
+      toast.success("Product deleted successfully");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete product");
+      toast.error(err.response?.data?.message || "Failed to delete product");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDelete = (id) => {
+    showToastConfirm({
+      title: "Delete this product?",
+      message: "This product will be removed from the catalog.",
+      confirmText: "Delete",
+      confirmClassName: "bg-red-600 hover:bg-red-700",
+      onConfirm: () => deleteProduct(id),
+    });
   };
 
   return (
@@ -499,13 +526,6 @@ formData.append("keywords", newProduct.keywords);
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={() => navigate("/admin/dashboard")}
-              className="px-4 py-2 border border-black bg-transparent cursor-pointer hover:bg-black hover:text-white text-gray-800 font-medium"
-            >
-              ← Back
-            </button>
-
             <button
               onClick={openAddModal}
               className="px-4 py-2 bg-black hover:bg-transparent hover:text-black border border-black text-white font-medium cursor-pointer shadow-sm"
@@ -574,6 +594,12 @@ formData.append("keywords", newProduct.keywords);
                               {getProductSubcategories(product).length
                                 ? ` / ${getProductSubcategories(product).map(formatSubcategory).join(", ")}`
                                 : ""}
+                            </p>
+                          )}
+                          {(product.productId || product.id || product.slug || product.handle) && (
+                            <p className="mt-1 text-[11px] text-gray-500">
+                              ID: {product.productId || product.id}
+                              {(product.slug || product.handle) ? ` / Slug: ${product.slug || product.handle}` : ""}
                             </p>
                           )}
 
@@ -728,6 +754,11 @@ formData.append("keywords", newProduct.keywords);
                   {galleryPreviews.map((g) => (
                     <div key={g.id} className="relative group overflow-hidden border bg-white">
                       <img src={g.url} alt="Gallery" className="w-full h-20 object-cover" />
+                      {g.existing && (
+                        <span className="absolute bottom-1 left-1 rounded bg-white/85 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700">
+                          Existing
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeGalleryItem(g.id)}
@@ -772,6 +803,22 @@ formData.append("keywords", newProduct.keywords);
               />
             </div>
 
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Slug / Handle
+              </label>
+              <input
+                type="text"
+                value={newProduct.slug}
+                onChange={(e) => setNewProduct({ ...newProduct, slug: e.target.value })}
+                className="w-full p-3 border border-gray-300 focus:outline-none focus:border-black"
+                placeholder="auto-generated from product name if empty"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Used as product handle for Shiprocket/catalog URLs.
+              </p>
+            </div>
+
             {/* Category */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -795,7 +842,6 @@ formData.append("keywords", newProduct.keywords);
                 </option>
                 <option value="men">Men</option>
                 <option value="women">Women</option>
-                <option value="customize">Customize</option>
               </select>
             </div>
 

@@ -5,8 +5,9 @@ import ProductCard from "./ProductCard";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaFilter, FaSearch } from "react-icons/fa";
 import { useSsrData } from "../context/SsrDataContext";
+import { extractProducts } from "../utils/products";
 
-const CATS = ["all", "men", "women", "customize"];
+const CATS = ["all", "men", "women"];
 
 // These MUST match the slugs you use in Navbar.jsx
 const SUB_MAP = {
@@ -32,14 +33,6 @@ const SUB_MAP = {
     "trousers",
     "jeans",
     "sports",
-  ],
-  customize: [
-    "all",
-    "hoodies",
-    "sweatshirt",
-    "regular-coupletshirt",
-    "oversize-coupletshirt",
-    "couple-hoodies"
   ],
 };
 
@@ -129,7 +122,7 @@ const ProductList = () => {
         const qs = q.toString() ? `?${q}` : "";
 
         const { data } = await axios.get(`${apiUrl}/api/products${qs}`);
-        const list = Array.isArray(data) ? data : data?.products || [];
+        const list = extractProducts(data);
         setProducts(list);
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -147,13 +140,14 @@ const ProductList = () => {
     let filtered = products.filter((product) =>
       product.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const getSalePrice = (product) => Number(product?.price?.sale ?? product?.price ?? 0);
 
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "price-low":
-          return (a.price || 0) - (b.price || 0);
+          return getSalePrice(a) - getSalePrice(b);
         case "price-high":
-          return (b.price || 0) - (a.price || 0);
+          return getSalePrice(b) - getSalePrice(a);
         case "name":
         default:
           return (a.name || "").localeCompare(b.name || "");
@@ -174,7 +168,6 @@ const ProductList = () => {
       all: "All Products",
       men: "Men's",
       women: "Women's",
-      customize: "Customize",
     };
     return labels[category] || titleCase(category);
   };

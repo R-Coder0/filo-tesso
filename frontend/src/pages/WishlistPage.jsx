@@ -1,6 +1,7 @@
 import React from "react";
 import { useWishlist } from "../context/WishlistContext";
 import { useNavigate } from "react-router-dom";
+import { getProductPath } from "../utils/products";
 
 const WishlistPage = () => {
   const { wishlist, removeFromWishlist } = useWishlist();
@@ -33,7 +34,7 @@ const WishlistPage = () => {
             <img
               src={`${import.meta.env.VITE_API_URL}${item.image}`}
               alt={item.name}
-              onClick={() => navigate(`/product/${item._id}`)}
+              onClick={() => navigate(getProductPath(item))}
               className="w-full h-48 object-cover cursor-pointer hover:scale-105 transition-transform"
             />
             <div className="p-3 space-y-1">

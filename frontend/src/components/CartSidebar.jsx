@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiX } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 const formatINR = (n) =>
   new Intl.NumberFormat("en-IN", {
@@ -34,7 +35,7 @@ const CartSidebar = ({ onClose }) => {
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      alert("Your cart is empty.");
+      toast.error("Your cart is empty.");
       return;
     }
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import { toast } from "react-hot-toast";
 
 // Static referral codes
 const REFERRAL_CODES = {
@@ -206,10 +207,10 @@ const CheckoutPage = () => {
     const code = referralCode.trim().toUpperCase();
     if (REFERRAL_CODES[code]) {
       setReferralDiscount(REFERRAL_CODES[code]);
-      alert(`Referral code applied! You got ${REFERRAL_CODES[code] * 100}% off.`);
+      toast.success(`Referral code applied! You got ${REFERRAL_CODES[code] * 100}% off.`);
     } else {
       setReferralDiscount(0);
-      alert("Invalid referral code.");
+      toast.error("Invalid referral code.");
     }
   };
 
@@ -249,8 +250,8 @@ const CheckoutPage = () => {
      COD FLOW
   ------------------------------*/
   const handlePlaceOrder = async () => {
-    if (!token) return alert("Please login to place order.");
-    if (!isFormValid) return alert("Please fill in all required fields.");
+    if (!token) return toast.error("Please login to place order.");
+    if (!isFormValid) return toast.error("Please fill in all required fields.");
 
     try {
       const form = new FormData();
@@ -311,7 +312,7 @@ const CheckoutPage = () => {
       navigate("/order-confirmation", { state: orderDetails });
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Failed to place order. Please try again.");
+      toast.error(err?.response?.data?.message || "Failed to place order. Please try again.");
     }
   };
 
@@ -319,11 +320,11 @@ const CheckoutPage = () => {
      RAZORPAY FLOW
   ------------------------------*/
   const handleOnlinePayment = async () => {
-    if (!token) return alert("Please login to place order.");
-    if (!isFormValid) return alert("Please fill in all required fields.");
+    if (!token) return toast.error("Please login to place order.");
+    if (!isFormValid) return toast.error("Please fill in all required fields.");
 
     const res = await loadRazorpayScript();
-    if (!res) return alert("Razorpay SDK failed to load. Check your connection.");
+    if (!res) return toast.error("Razorpay SDK failed to load. Check your connection.");
 
     try {
       // create order on server
@@ -401,7 +402,7 @@ const CheckoutPage = () => {
             navigate("/order-confirmation", { state: orderDetails });
           } catch (err) {
             console.error(err);
-            alert("Payment verified but order creation failed. Please contact support.");
+            toast.error("Payment verified but order creation failed. Please contact support.");
           }
         },
       };
@@ -409,12 +410,12 @@ const CheckoutPage = () => {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (response) {
         console.error("Razorpay payment failed:", response?.error);
-        alert(response?.error?.description || "Payment failed. Please try again.");
+        toast.error(response?.error?.description || "Payment failed. Please try again.");
       });
       rzp.open();
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Payment initialization failed.");
+      toast.error(err?.response?.data?.message || "Payment initialization failed.");
     }
   };
 

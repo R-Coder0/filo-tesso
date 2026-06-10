@@ -1,6 +1,20 @@
 const mongoose = require("mongoose");
 const { CATEGORY_MAP, ALL_CATEGORIES } = require("../config/categories");
 
+const slugify = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const objectIdToNumericId = (id) => {
+  const hex = String(id || "").replace(/[^a-fA-F0-9]/g, "");
+  if (!hex) return Math.floor(100000000 + Math.random() * 900000000);
+  return 100000000 + (parseInt(hex.slice(-8), 16) % 900000000);
+};
+
 const isAllowedSubcategory = function (val) {
   const cat = this.category?.toLowerCase();
   if (!cat || !val) return false;
@@ -9,6 +23,17 @@ const isAllowedSubcategory = function (val) {
 };
 
 const productSchema = new mongoose.Schema({
+  productId: {
+    type: Number,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
+  slug: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  },
   name: { type: String, required: true, trim: true },
   image: { type: String, required: true },
   gallery: { type: [String], default: [] },
@@ -99,6 +124,60 @@ seo: {
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+productSchema.index({ slug: 1 }, { unique: true, sparse: true });
+
+productSchema.pre("validate", async function ensureCatalogIdentifiers(next) {
+  try {
+    if (!this.productId) {
+      let candidate = objectIdToNumericId(this._id);
+      let exists = await this.constructor.exists({
+        productId: candidate,
+        _id: { $ne: this._id },
+      });
+
+      while (exists) {
+        candidate = Math.floor(100000000 + Math.random() * 900000000);
+        exists = await this.constructor.exists({
+          productId: candidate,
+          _id: { $ne: this._id },
+        });
+      }
+
+      this.productId = candidate;
+    }
+
+    if (!this.slug || this.isModified("name")) {
+      const baseSlug = slugify(this.slug || this.name) || `product-${this.productId}`;
+      let candidateSlug = baseSlug;
+      let suffix = 2;
+      let exists = await this.constructor.exists({
+        slug: candidateSlug,
+        _id: { $ne: this._id },
+      });
+
+      while (exists) {
+        candidateSlug = `${baseSlug}-${suffix}`;
+        suffix += 1;
+        exists = await this.constructor.exists({
+          slug: candidateSlug,
+          _id: { $ne: this._id },
+        });
+      }
+
+      this.slug = candidateSlug;
+    }
+
+    this.updatedAt = new Date();
+    next();
+  } catch (error) {
+    next(error);
   }
 });
 

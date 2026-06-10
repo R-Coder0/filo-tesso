@@ -4,6 +4,7 @@ import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 import { FaEye } from "react-icons/fa";
 import { ShoppingBag } from "lucide-react";
+import { getProductPath } from "../utils/products";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useContext(CartContext);
@@ -32,7 +33,7 @@ const ProductCard = ({ product }) => {
     e.stopPropagation();
     if (product?.stock === 0) return;
     if (product?.sizeVariants?.length > 0 || product?.sizes?.length > 0) {
-      navigate(`/product/${product?._id}`);
+      navigate(getProductPath(product));
       return;
     }
     addToCart(product);
@@ -43,7 +44,7 @@ const ProductCard = ({ product }) => {
     e.stopPropagation();
     if (product?.stock === 0) return;
     if (product?.sizeVariants?.length > 0 || product?.sizes?.length > 0) {
-      navigate(`/product/${product?._id}`);
+      navigate(getProductPath(product));
       return;
     }
     addToCart(product);
@@ -57,7 +58,7 @@ const ProductCard = ({ product }) => {
   };
 
   const handleViewDetails = () => {
-    navigate(`/product/${product?._id}`);
+    navigate(getProductPath(product));
   };
 
   const imgSrc = product?.image

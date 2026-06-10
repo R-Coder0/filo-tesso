@@ -7,6 +7,7 @@ import { ShoppingBag } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 import { useSsrData } from "../context/SsrDataContext";
+import { extractProducts, getProductPath } from "../utils/products";
 
 const LatestProducts = () => {
   const ssrProducts = useSsrData("homeLatestProducts");
@@ -30,7 +31,7 @@ const LatestProducts = () => {
   const fetchLatestProducts = async () => {
     try {
       const response = await axios.get(`${apiUrl}/api/products/latest?limit=20`);
-      setLatestProducts(response.data);
+      setLatestProducts(extractProducts(response.data));
     } catch (error) {
       console.error("Error fetching latest products:", error);
     } finally {
@@ -129,7 +130,7 @@ const LatestProducts = () => {
                 >
                   {/* Image */}
                   <Link
-                    to={`/product/${product._id}`}
+                    to={getProductPath(product)}
                     className="block relative overflow-hidden bg-gray-50"
                   >
                     <div className="aspect-[3/4] w-full">
@@ -156,7 +157,7 @@ const LatestProducts = () => {
 
                   {/* Info */}
                   <Link
-                    to={`/product/${product._id}`}
+                    to={getProductPath(product)}
                     className="px-3 pt-2.5 pb-1 flex flex-col gap-1 flex-1"
                   >
                     {product.category && (

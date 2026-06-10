@@ -6,6 +6,7 @@ import {
   Package, Calendar, CreditCard, Coins, FileText, Image, 
   Clock, CheckCircle, XCircle, Ban, Loader 
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const MyOrders = () => {
   const { user, token } = useContext(AuthContext);
@@ -62,11 +63,11 @@ const MyOrders = () => {
       setOrderToCancel(null);
       setCancellationReason("");
       setCancellingOrderId(null);
-      alert(data.message);
+      toast.success(data.message || "Order cancellation requested");
     } catch (error) {
       console.error('Cancellation failed:', error);
       setCancellingOrderId(null);
-      alert(error.response?.data?.message || 'Failed to cancel order');
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
     }
   };
 
@@ -92,11 +93,11 @@ const MyOrders = () => {
       setOrderToReturn(null);
       setReturnReason("");
       setReturningOrderId(null);
-      alert(data.message);
+      toast.success(data.message || "Return request submitted");
     } catch (error) {
       console.error('Return request failed:', error);
       setReturningOrderId(null);
-      alert(error.response?.data?.message || 'Failed to request return');
+      toast.error(error.response?.data?.message || 'Failed to request return');
     }
   };
 
