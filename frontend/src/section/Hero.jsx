@@ -1,53 +1,143 @@
-import React, { useState } from 'react';
-import imageone from "../assets/1hero.webp"
-import imagetwo from "../assets/2hero.webp"
-import imagethree from "../assets/3hero.webp"
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import heroOne from "../assets/background/1st.webp";
+import heroTwo from "../assets/background/2nd.webp";
+import heroThree from "../assets/background/3rd.webp";
+import jeansImage from "../assets/background/4th.webp";
+
+const SLIDE_DELAY = 4800;
+
+const heroBanners = [
+  {
+    id: "summer-collection",
+    to: "/products/men/jeans",
+    image: jeansImage,
+    alt: "Filo Teso jeans collection",
+    position: "object-center",
+  },
+  {
+    id: "new-arrivals",
+    to: "/products?sort=newest",
+    image: heroTwo,
+    alt: "Filo Teso new season looks",
+    position: "object-center",
+  },
+  {
+    id: "oversize-tshirts",
+    to: "/products/men/oversize-tshirt",
+    image: heroThree,
+    alt: "Filo Teso oversize t-shirt collection",
+    position: "object-center",
+  },
+  {
+    id: "shirts",
+    to: "/products/men/regular-shirt",
+    image: heroOne,
+    alt: "Filo Teso shirt collection",
+    position: "object-center",
+  },
+];
 
 const Hero = () => {
+  const trackRef = useRef(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const slides = [
-    { id: 1, image: imageone },
-    { id: 2, image: imagetwo },
-    { id: 3, image: imagethree }
-  ];
+  const scrollToSlide = (index, behavior = "smooth") => {
+    const track = trackRef.current;
+    const target = track?.children[index];
+
+    if (!track || !target) {
+      setCurrentSlide(index);
+      return;
+    }
+
+    track.scrollTo({
+      left: target.offsetLeft - track.offsetLeft,
+      behavior,
+    });
+    setCurrentSlide(index);
+  };
+
+  const syncCurrentSlide = () => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    Array.from(track.children).forEach((item, index) => {
+      const distance = Math.abs(item.offsetLeft - track.offsetLeft - track.scrollLeft);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setCurrentSlide(closestIndex);
+  };
+
+  useEffect(() => {
+    if (isPaused) return undefined;
+
+    const timer = setInterval(() => {
+      const nextSlide = (currentSlide + 1) % heroBanners.length;
+      scrollToSlide(nextSlide);
+    }, SLIDE_DELAY);
+
+    return () => clearInterval(timer);
+  }, [currentSlide, isPaused]);
 
   return (
-    <section className="relative h- lg:h-[100vh] md:h-[400px] h-[200px] overflow-hidden bg-white">
-      {/* Slides Container */}
-      <div className="relative h-full">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <img
-              src={slide.image}
-              alt={`Slide ${slide.id}`}
-              className="w-full md:h-full h-[210px] md:object-cover"
-            />
-          </div>
-        ))}
+    <section
+      className="bg-white pb-2"
+      aria-label="Featured collections"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={() => setIsPaused(false)}
+    >
+      <div className="relative overflow-hidden">
+        <div
+          ref={trackRef}
+          onScroll={syncCurrentSlide}
+          className="hide-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth px-3 gap-2 lg:px-5"
+        >
+          {heroBanners.map((banner, index) => (
+            <Link
+              key={banner.id}
+              to={banner.to}
+              className="group relative block h-[86vw] max-h-[520px] w-[86vw] max-w-[520px] shrink-0 snap-start overflow-hidden bg-gray-100 sm:h-[520px] sm:w-[520px]"
+              aria-label={`Shop ${banner.id.replaceAll("-", " ")}`}
+            >
+              <img
+                src={banner.image}
+                alt={banner.alt}
+                className={`h-full w-full object-cover ${banner.position} transition duration-700 group-hover:scale-[1.025]`}
+                loading={index < 2 ? "eager" : "lazy"}
+                fetchPriority={index < 2 ? "high" : "auto"}
+              />
+            </Link>
+          ))}
+        </div>
       </div>
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
-        {slides.map((_, index) => (
+      <div className="mt-3 flex items-center justify-center gap-2">
+        {heroBanners.map((banner, index) => (
           <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 transition-all duration-300 rounded-full ${
-              index === currentSlide
-                ? 'bg-white scale-125'
-                : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+            key={banner.id}
+            type="button"
+            onClick={() => scrollToSlide(index)}
+            className={`h-2 rounded-full transition-all ${
+              index === currentSlide ? "w-7 bg-[#2589f5]" : "w-2 bg-gray-300"
             }`}
+            aria-label={`Go to hero banner ${index + 1}`}
+            aria-current={index === currentSlide ? "true" : undefined}
           />
         ))}
       </div>
     </section>
   );
-};   
+};
 
 export default Hero;

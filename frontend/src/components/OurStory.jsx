@@ -11,7 +11,7 @@ import img4 from '../assets/storyimage/10.jpg';
 
 export default function OurStory() {
   return (
-    <section className="max-w-[1700px] mx-auto bg-white py-2">
+    <section id="about" className="max-w-[1700px] mx-auto scroll-mt-48 bg-white py-2">
       <div className="mx-auto px-2 lg:px-6">
         <div className="flex flex-col lg:flex-row lg:items-start">
 

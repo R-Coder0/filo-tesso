@@ -7,17 +7,20 @@ const MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES = [
 
 module.exports.CATEGORY_MAP = {
   men: [
-    "regular-tshirt",
     "oversize-tshirt",
     "polo-tshirt",
-    "jacket",
+    "regular-tshirt",
     "regular-shirt",
-    "trousers",
-    "jeans",
     "oversize-shirt",
+    "jeans",
+    "trousers",
+    "sneakers",
+    "perfume",
+    // Legacy values kept valid so older products can still be edited/saved.
+    "plus-shirt",
     "plus-size",
-    "cargos",
     "shoes",
+    "perfumes",
   ],
   women: [
     "regular-tshirt",

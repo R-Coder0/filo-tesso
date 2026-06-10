@@ -7,6 +7,13 @@ const movedCustomizeTshirtSet = new Set(MOVED_CUSTOMIZE_TSHIRT_SUBCATEGORIES);
 const SUBCATEGORY_ALIASES = {
   "co-ord-set": ["co-ord-set", "co-ord set"],
   "co-ord set": ["co-ord-set", "co-ord set"],
+  "oversize-shirt": ["oversize-shirt", "plus-shirt", "plus-size"],
+  "plus-shirt": ["oversize-shirt", "plus-shirt", "plus-size"],
+  "plus-size": ["oversize-shirt", "plus-shirt", "plus-size"],
+  sneakers: ["sneakers", "shoes"],
+  shoes: ["sneakers", "shoes"],
+  perfume: ["perfume", "perfumes"],
+  perfumes: ["perfume", "perfumes"],
 };
 
 const getSubcategoryValues = (subcategory) =>
