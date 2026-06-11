@@ -6,7 +6,6 @@ import { Toaster } from "react-hot-toast";
 import { useUI } from "./context/UIContext"; // ✅ add this
 import Profile from "./pages/Profile";
 import Footer from "./components/Footer";
-import HomeSeoContent from "./components/HomeSeoContent";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import ReviewSubmissionPage from "./pages/Reveiwpage";
 import WishlistPage from "./pages/WishlistPage";

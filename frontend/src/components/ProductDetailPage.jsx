@@ -5,10 +5,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
-import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp, FaShareAlt } from "react-icons/fa";
+import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
 import { Helmet } from "react-helmet-async";
-import { ChevronLeft, ChevronRight, Droplets, Heart, Maximize2, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Droplets, Heart, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useSsrData } from "../context/SsrDataContext";
 import { extractProducts } from "../utils/products";
@@ -31,7 +31,7 @@ const ProductDetailPage = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [customFile, setCustomFile] = useState(null);
-  const [openFaq, setOpenFaq] = useState("description");
+  const [openFaq, setOpenFaq] = useState("");
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -41,7 +41,6 @@ const ProductDetailPage = () => {
   const [reviewError, setReviewError] = useState("");
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
-  const [imgZoom, setImgZoom] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -290,36 +289,12 @@ const ProductDetailPage = () => {
         </div>
       )}
 
-      {imgZoom && currentImage && (
-        <div
-          className="fixed inset-0 z-[80] bg-black/90 p-4 md:p-8"
-          onClick={() => setImgZoom(false)}
-        >
-          <button
-            type="button"
-            onClick={() => setImgZoom(false)}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center border border-white/30 bg-white/10 text-white transition hover:bg-white hover:text-black"
-            aria-label="Close full image"
-          >
-            <FaTimes className="text-sm" />
-          </button>
-          <div className="flex h-full w-full items-center justify-center">
-            <img
-              src={`${apiUrl}${currentImage}`}
-              alt={`${product.name} full view`}
-              className="max-h-full max-w-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
-
       <div className="min-h-screen bg-gray-50">
 
         {/* ── Breadcrumb Bar ── */}
         <div className="bg-white border-b border-gray-200 sticky top-[76px] z-30">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 h-11 flex items-center justify-between">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-xs font-semibold uppercase tracking-widest">
+          <div className="max-w-[1700px] mx-auto px-4 md:px-6 h-11 flex items-center justify-between">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 rounded-full text-gray-500 hover:text-black transition-colors text-xs font-semibold uppercase tracking-widest">
               <FaArrowLeft className="text-[10px]" /> Back
             </button>
             <nav className="hidden md:flex items-center gap-1.5 text-xs text-gray-400">
@@ -330,7 +305,7 @@ const ProductDetailPage = () => {
             </nav>
             <div className="flex items-center gap-2">
               <button onClick={handleWishlistClick} disabled={wishlistLoading}
-                className={`flex items-center gap-2 px-3 py-1.5 border text-xs font-semibold uppercase tracking-wider transition-all ${isWishlisted ? "bg-red-50 border-red-300 text-red-600" : "border-gray-300 text-gray-600 hover:border-gray-500 hover:text-black"} ${wishlistLoading ? "opacity-50 cursor-not-allowed" : ""}`}>
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 border text-xs font-semibold uppercase tracking-wider transition-all ${isWishlisted ? "bg-red-50 border-red-300 text-red-600" : "border-gray-300 text-gray-600 hover:border-gray-500 hover:text-black"} ${wishlistLoading ? "opacity-50 cursor-not-allowed" : ""}`}>
                 {wishlistLoading ? (
                   <div className="w-3 h-3 border border-current border-t-transparent animate-spin" />
                 ) : (
@@ -343,8 +318,8 @@ const ProductDetailPage = () => {
         </div>
 
         {/* ── Main Product Section ── */}
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_520px] gap-8 items-start">
+        <div className="max-w-[1700px] mx-auto px-4 md:px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_620px] xl:grid-cols-[1fr_720px] gap-8 items-start">
 
             {/* ── LEFT: Image Gallery ── */}
             <div className="lg:sticky lg:top-28 h-fit">
@@ -358,18 +333,16 @@ const ProductDetailPage = () => {
                           key={`${img}-${idx}`}
                           type="button"
                           onClick={() => setSelectedImage(img)}
-                          className={`relative h-20 w-20 shrink-0 border bg-white transition-all duration-200 lg:h-24 lg:w-20 ${isActive
-                            ? "border-black shadow-[0_0_0_1px_#000]"
-                            : "border-gray-200 hover:border-gray-500"
-                            }`}
+                          className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-white transition-all duration-200 lg:h-24 lg:w-20 ${
+                            isActive ? "opacity-100" : "opacity-60 hover:opacity-100"
+                          }`}
                           aria-label={`View image ${idx + 1}`}
                         >
                           <img
                             src={`${apiUrl}${img}`}
                             alt={`${product.name} view ${idx + 1}`}
-                            className="h-full w-full object-contain p-1.5"
+                            className="h-full w-full object-contain"
                           />
-                          <span className={`absolute bottom-1 left-1 h-1 w-5 ${isActive ? "bg-black" : "bg-gray-200"}`} />
                         </button>
                       );
                     })}
@@ -377,47 +350,18 @@ const ProductDetailPage = () => {
                 )}
 
                 <div className="order-1 border border-gray-200 bg-white lg:order-2">
-                  <div
-                    className="relative flex aspect-[4/5] min-h-[360px] cursor-zoom-in items-center justify-center overflow-hidden bg-[#f7f7f4] sm:min-h-[520px]"
-                    onClick={() => setImgZoom(true)}
-                  >
+                  <div className="relative flex aspect-[4/5] min-h-[360px] items-center justify-center overflow-hidden bg-[#f7f7f4] sm:min-h-[520px]">
                     {currentImage ? (
                       <img
                         src={`${apiUrl}${currentImage}`}
                         alt={product.name}
-                        className="h-full w-full object-contain p-3 transition-transform duration-500 hover:scale-[1.02] sm:p-5"
+                        className="h-full w-full object-contain transition-transform duration-500 hover:scale-[1.02]"
                       />
                     ) : (
                       <div className="text-sm font-semibold uppercase tracking-widest text-gray-400">
                         Image unavailable
                       </div>
                     )}
-
-                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {discount > 0 && (
-                          <span className="bg-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
-                            {discount}% OFF
-                          </span>
-                        )}
-                        {hasMultipleImages && (
-                          <span className="bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-700 shadow-sm">
-                            {selectedImageIndex + 1} / {allImages.length}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setImgZoom(true);
-                        }}
-                        className="flex h-9 w-9 items-center justify-center border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:text-black"
-                        aria-label="Open full image"
-                      >
-                        <Maximize2 size={15} strokeWidth={1.9} />
-                      </button>
-                    </div>
 
                     {hasMultipleImages && (
                       <>
@@ -427,7 +371,7 @@ const ProductDetailPage = () => {
                             e.stopPropagation();
                             showPreviousImage();
                           }}
-                          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black/20 sm:left-4 sm:h-11 sm:w-11"
+                          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black/20 sm:left-4 sm:h-11 sm:w-11"
                           aria-label="Show previous product image"
                         >
                           <ChevronLeft size={20} strokeWidth={2.2} />
@@ -438,7 +382,7 @@ const ProductDetailPage = () => {
                             e.stopPropagation();
                             showNextImage();
                           }}
-                          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black/20 sm:right-4 sm:h-11 sm:w-11"
+                          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/90 text-gray-800 shadow-sm transition hover:border-black hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black/20 sm:right-4 sm:h-11 sm:w-11"
                           aria-label="Show next product image"
                         >
                           <ChevronRight size={20} strokeWidth={2.2} />
@@ -446,9 +390,6 @@ const ProductDetailPage = () => {
                       </>
                     )}
 
-                    <div className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shadow-sm">
-                      Full Product View
-                    </div>
                   </div>
                 </div>
               </div>
@@ -524,7 +465,7 @@ const ProductDetailPage = () => {
                   <div className="flex flex-wrap gap-2">
                     {availableSizes.map((size, idx) => (
                       <button key={idx} onClick={() => setSelectedSize(size)}
-                        className={`min-w-[44px] h-10 px-3 border text-sm font-semibold tracking-wide uppercase transition-all duration-200 ${selectedSize === size ? "border-black bg-black text-white" : "border-gray-300 text-gray-700 hover:border-gray-600 hover:text-black bg-white"}`}>
+                        className={`min-w-[44px] h-10 rounded-full px-3 border text-sm font-semibold tracking-wide uppercase transition-all duration-200 ${selectedSize === size ? "border-black bg-black text-white" : "border-gray-300 text-gray-700 hover:border-gray-600 hover:text-black bg-white"}`}>
                         {size}
                       </button>
                     ))}
@@ -536,7 +477,7 @@ const ProductDetailPage = () => {
               <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-700 mb-3">Quantity</h3>
                 <div className="flex items-center gap-5">
-                  <div className="flex items-center border border-gray-300">
+                  <div className="flex items-center overflow-hidden rounded-full border border-gray-300">
                     <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}
                       className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors text-lg font-light">−</button>
                     <span className="w-10 text-center text-sm font-bold text-gray-900 border-x border-gray-300 h-9 flex items-center justify-center">{quantity}</span>
@@ -556,7 +497,7 @@ const ProductDetailPage = () => {
                   <div className="flex flex-wrap gap-2">
                     {["Front Side", "Back Side", "Both Sides"].map((side) => (
                       <button key={side} onClick={() => setSelectedSide(side)}
-                        className={`px-3 py-1.5 border text-xs font-semibold uppercase tracking-wide transition-colors ${selectedSide === side ? "bg-black text-white border-black" : "border-gray-300 text-gray-700 hover:border-gray-600"}`}>
+                        className={`rounded-full px-3 py-1.5 border text-xs font-semibold uppercase tracking-wide transition-colors ${selectedSide === side ? "bg-black text-white border-black" : "border-gray-300 text-gray-700 hover:border-gray-600"}`}>
                         {side}
                       </button>
                     ))}
@@ -566,7 +507,7 @@ const ProductDetailPage = () => {
                       <label className="block text-xs text-gray-500 font-medium">Upload design for {selectedSide.toLowerCase()}</label>
                       <input type="file" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
                         onChange={(e) => setCustomFile(e.target.files?.[0] || null)}
-                        className="text-xs text-gray-700 cursor-pointer file:mr-3 file:px-3 file:py-1.5 file:border file:border-gray-300 file:text-xs file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50" />
+                        className="text-xs text-gray-700 cursor-pointer file:mr-3 file:rounded-full file:px-3 file:py-1.5 file:border file:border-gray-300 file:text-xs file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50" />
                       <p className="text-[10px] text-gray-400">JPG, PNG, PDF supported. Will be attached to your order.</p>
                     </div>
                   )}
@@ -577,12 +518,12 @@ const ProductDetailPage = () => {
               <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={handleAddToCart} disabled={!inStock || (requiresSize && selectedSize && availableStock <= 0)}
-                    className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest border transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-black text-black bg-white hover:bg-gray-50"}`}>
+                    className={`flex items-center justify-center gap-2.5 rounded-full py-3.5 text-xs font-bold uppercase tracking-widest border transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed" : "border-black text-black bg-white hover:bg-gray-50"}`}>
                     <ShoppingBag size={15} strokeWidth={1.9} />
                     Add to Cart
                   </button>
                   <button onClick={handleBuyNow} disabled={!inStock || (requiresSize && selectedSize && availableStock <= 0)}
-                    className={`flex items-center justify-center gap-2.5 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}>
+                    className={`flex items-center justify-center gap-2.5 rounded-full py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-200 ${!inStock || (requiresSize && selectedSize && availableStock <= 0) ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}>
                     <ShoppingBag size={15} strokeWidth={1.9} />
                     Buy Now
                   </button>
@@ -639,7 +580,7 @@ const ProductDetailPage = () => {
         </div>
 
         {/* ── Reviews ── */}
-        <div id="reviews" className="max-w-7xl mx-auto px-4 md:px-6 mb-10">
+        <div id="reviews" className="max-w-[1700px] mx-auto px-4 md:px-6 mb-10">
           <div className="bg-white border border-gray-200 p-5 md:p-6">
 
             {/* Reviews Header */}
@@ -655,7 +596,7 @@ const ProductDetailPage = () => {
                 </div>
               </div>
               <button onClick={() => setShowReviewForm(!showReviewForm)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors self-start sm:self-auto">
+                className="flex items-center gap-2 rounded-full px-5 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors self-start sm:self-auto">
                 <MessageCircle size={13} />
                 Write a Review
               </button>
@@ -682,11 +623,11 @@ const ProductDetailPage = () => {
                   </div>
                   <div className="flex gap-3 pt-1">
                     <button type="submit" disabled={reviewSubmitting || !user}
-                      className={`px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-colors ${reviewSubmitting || !user ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"}`}>
+                      className={`rounded-full px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-colors ${reviewSubmitting || !user ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"}`}>
                       {reviewSubmitting ? "Submitting..." : "Submit"}
                     </button>
                     <button type="button" onClick={() => setShowReviewForm(false)}
-                      className="px-6 py-2.5 border border-gray-300 text-xs font-bold uppercase tracking-widest text-gray-700 hover:border-gray-500 hover:text-black transition-colors">
+                      className="rounded-full px-6 py-2.5 border border-gray-300 text-xs font-bold uppercase tracking-widest text-gray-700 hover:border-gray-500 hover:text-black transition-colors">
                       Cancel
                     </button>
                   </div>
@@ -741,7 +682,7 @@ const ProductDetailPage = () => {
         </div>
         {/* ── Related Products ── */}
         {relatedProducts.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8 mb-6">
+          <div className="max-w-[1700px] mx-auto px-4 md:px-6 mt-8 mb-6">
             <div className="bg-white border border-gray-200 p-5 md:p-6">
               <div className="flex items-end justify-between mb-5">
                 <div>

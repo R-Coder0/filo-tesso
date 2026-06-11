@@ -2,10 +2,11 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Search as SearchIcon, ShoppingBag, UserRound, X } from "lucide-react";
+import { Heart, Search as SearchIcon, ShoppingBag, UserRound, X } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
+import { useWishlist } from "../context/WishlistContext";
 import logoImg from "../assets/logo.png";
 import { extractProducts, getProductPath } from "../utils/products";
 import {
@@ -26,6 +27,7 @@ const Navbar = () => {
   const { cartItems } = useContext(CartContext);
   const { user } = useContext(AuthContext);
   const { setShowCartSidebar } = useUI();
+  const { wishlist } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -50,11 +52,15 @@ useEffect(() => {
 }, [location.pathname]);
 
 const categoryLinks = CATEGORY_LINKS_BY_GENDER[selectedGender];
+const isProductListRoute =
+  location.pathname === "/products" || location.pathname.startsWith("/products/");
+const shouldShowCategoryNav = !isProductListRoute;
 
   const itemCount = cartItems.reduce(
     (count, item) => count + (item.quantity || 0),
     0
   );
+  const wishlistCount = wishlist.length;
 
   useEffect(() => {
     const storedName = localStorage.getItem("customUserName");
@@ -102,6 +108,11 @@ const categoryLinks = CATEGORY_LINKS_BY_GENDER[selectedGender];
 
   const handleProfileClick = () => {
     navigate(user ? "/profile" : "/login");
+    closeMenu();
+  };
+
+  const handleWishlistClick = () => {
+    navigate("/wishlist");
     closeMenu();
   };
 
@@ -205,12 +216,12 @@ const isCategoryActive = (item) => {
     return (
       <form className="relative w-full" onSubmit={handleSubmit}>
         <div
-          className={`flex h-12 items-center border border-black bg-white px-3 transition focus-within:ring-1 focus-within:ring-black ${
+          className={`flex h-10 items-center border border-black bg-white px-3 transition focus-within:ring-1 focus-within:ring-black ${
             isMobile ? "h-13" : "w-full"
           }`}
         >
           <SearchIcon
-            className="mr-3 h-6 w-6 shrink-0 text-black"
+            className="mr-2 h-5 w-5 shrink-0 text-black"
             strokeWidth={1.8}
           />
 
@@ -225,7 +236,7 @@ const isCategoryActive = (item) => {
             inputMode="search"
             enterKeyHint="search"
             placeholder='Search "WHITE SHIRTS"'
-            className="h-full min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-500 md:text-base"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-500"
             onChange={(event) => {
               const value = event.target.value;
               setQuery(value);
@@ -329,42 +340,57 @@ const isCategoryActive = (item) => {
             />
           </Link>
 
-          <div className="flex items-center justify-end gap-2 md:gap-5">
-            <div className="hidden w-[330px] lg:block">
+          <div className="flex items-center justify-end gap-1.5 md:gap-2">
+            <div className="hidden w-[280px] md:block lg:w-[330px]">
               <SearchBox />
             </div>
 
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center text-black transition hover:text-gray-600 lg:hidden"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600 md:hidden"
               onClick={() => setShowSearch(true)}
               aria-label="Search"
             >
-              <SearchIcon className="h-6 w-6" strokeWidth={1.8} />
+              <SearchIcon className="h-5 w-5" strokeWidth={1.8} />
             </button>
 
             <button
               type="button"
               onClick={handleProfileClick}
-              className="hidden h-10 min-w-10 items-center justify-center text-black transition hover:text-gray-600 md:flex"
+              className="hidden h-9 min-w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600 md:flex"
               aria-label={user ? "Profile" : "Login"}
             >
               {user && displayName ? (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white">
                   {getUserInitials()}
                 </span>
               ) : (
-                <UserRound className="h-7 w-7" strokeWidth={1.45} />
+                <UserRound className="h-5 w-5" strokeWidth={1.6} />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleWishlistClick}
+              className="relative flex h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600"
+              aria-label="Wishlist"
+            >
+              <Heart className="h-5 w-5" strokeWidth={1.7} />
+
+              {wishlistCount > 0 && (
+                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef6a4d] px-1 text-[10px] font-semibold text-white">
+                  {wishlistCount}
+                </span>
               )}
             </button>
 
             <button
               type="button"
               onClick={handleCartClick}
-              className="relative flex h-10 w-10 items-center justify-center text-black transition hover:text-gray-600"
+              className="relative flex h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600"
               aria-label="Cart"
             >
-              <ShoppingBag className="h-7 w-7" strokeWidth={1.45} />
+              <ShoppingBag className="h-5 w-5" strokeWidth={1.6} />
 
               {itemCount > 0 && (
                 <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef6a4d] px-1 text-[10px] font-semibold text-white">
@@ -376,52 +402,54 @@ const isCategoryActive = (item) => {
         </div>
       </header>
 
-      <nav className="  bg-white">
-        <div className="flex items-center gap-4 px-3 py-3 sm:px-5 lg:gap-8 lg:px-8">
-          {/* Left Side: Men / Women */}
-          <div className="grid h-12 w-[220px] shrink-0 grid-cols-2 rounded-full bg-white p-1 shadow-[0_4px_22px_rgba(0,0,0,0.14)] ring-1 ring-black">
-{GENDER_TABS.map((tab) => {
-  const isActive = selectedGender === tab.value;
+      {shouldShowCategoryNav && (
+        <nav className="bg-white max-w-[1700px] mx-auto">
+          <div className="flex items-center gap-4 px-3 py-3 sm:px-5 lg:gap-8 lg:px-8">
+            {/* Left Side: Men / Women */}
+            <div className="grid h-11 md:h-12 w-[170px] md:w-[220px] shrink-0 grid-cols-2 rounded-full bg-white p-1 shadow-[0_4px_22px_rgba(0,0,0,0.14)] ring-1 ring-black">
+  {GENDER_TABS.map((tab) => {
+    const isActive = selectedGender === tab.value;
 
-  return (
-    <button
-      key={tab.value}
-      type="button"
-      onClick={() => selectGender(tab.value)}
-      className={`flex h-full items-center justify-center rounded-full text-sm font-black uppercase tracking-wide transition md:text-base ${
-        isActive
-          ? "bg-black text-white"
-          : "bg-white text-black hover:bg-black hover:text-white"
-      }`}
-    >
-      {tab.label}
-    </button>
-  );
-})}
-          </div>
+    return (
+      <button
+        key={tab.value}
+        type="button"
+        onClick={() => selectGender(tab.value)}
+        className={`flex h-full items-center justify-center rounded-full text-sm font-black uppercase tracking-wide transition md:text-base ${
+          isActive
+            ? "bg-black text-white"
+            : "bg-white text-black hover:bg-black hover:text-white"
+        }`}
+      >
+        {tab.label}
+      </button>
+    );
+  })}
+            </div>
 
-          {/* Right Side: Categories */}
-          <div className="hide-scrollbar flex h-12 flex-1 items-center gap-6 overflow-x-auto whitespace-nowrap lg:justify-between lg:gap-8">
-            {categoryLinks.map((item) => (
-              <Link
-                key={item.label}
-                to={item.path}
-                className={`relative flex h-full items-center px-1 text-sm font-medium text-black transition hover:text-[#ef6a4d] md:text-base ${
-                  isCategoryActive(item) ? "text-[#ef6a4d]" : ""
-                }`}
-              >
-                {item.label}
-
-                <span
-                  className={`absolute bottom-0 left-0 h-[3px] bg-[#ef6a4d] transition-all ${
-                    isCategoryActive(item) ? "w-full" : "w-0"
+            {/* Right Side: Categories */}
+            <div className="hide-scrollbar flex h-12 flex-1 items-center gap-6 overflow-x-auto whitespace-nowrap lg:justify-between lg:gap-8">
+              {categoryLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  className={`relative flex h-full items-center px-1 text-sm font-medium text-black transition hover:text-[#ef6a4d] md:text-base ${
+                    isCategoryActive(item) ? "text-[#ef6a4d]" : ""
                   }`}
-                />
-              </Link>
-            ))}
+                >
+                  {item.label}
+
+                  <span
+                    className={`absolute bottom-0 left-0 h-[3px] bg-[#ef6a4d] transition-all ${
+                      isCategoryActive(item) ? "w-full" : "w-0"
+                    }`}
+                  />
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       <div
         className={`fixed inset-0 z-[90] flex transition ${

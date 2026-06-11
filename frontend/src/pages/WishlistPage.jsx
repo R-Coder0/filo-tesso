@@ -1,6 +1,7 @@
 import React from "react";
 import { useWishlist } from "../context/WishlistContext";
 import { useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
 import { getProductPath } from "../utils/products";
 
 const WishlistPage = () => {
@@ -10,10 +11,13 @@ const WishlistPage = () => {
   if (!wishlist.length) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-gray-600">
-        <p className="text-lg font-medium">Your wishlist is empty 💔</p>
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+          <Heart className="h-7 w-7" strokeWidth={1.7} />
+        </div>
+        <p className="text-lg font-medium">Your wishlist is empty</p>
         <button
           onClick={() => navigate("/")}
-          className="mt-4 bg-black text-white px-6 py-3 font-semibold uppercase tracking-wide hover:bg-gray-800"
+          className="mt-4 rounded-full bg-black px-6 py-3 font-semibold uppercase tracking-wide text-white hover:bg-gray-800"
         >
           Go Shopping
         </button>

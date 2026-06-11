@@ -8,8 +8,8 @@ import {
   Coins,
   Package,
   LogOut,
-  Shield,
   Clock,
+  Heart,
   MapPin,
   Plus,
   Edit2,
@@ -18,8 +18,8 @@ import {
   Search,
 } from "lucide-react";
 import MyOrders from "./MyOrders";
-import { FaHeart } from "react-icons/fa";
 import { showToastConfirm } from "../utils/toastConfirm";
+import { useWishlist } from "../context/WishlistContext";
 
 const AddressForm = ({ onSave, onClose, initialData }) => {
   const [formData, setFormData] = useState({
@@ -50,14 +50,14 @@ const AddressForm = ({ onSave, onClose, initialData }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
             {initialData ? "Edit Address" : "Add New Address"}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-900 transition-colors p-1"
+            className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
           >
             <X className="w-5 h-5" />
           </button>
@@ -81,7 +81,7 @@ const AddressForm = ({ onSave, onClose, initialData }) => {
                 name={f.name}
                 value={formData[f.name]}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full rounded-full border border-gray-300 px-3 py-2.5 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10 sm:px-4 sm:py-3"
                 placeholder={`Enter ${f.label.toLowerCase()}`}
               />
             </div>
@@ -89,7 +89,7 @@ const AddressForm = ({ onSave, onClose, initialData }) => {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full bg-black text-white py-3 sm:py-3.5 rounded-lg  transition-all font-medium text-sm sm:text-base shadow-sm"
+              className="w-full rounded-full bg-black py-3 text-sm font-medium text-white shadow-sm transition-all hover:bg-gray-800 sm:py-3.5 sm:text-base"
             >
               Save Address
             </button>
@@ -107,37 +107,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL;
-
-  // ✅ ✅ ✅ DEBUGGING YAHAN ADD KARO - Profile component ke andar ✅ ✅ ✅
-  console.log("🔍 Profile Component - Current User:", user);
-  console.log("🔍 Profile Component - User Name:", user?.name);
-  console.log("🔍 Profile Component - User Email:", user?.email);
-  console.log("🔍 Profile Component - Token:", token ? "Present" : "Missing");
-
-  // ✅ Check karo ki user data properly aa raha hai ya nahi
-  useEffect(() => {
-    console.log("🔄 User data updated:", user);
-  }, [user]);
-
-
-  // ✅ Temporary - Check localStorage directly
-useEffect(() => {
-  const checkLocalStorage = () => {
-    const stored = localStorage.getItem("auth");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      console.log("📦 Direct localStorage check:", parsed.user);
-      
-      // Agar context user undefined hai, par localStorage mein data hai
-      if (!user?.name && parsed.user?.name) {
-        console.log("🔄 Using localStorage data as fallback");
-        // Yahan aap temporary data set kar sakte ho
-      }
-    }
-  };
-  
-  checkLocalStorage();
-}, [user]);
+  const { wishlist } = useWishlist();
 
   const [addresses, setAddresses] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -150,10 +120,7 @@ useEffect(() => {
 
   const [activeTab, setActiveTab] = useState("account");
 
-  // ✅ Update profile function (Fixed)
   const handleSaveName = async () => {
-    console.log("💾 Saving name:", tempName);
-    
     if (!tempName.trim()) {
       toast.error("Name cannot be empty");
       return;
@@ -162,9 +129,7 @@ useEffect(() => {
     try {
       setUpdating(true);
       
-      // ✅ Temporary: Direct localStorage mein save karo
       const storedAuth = localStorage.getItem("auth");
-      console.log("📦 Stored auth before update:", storedAuth);
       
       if (storedAuth) {
         const parsed = JSON.parse(storedAuth);
@@ -176,7 +141,6 @@ useEffect(() => {
           }
         };
         localStorage.setItem("auth", JSON.stringify(updatedAuth));
-        console.log("✅ LocalStorage updated with new name:", tempName.trim());
         toast.success("Name updated successfully");
         
         // Page refresh for changes to take effect
@@ -187,31 +151,27 @@ useEffect(() => {
 
       setEditingName(false);
     } catch (error) {
-      console.error("❌ Profile update error:", error);
+      console.error("Profile update error:", error);
       toast.error("Failed to update profile. Please try again.");
     } finally {
       setUpdating(false);
     }
   };
 
-  // ✅ Reset tempName when user changes
   useEffect(() => {
     if (user?.name) {
       setTempName(user.name);
-      console.log("🔄 TempName updated to:", user.name);
     }
   }, [user?.name]);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("savedAddresses")) || [];
     setAddresses(saved);
-    console.log("🏠 Addresses loaded:", saved.length);
   }, []);
 
   const saveToStorage = (list) => {
     localStorage.setItem("savedAddresses", JSON.stringify(list));
     setAddresses(list);
-    console.log("💾 Addresses saved to localStorage:", list.length);
   };
 
   const handleSave = (data) => {
@@ -245,7 +205,6 @@ useEffect(() => {
   useEffect(() => {
     const fetchPendingCoins = async () => {
       try {
-        console.log("🔄 Fetching pending coins...");
         const { data } = await axios.get(`${apiUrl}/api/orders/my-orders`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -255,9 +214,8 @@ useEffect(() => {
           0
         );
         setPendingCoins(pending);
-        console.log("💰 Pending coins:", pending);
       } catch (error) {
-        console.error("❌ Error fetching pending coins:", error);
+        console.error("Error fetching pending coins:", error);
         setPendingCoins(0);
       } finally {
         setLoading(false);
@@ -267,24 +225,22 @@ useEffect(() => {
   }, [user, token, apiUrl]);
 
   if (!user) {
-    console.log("🚫 No user found, redirecting to login");
     navigate("/login", { replace: true });
     return null;
   }
 
   const coins = Number(user?.coinsBalance ?? 0);
-  console.log("🪙 Current coins balance:", coins);
 
   const NavButton = ({ active, onClick, children, danger }) => (
     <button
       onClick={onClick}
       className={[
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+        "w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-colors",
         active
-          ? "bg-blue-50 text-blue-600"
+          ? "bg-black text-white"
           : danger
           ? "text-gray-700 hover:bg-red-50 hover:text-red-600"
-          : "text-gray-700 hover:bg-blue-50 hover:text-blue-600",
+          : "text-gray-700 hover:bg-gray-100 hover:text-black",
       ].join(" ")}
     >
       {children}
@@ -299,11 +255,10 @@ useEffect(() => {
           <h1 className="text-lg font-semibold text-gray-900">My Account</h1>
           <button
             onClick={() => {
-              console.log("🚪 Logging out...");
               logout();
               navigate("/", { replace: true });
             }}
-            className="text-red-600 text-sm font-medium"
+            className="rounded-full border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
           >
             Logout
           </button>
@@ -313,7 +268,7 @@ useEffect(() => {
         <div className="px-4 pb-3 flex gap-2">
           <button
             onClick={() => setActiveTab("account")}
-            className={`flex-1 px-3 py-2 text-sm rounded-md border ${
+            className={`flex-1 rounded-full border px-3 py-2 text-sm ${
               activeTab === "account"
                 ? "bg-black text-white border-black"
                 : "bg-white text-gray-700 border-gray-200"
@@ -323,7 +278,7 @@ useEffect(() => {
           </button>
           <button
             onClick={() => setActiveTab("orders")}
-            className={`flex-1 px-3 py-2 text-sm rounded-md border ${
+            className={`flex-1 rounded-full border px-3 py-2 text-sm ${
               activeTab === "orders"
                 ? "bg-black text-white border-black"
                 : "bg-white text-gray-700 border-gray-200"
@@ -338,7 +293,7 @@ useEffect(() => {
         <div className="lg:grid lg:grid-cols-12 lg:gap-6">
           {/* Sidebar - Desktop Only */}
           <div className="hidden lg:block lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden sticky top-24">
+            <div className="sticky top-24 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* Profile Section */}
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -373,7 +328,6 @@ useEffect(() => {
                 <NavButton
                   danger
                   onClick={() => {
-                    console.log("🚪 Logging out...");
                     logout();
                     navigate("/", { replace: true });
                   }}
@@ -390,7 +344,7 @@ useEffect(() => {
             {activeTab === "account" && (
               <>
                 {/* Mobile Profile Card */}
-                <div className="lg:hidden bg-black px-4 py-6 mb-2">
+                <div className="mb-2 bg-black px-4 py-6 lg:hidden">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-xl font-bold border-2 border-white/30">
                       {(user?.name || "U").charAt(0).toUpperCase()}
@@ -409,7 +363,7 @@ useEffect(() => {
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <p className="text-blue-100 text-sm mt-0.5">{user?.email}</p>
+                          <p className="mt-0.5 text-sm text-white/70">{user?.email}</p>
                         </>
                       ) : (
                         <div className="space-y-2">
@@ -417,7 +371,7 @@ useEffect(() => {
                             type="text"
                             value={tempName}
                             onChange={(e) => setTempName(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg text-white text-sm"
+                            className="w-full rounded-full px-3 py-2 text-sm text-gray-900"
                             disabled={updating}
                             placeholder="Enter your name"
                           />
@@ -425,7 +379,7 @@ useEffect(() => {
                             <button
                               onClick={handleSaveName}
                               disabled={updating}
-                              className="px-3 py-1.5 bg-white text-black rounded-md text-xs font-medium disabled:opacity-50"
+                              className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-black disabled:opacity-50"
                             >
                               {updating ? "Saving..." : "Save"}
                             </button>
@@ -435,7 +389,7 @@ useEffect(() => {
                                 setTempName(user?.name || "");
                               }}
                               disabled={updating}
-                              className="px-3 py-1.5 bg-white/20 text-white rounded-md text-xs font-medium disabled:opacity-50"
+                              className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                             >
                               Cancel
                             </button>
@@ -447,7 +401,7 @@ useEffect(() => {
                 </div>
 
                 {/* Desktop Profile Header */}
-                <div className="hidden lg:block bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div className="mb-6 hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:block">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center text-2xl font-bold">
@@ -462,7 +416,7 @@ useEffect(() => {
                               </h1>
                               <button
                                 onClick={() => setEditingName(true)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
@@ -475,14 +429,14 @@ useEffect(() => {
                               type="text"
                               value={tempName}
                               onChange={(e) => setTempName(e.target.value)}
-                              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64"
+                              className="w-64 rounded-full border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
                               disabled={updating}
                               placeholder="Enter your name"
                             />
                             <button
                               onClick={handleSaveName}
                               disabled={updating}
-                              className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                             >
                               {updating ? "Saving..." : "Save"}
                             </button>
@@ -492,7 +446,7 @@ useEffect(() => {
                                 setTempName(user?.name || "");
                               }}
                               disabled={updating}
-                              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium disabled:opacity-50"
+                              className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
                             >
                               Cancel
                             </button>
@@ -504,18 +458,17 @@ useEffect(() => {
                     <div className="hidden lg:flex items-center gap-3">
                       <button
                         onClick={() => setActiveTab("orders")}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 transition-all font-medium text-gray-900"
+                        className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3 font-medium text-gray-900 transition-all hover:border-gray-900 hover:bg-gray-50"
                       >
                         <Package className="w-4 h-4" />
                         My Orders
                       </button>
                       <button
                         onClick={() => {
-                          console.log("🚪 Logging out...");
                           logout();
                           navigate("/", { replace: true });
                         }}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:from-gray-800 hover:to-gray-700 transition-all font-medium shadow-sm hover:shadow"
+                        className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 font-medium text-white shadow-sm transition-all hover:bg-gray-800"
                       >
                         <LogOut className="w-4 h-4" />
                         Logout
@@ -524,15 +477,14 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* Rest of the code remains same... */}
                 {/* Coins & Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 px-4 sm:px-0 mb-2 sm:mb-6">
-                  <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-100">
+                <div className="grid grid-cols-2 gap-2 px-4 sm:mb-6 sm:gap-4 sm:px-0 lg:grid-cols-3">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                        <Coins className="w-4 h-4 text-amber-600" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                        <Coins className="h-4 w-4 text-gray-700" strokeWidth={1.7} />
                       </div>
-                      <p className="text-xs text-gray-500">Available</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Available</p>
                     </div>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900">
                       {coins.toLocaleString()}
@@ -540,12 +492,12 @@ useEffect(() => {
                     <p className="text-xs text-gray-400 mt-0.5">Coins</p>
                   </div>
 
-                  <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-100">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                        <Clock className="w-4 h-4 text-orange-600" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                        <Clock className="h-4 w-4 text-gray-700" strokeWidth={1.7} />
                       </div>
-                      <p className="text-xs text-gray-500">Pending</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Pending</p>
                     </div>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900">
                       {loading ? "..." : pendingCoins.toLocaleString()}
@@ -553,19 +505,26 @@ useEffect(() => {
                     <p className="text-xs text-gray-400 mt-0.5">Coins</p>
                   </div>
 
-                  <div onClick={() => window.open('/wishlist')} className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-100 col-span-2 lg:col-span-1">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/wishlist")}
+                    className="col-span-2 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-black sm:p-5 lg:col-span-1"
+                  >
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                        <FaHeart className="w-4 h-4 text-red-500" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                        <Heart className="h-4 w-4 text-gray-700" strokeWidth={1.7} />
                       </div>
-                      <p className="text-xs text-gray-500">Wishlist</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Wishlist</p>
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold text-green-600">Favourites</p>
-                  </div>
+                    <p className="text-xl font-bold text-gray-900 sm:text-2xl">
+                      {wishlist.length.toLocaleString()}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-400">Saved Styles</p>
+                  </button>
                 </div>
 
                 {/* Saved Addresses */}
-                <div className="bg-white rounded-lg shadow-sm mx-0 sm:mx-0 mb-2 sm:mb-6">
+                <div className="mx-0 mb-2 rounded-xl border border-gray-200 bg-white shadow-sm sm:mx-0 sm:mb-6">
                   <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex items-center justify-between">
                     <div>
                       <h2 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -580,7 +539,7 @@ useEffect(() => {
                         setEditingAddress(null);
                         setShowForm(true);
                       }}
-                      className="flex items-center gap-1.5 sm:gap-2 bg-black text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium"
+                      className="flex items-center gap-1.5 rounded-full bg-black px-3 py-2 text-xs font-medium text-white transition hover:bg-gray-800 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
                     >
                       <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <span className="hidden sm:inline">Add Address</span>
@@ -606,7 +565,7 @@ useEffect(() => {
                         {addresses.map((addr) => (
                           <div
                             key={addr.id}
-                            className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-sm transition-all"
+                            className="rounded-xl border border-gray-200 p-4 transition-all hover:border-black hover:shadow-sm"
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1">
@@ -633,14 +592,14 @@ useEffect(() => {
                                   setEditingAddress(addr);
                                   setShowForm(true);
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDelete(addr.id)}
-                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium"
+                                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                                 Delete
@@ -654,7 +613,7 @@ useEffect(() => {
                 </div>
 
                 {/* Track Order Section */}
-                <div className="bg-white rounded-lg shadow-sm mx-0 sm:mx-0">
+                <div className="mx-0 rounded-xl border border-gray-200 bg-white shadow-sm sm:mx-0">
                   <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200">
                     <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                       Track Your Order
@@ -668,7 +627,7 @@ useEffect(() => {
                       <input
                         type="text"
                         placeholder="Enter Order ID"
-                        className="flex-1 border border-gray-300 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        className="flex-1 rounded-full border border-gray-300 px-3 py-2.5 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10 sm:px-4 sm:py-3"
                         value={orderId}
                         onChange={(e) => setOrderId(e.target.value)}
                       />
@@ -680,7 +639,7 @@ useEffect(() => {
                             "_blank"
                           );
                         }}
-                        className="flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 font-medium text-sm whitespace-nowrap"
+                        className="flex items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 sm:px-6 sm:py-3 whitespace-nowrap"
                       >
                         <Search className="w-4 h-4" />
                         Track Order
@@ -693,7 +652,7 @@ useEffect(() => {
 
             {/* Orders Tab Content */}
             {activeTab === "orders" && (
-              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
                 <MyOrders token={token} apiUrl={apiUrl} embedded />
               </div>
             )}

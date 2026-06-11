@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import { Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { useWishlist } from "../context/WishlistContext";
 import { extractProducts, getProductPath } from "../utils/products";
 import {
   CATEGORY_LINKS_BY_GENDER,
@@ -19,10 +22,14 @@ const getImageSrc = (apiUrl, image) => {
 
 export default function HomeNewPopular() {
   const apiUrl = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
+  const { user, token } = useContext(AuthContext);
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [gender, setGender] = useState(() => getStoredShopGender());
   const [category, setCategory] = useState("all");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
 
   const categories = useMemo(
     () => [
@@ -77,6 +84,32 @@ export default function HomeNewPopular() {
 
   const activeCategoryLabel =
     categories.find((item) => item.value === category)?.label || "All";
+
+  const handleWishlistToggle = async (product) => {
+    const productId = product?._id;
+    if (!productId) return;
+
+    if (!user || !token) {
+      toast.error("Please login to use wishlist");
+      navigate("/login");
+      return;
+    }
+
+    setWishlistLoadingId(productId);
+    try {
+      if (isInWishlist(productId)) {
+        await removeFromWishlist(productId);
+        toast.success("Removed from wishlist");
+      } else {
+        await addToWishlist(productId);
+        toast.success("Added to wishlist");
+      }
+    } catch (error) {
+      toast.error(error.message || "Wishlist update failed");
+    } finally {
+      setWishlistLoadingId(null);
+    }
+  };
 
   return (
     <section className="bg-white py-12 md:py-14">
@@ -134,10 +167,18 @@ export default function HomeNewPopular() {
                     </Link>
                     <button
                       type="button"
-                      className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black shadow-sm transition hover:bg-black hover:text-white"
-                      aria-label="Add to wishlist"
+                      onClick={() => handleWishlistToggle(product)}
+                      disabled={wishlistLoadingId === product._id}
+                      className={`absolute right-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60 ${
+                        isInWishlist(product._id) ? "text-[#ef6a4d]" : "text-black"
+                      }`}
+                      aria-label={isInWishlist(product._id) ? "Remove from wishlist" : "Add to wishlist"}
                     >
-                      <Heart size={18} strokeWidth={1.8} />
+                      <Heart
+                        size={18}
+                        strokeWidth={1.8}
+                        fill={isInWishlist(product._id) ? "currentColor" : "none"}
+                      />
                     </button>
                   </div>
 

@@ -2,6 +2,7 @@ import React from "react";
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import logoImg from "../assets/logowhite.png";
+import { CATEGORY_LINKS_BY_GENDER } from "../utils/navigationCategories";
 
 export default function Footer() {
   const quickLinks = [
@@ -15,12 +16,6 @@ export default function Footer() {
     { label: "Payments", to: "/help/payments" },
     { label: "Shipping", to: "/help/shipping" },
     { label: "FAQ", to: "/help/faqs" },
-  ];
-
-  const categoryLinks = [
-    { label: "Men", to: "/products/men" },
-    { label: "Women", to: "/products/women" },
-    { label: "All Products", to: "/products" },
   ];
 
   const policyLinks = [
@@ -66,7 +61,7 @@ export default function Footer() {
 
   return (
     <footer className="w-full bg-black text-[14px] text-gray-300">
-      <div className="max-w-[1700px] mx-auto grid grid-cols-1 gap-9 border-b border-gray-800 px-4 sm:px-6 lg:px-8 py-10 sm:grid-cols-2 lg:grid-cols-4 ">
+      <div className="max-w-[1700px] mx-auto grid grid-cols-1 gap-9 border-b border-gray-800 px-4 sm:px-6 lg:px-8 py-10 sm:grid-cols-2 lg:grid-cols-5 ">
         <div className="max-w-sm">
           <Link to="/" className="inline-flex items-center">
             <img
@@ -88,14 +83,49 @@ export default function Footer() {
 
         <div>
           <h3 className="text-[13px] font-semibold uppercase tracking-wide text-gray-400">
-            Category
+            Men Category
           </h3>
 
           <ul className="mt-4 space-y-2.5">
-            {categoryLinks.map((link) => (
-              <li key={link.to}>
+            <li>
+              <Link
+                to="/products/men"
+                className="font-medium text-white hover:underline"
+              >
+                All Men
+              </Link>
+            </li>
+            {CATEGORY_LINKS_BY_GENDER.men.map((link) => (
+              <li key={link.path}>
                 <Link
-                  to={link.to}
+                  to={link.path}
+                  className="font-medium text-white hover:underline"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-gray-400">
+            Women Category
+          </h3>
+
+          <ul className="mt-4 space-y-2.5">
+            <li>
+              <Link
+                to="/products/women"
+                className="font-medium text-white hover:underline"
+              >
+                All Women
+              </Link>
+            </li>
+            {CATEGORY_LINKS_BY_GENDER.women.map((link) => (
+              <li key={link.path}>
+                <Link
+                  to={link.path}
                   className="font-medium text-white hover:underline"
                 >
                   {link.label}
