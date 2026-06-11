@@ -327,33 +327,6 @@ const ProductList = () => {
   }, [cat, sub, sortBy, appliedFilters, searchQuery]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const mediaQuery = window.matchMedia("(min-width: 1024px)");
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    const syncPageScrollLock = () => {
-      if (mediaQuery.matches) {
-        document.body.style.overflow = "hidden";
-        document.documentElement.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = previousBodyOverflow;
-        document.documentElement.style.overflow = previousHtmlOverflow;
-      }
-    };
-
-    syncPageScrollLock();
-    mediaQuery.addEventListener("change", syncPageScrollLock);
-
-    return () => {
-      mediaQuery.removeEventListener("change", syncPageScrollLock);
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
     if (typeof window === "undefined" || !mobileSheet) return undefined;
 
     const previousBodyOverflow = document.body.style.overflow;
@@ -581,9 +554,9 @@ const ProductList = () => {
         />
       </div>
 
-      <div className="hidden bg-white px-3 py-5 text-gray-950 sm:px-5 lg:block lg:h-[calc(100vh-72px)] lg:overflow-hidden lg:px-8">
-        <div className="mx-auto flex h-full max-w-[1920px] flex-col">
-          <div className="shrink-0 border-b border-gray-200 pb-5">
+      <div className="hidden bg-white px-3 py-5 text-gray-950 sm:px-5 lg:block lg:px-8">
+        <div className="mx-auto max-w-[1920px]">
+          <div className="sticky top-[72px] z-20 border-b border-gray-200 bg-white pb-5 pt-1">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <h1 className="text-2xl font-black uppercase tracking-tight md:text-3xl">
                 {pageTitle}
@@ -648,7 +621,7 @@ const ProductList = () => {
             </div>
           </div>
 
-          <div className="grid min-h-0 flex-1 gap-5 pt-5 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
+          <div className="grid gap-5 pt-5 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
             <FilterSidebar
               openFilters={openFilters}
               draftFilters={draftFilters}
@@ -661,7 +634,7 @@ const ProductList = () => {
               onApply={applyFilters}
             />
 
-            <section className="min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+            <section className="min-w-0 lg:pr-2">
               <div>
                 {loading ? (
                   <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
@@ -860,7 +833,7 @@ function FilterSidebar({
   onApply,
 }) {
   return (
-    <aside className="lg:min-h-0 lg:overflow-y-auto">
+    <aside className="lg:sticky lg:top-[205px] lg:max-h-[calc(100vh-220px)] lg:self-start lg:overflow-y-auto">
       <div className="border border-gray-200 bg-white">
         <div className="border-b border-gray-200 px-4 py-4">
           <h2 className="text-sm font-black uppercase tracking-tight text-black">
