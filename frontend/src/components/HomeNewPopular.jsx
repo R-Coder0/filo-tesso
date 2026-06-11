@@ -5,7 +5,11 @@ import { Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { useWishlist } from "../context/WishlistContext";
-import { extractProducts, getProductPath } from "../utils/products";
+import {
+  extractProducts,
+  getProductCardImageSources,
+  getProductPath,
+} from "../utils/products";
 import {
   CATEGORY_LINKS_BY_GENDER,
   SHOP_GENDER_CHANGE_EVENT,
@@ -13,12 +17,6 @@ import {
   getSubcategoryFromPath,
   normalizeShopGender,
 } from "../utils/navigationCategories";
-
-const getImageSrc = (apiUrl, image) => {
-  if (!image) return "https://via.placeholder.com/600x750?text=No+Image";
-  if (/^https?:\/\//i.test(image)) return image;
-  return `${apiUrl}${image}`;
-};
 
 export default function HomeNewPopular() {
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -152,17 +150,35 @@ export default function HomeNewPopular() {
             </div>
           ) : products.length ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 xl:grid-cols-5">
-              {products.map((product) => (
+              {products.map((product) => {
+                const { mainSrc, hoverSrc } = getProductCardImageSources(
+                  product,
+                  apiUrl,
+                  "https://via.placeholder.com/600x750?text=No+Image"
+                );
+
+                return (
                 <article key={product._id || product.id} className="group">
                   <div className="relative overflow-hidden bg-gray-100">
                     <Link to={getProductPath(product)} className="block">
-                      <div className="aspect-[4/5]">
+                      <div className="relative aspect-[4/5]">
                         <img
-                          src={getImageSrc(apiUrl, product.image)}
+                          src={mainSrc}
                           alt={product.name}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+                            hoverSrc ? "group-hover:opacity-0" : ""
+                          }`}
                           loading="lazy"
                         />
+                        {hoverSrc && (
+                          <img
+                            src={hoverSrc}
+                            alt={product.name}
+                            className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+                            loading="lazy"
+                            aria-hidden="true"
+                          />
+                        )}
                       </div>
                     </Link>
                     <button
@@ -198,7 +214,8 @@ export default function HomeNewPopular() {
                     </div>
                   </Link>
                 </article>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="border border-gray-200 px-6 py-14 text-center">

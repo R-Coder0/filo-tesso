@@ -7,7 +7,11 @@ import { ShoppingBag } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 import { useSsrData } from "../context/SsrDataContext";
-import { extractProducts, getProductPath } from "../utils/products";
+import {
+  extractProducts,
+  getProductCardImageSources,
+  getProductPath,
+} from "../utils/products";
 
 const CATEGORIES = ["men", "women"];
 
@@ -234,7 +238,7 @@ function BestCard({ product, apiUrl }) {
 
   const id = product._id || product.id || product.productId;
   const name = product.name || "Product";
-  const img = product.image ? `${apiUrl}${product.image}` : "/placeholder.png";
+  const { mainSrc, hoverSrc } = getProductCardImageSources(product, apiUrl);
   const category = product.category || product.gender || product.segment || product.type || "";
 
   const getStockStatus = (stock) => {
@@ -263,14 +267,26 @@ function BestCard({ product, apiUrl }) {
 
       {/* Image */}
       <Link to={getProductPath(product)} className="block relative overflow-hidden bg-gray-50">
-        <div className="aspect-[3/4] w-full">
+        <div className="relative aspect-[3/4] w-full">
           <img
-            src={img}
+            src={mainSrc}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+              hoverSrc ? "group-hover:opacity-0" : ""
+            }`}
             onError={(e) => (e.currentTarget.src = "/placeholder.png")}
             loading="lazy"
           />
+          {hoverSrc && (
+            <img
+              src={hoverSrc}
+              alt={name}
+              className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+              loading="lazy"
+              aria-hidden="true"
+            />
+          )}
         </div>
 
         {/* Category badge — top left */}

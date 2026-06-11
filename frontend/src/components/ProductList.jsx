@@ -11,7 +11,11 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { useSsrData } from "../context/SsrDataContext";
 import { useWishlist } from "../context/WishlistContext";
-import { extractProducts, getProductPath } from "../utils/products";
+import {
+  extractProducts,
+  getProductCardImageSources,
+  getProductPath,
+} from "../utils/products";
 import {
   CATEGORY_LINKS_BY_GENDER,
   GENDER_TABS,
@@ -140,12 +144,6 @@ const getSalePrice = (product) => Number(product?.price?.sale ?? product?.price 
 const getOriginalPrice = (product) => {
   if (typeof product?.price === "object") return Number(product.price?.original || 0);
   return 0;
-};
-
-const getImageSrc = (apiUrl, image) => {
-  if (!image) return "https://via.placeholder.com/700x900?text=Filo+Teso";
-  if (/^https?:\/\//i.test(image)) return image;
-  return `${apiUrl}${image}`;
 };
 
 const getProductSearchText = (product) =>
@@ -936,6 +934,11 @@ function ProductTile({ product, apiUrl }) {
   const originalPrice = getOriginalPrice(product);
   const productId = product?._id;
   const isWishlisted = Boolean(productId && isInWishlist(productId));
+  const { mainSrc, hoverSrc } = getProductCardImageSources(
+    product,
+    apiUrl,
+    "https://via.placeholder.com/700x900?text=Filo+Teso"
+  );
 
   const handleWishlistToggle = async () => {
     if (!productId) return;
@@ -966,13 +969,24 @@ function ProductTile({ product, apiUrl }) {
     <article className="group min-w-0">
       <div className="relative overflow-hidden bg-gray-100">
         <Link to={getProductPath(product)} className="block">
-          <div className="aspect-[3/4]">
+          <div className="relative aspect-[3/4]">
             <img
-              src={getImageSrc(apiUrl, product.image)}
+              src={mainSrc}
               alt={product.name || "Product"}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+                hoverSrc ? "group-hover:opacity-0" : ""
+              }`}
               loading="lazy"
             />
+            {hoverSrc && (
+              <img
+                src={hoverSrc}
+                alt={product.name || "Product"}
+                className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+                loading="lazy"
+                aria-hidden="true"
+              />
+            )}
           </div>
         </Link>
 

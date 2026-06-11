@@ -4,7 +4,7 @@ import { CartContext } from "../context/CartContext";
 import { useUI } from "../context/UIContext";
 import { FaEye } from "react-icons/fa";
 import { ShoppingBag } from "lucide-react";
-import { getProductPath } from "../utils/products";
+import { getProductCardImageSources, getProductPath } from "../utils/products";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useContext(CartContext);
@@ -61,9 +61,11 @@ const ProductCard = ({ product }) => {
     navigate(getProductPath(product));
   };
 
-  const imgSrc = product?.image
-    ? `${apiUrl}${product.image}`
-    : "https://via.placeholder.com/600x400?text=No+Image";
+  const { mainSrc, hoverSrc } = getProductCardImageSources(
+    product,
+    apiUrl,
+    "https://via.placeholder.com/600x400?text=No+Image"
+  );
   const productSubcategories = Array.isArray(product?.subcategories) && product.subcategories.length
     ? product.subcategories
     : product?.subcategory
@@ -82,13 +84,24 @@ const ProductCard = ({ product }) => {
         onClick={handleViewDetails}
       >
         {/* Fixed aspect ratio — image fills the box, no distortion */}
-        <div className="aspect-[4/5] w-full">
+        <div className="relative aspect-[4/5] w-full">
           <img
-            src={imgSrc}
+            src={mainSrc}
             alt={product?.name || "Product"}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+              hoverSrc ? "group-hover:opacity-0" : ""
+            }`}
             loading="lazy"
           />
+          {hoverSrc && (
+            <img
+              src={hoverSrc}
+              alt={product?.name || "Product"}
+              className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+              loading="lazy"
+              aria-hidden="true"
+            />
+          )}
         </div>
 
         {/* Discount badge — top right */}
