@@ -113,6 +113,15 @@ const toAbsoluteUrl = (req, value) => {
 
 const formatMoney = (value) => Number(value || 0).toFixed(2);
 
+const getPagination = (req, defaultLimit = 50) => {
+  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(
+    100,
+    Math.max(1, Number.parseInt(req.query.limit, 10) || defaultLimit)
+  );
+  return { page, limit, skip: (page - 1) * limit };
+};
+
 const toIsoDate = (value) => {
   const date = value ? new Date(value) : new Date();
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
@@ -148,24 +157,30 @@ const toShiprocketVariant = (req, product, variant, index) => {
   const size = String(variant?.size || "").trim();
   const optionValues = {};
   if (size) optionValues.Size = size;
+  const weight = Number(product?.shipping?.weight || 0.5);
+  const baseSku = product?.sku || `FT-${getProductNumericId(product)}`;
 
   return {
     id: getVariantNumericId(product, index),
     title: size || "Default",
     price: formatMoney(product?.price?.sale),
     compare_at_price: formatMoney(product?.price?.original),
-    sku: `FT-${getProductNumericId(product)}-${size || "DEFAULT"}`,
+    sku: `${baseSku}-${size || "DEFAULT"}`,
     quantity: Math.max(0, Number(variant?.stock ?? product?.stock ?? 0)),
     created_at: toIsoDate(product?.createdAt),
     updated_at: toIsoDate(product?.updatedAt || product?.createdAt),
     taxable: true,
     option_values: optionValues,
-    grams: 500,
+    grams: Math.round(weight * 1000),
     image: {
       src: toAbsoluteUrl(req, product?.image),
     },
-    weight: 0.5,
+    weight,
     weight_unit: "kg",
+    hsn: product?.hsn || "",
+    length: Number(product?.shipping?.length || 10),
+    breadth: Number(product?.shipping?.breadth || 10),
+    height: Number(product?.shipping?.height || 2),
   };
 };
 
@@ -275,9 +290,14 @@ const findCollection = (identifier) => {
   );
 };
 
-const productListResponse = (products) => ({
+const productListResponse = (products, pagination = {}) => ({
   data: {
-    total: products.length,
+    total: pagination.total ?? products.length,
+    page: pagination.page ?? 1,
+    limit: pagination.limit ?? products.length,
+    total_pages: pagination.limit
+      ? Math.ceil((pagination.total ?? products.length) / pagination.limit)
+      : 1,
     products,
   },
 });
@@ -450,6 +470,21 @@ const normalizeSizeVariants = (raw, fallbackSizes = [], fallbackStock = 0) => {
 const getTotalVariantStock = (variants) =>
   variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock || 0)), 0);
 
+const optionalPositiveNumber = (value, minimum) => {
+  if (typeof value === "undefined" || value === null || value === "") {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= minimum ? parsed : undefined;
+};
+
+const getShippingInput = (body) => ({
+  weight: optionalPositiveNumber(body.weight ?? body.shippingWeight, 0.001),
+  length: optionalPositiveNumber(body.length ?? body.shippingLength, 0.5),
+  breadth: optionalPositiveNumber(body.breadth ?? body.shippingBreadth, 0.5),
+  height: optionalPositiveNumber(body.height ?? body.shippingHeight, 0.5),
+});
+
 const getUploadedFiles = (files, fieldNames) =>
   fieldNames.flatMap((fieldName) => files?.[fieldName] || []);
 
@@ -492,6 +527,9 @@ const addProduct = async (req, res) => {
       });
     }
     const description = String(req.body.description || "");
+    const sku = String(req.body.sku || "").trim();
+    const hsn = String(req.body.hsn || "").trim();
+    const shipping = getShippingInput(req.body);
     const category = String(req.body.category || "").toLowerCase().trim();
     const slug = slugify(req.body.slug || req.body.handle || name);
     const subcategories = normalizeSubcategories(req.body.subcategories, req.body.subcategory);
@@ -549,6 +587,9 @@ const keywords = req.body.keywords
         original: originalPrice,
         sale: salePrice,
       },
+      sku,
+      hsn,
+      shipping,
       stock: totalStock,
       sizes,
       sizeVariants,
@@ -597,6 +638,13 @@ const updateProduct = async (req, res) => {
 
     if (typeof body.salePrice !== "undefined") {
       product.price.sale = Number(body.salePrice);
+    }
+
+    if (typeof body.sku !== "undefined") product.sku = String(body.sku).trim();
+    if (typeof body.hsn !== "undefined") product.hsn = String(body.hsn).trim();
+    const shippingInput = getShippingInput(body);
+    for (const [field, value] of Object.entries(shippingInput)) {
+      if (typeof value !== "undefined") product.set(`shipping.${field}`, value);
     }
 
     if (typeof body.sizeVariants !== "undefined" || typeof body.sizes !== "undefined") {
@@ -732,9 +780,18 @@ const getShiprocketProducts = async (req, res) => {
     const category = rawCat ? String(rawCat).toLowerCase().trim() : null;
     const subcategory = rawSub ? String(rawSub).toLowerCase().trim() : null;
     const filter = buildProductFilter(category, subcategory);
+    const { page, limit, skip } = getPagination(req);
 
-    const products = await Product.find(filter).sort({ createdAt: -1 });
-    res.json(productListResponse(products.map((product) => toShiprocketProduct(req, product))));
+    const [products, total] = await Promise.all([
+      Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Product.countDocuments(filter),
+    ]);
+    res.json(
+      productListResponse(
+        products.map((product) => toShiprocketProduct(req, product)),
+        { total, page, limit }
+      )
+    );
   } catch (err) {
     console.error("❌ Failed to fetch Shiprocket products:", err);
     res.status(500).json({ message: "Failed to fetch products" });
@@ -743,13 +800,18 @@ const getShiprocketProducts = async (req, res) => {
 
 const getShiprocketCollections = async (req, res) => {
   try {
-    const collections = buildCollections().map((collection) =>
-      collectionToResponse(req, collection)
-    );
+    const { page, limit, skip } = getPagination(req, 100);
+    const allCollections = buildCollections();
+    const collections = allCollections
+      .slice(skip, skip + limit)
+      .map((collection) => collectionToResponse(req, collection));
 
     res.json({
       data: {
-        total: collections.length,
+        total: allCollections.length,
+        page,
+        limit,
+        total_pages: Math.ceil(allCollections.length / limit),
         collections,
       },
     });
@@ -775,9 +837,18 @@ const getShiprocketProductsByCollection = async (req, res) => {
     }
 
     const filter = buildProductFilter(collection.category, collection.subcategory || null);
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    const { page, limit, skip } = getPagination(req);
+    const [products, total] = await Promise.all([
+      Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Product.countDocuments(filter),
+    ]);
 
-    res.json(productListResponse(products.map((product) => toShiprocketProduct(req, product))));
+    res.json(
+      productListResponse(
+        products.map((product) => toShiprocketProduct(req, product)),
+        { total, page, limit }
+      )
+    );
   } catch (err) {
     console.error("❌ Failed to fetch Shiprocket collection products:", err);
     res.status(500).json({ message: "Failed to fetch products by collection" });

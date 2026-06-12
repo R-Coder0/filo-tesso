@@ -12,7 +12,15 @@ const orderItemSchema = new mongoose.Schema(
     selectedSize: { type: String, default: "" },
     selectedColor: { type: String, default: "" },
 
-    // ✅ IMPORTANT (freeze price)
+    name: { type: String, default: "" },
+    sku: { type: String, default: "" },
+    hsn: { type: String, default: "" },
+    weight: { type: Number },
+    length: { type: Number },
+    breadth: { type: Number },
+    height: { type: Number },
+
+    // Freeze values needed for invoices and shipping retries.
     priceAtPurchase: { type: Number, required: true },
   },
   { _id: false }
@@ -51,6 +59,13 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
     },
 
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "Prepaid"],
+      required: true,
+      default: "COD",
+    },
+
     orderStatus: {
       type: String,
       enum: ["pending", "confirmed", "shipped", "delivered", "cancelled", "returned"],
@@ -65,6 +80,26 @@ const orderSchema = new mongoose.Schema(
       city: String,
       state: String,
       postalCode: String,
+      country: { type: String, default: "India" },
+    },
+
+    shiprocket: {
+      syncStatus: {
+        type: String,
+        enum: ["not_started", "pending", "synced", "failed"],
+        default: "not_started",
+      },
+      orderId: { type: String, default: "" },
+      shipmentId: { type: String, default: "" },
+      status: { type: String, default: "" },
+      statusCode: Number,
+      awbCode: { type: String, default: "" },
+      courierCompanyId: { type: String, default: "" },
+      courierName: { type: String, default: "" },
+      lastError: { type: String, default: "" },
+      lastAttemptAt: Date,
+      syncedAt: Date,
+      response: mongoose.Schema.Types.Mixed,
     },
 
     customizationUploads: {

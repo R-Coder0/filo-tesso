@@ -4,6 +4,8 @@ const Product = require("../models/Product");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
+const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
+const { syncOrderToShiprocket } = require("../utils/shiprocket");
 
 const getVariantForSize = (product, selectedSize) => {
   const variants = product.sizeVariants || [];
@@ -52,6 +54,8 @@ exports.createOrder = async (req, res) => {
     // ✅ USER
     const user = await User.findById(userId);
     if (!user) return res.status(401).json({ message: "User not found" });
+    address.email = address.email || user.email || "";
+    address.country = address.country || "India";
 
     // 🔥🔥🔥 MAIN FIX START (SECURE PRICING)
     let totalAmount = 0;
@@ -86,13 +90,7 @@ exports.createOrder = async (req, res) => {
 
       totalAmount += price * qty;
 
-      orderItems.push({
-        product: product._id,
-        quantity: qty,
-        selectedSize,
-        selectedColor: String(it.selectedColor || "").trim(),
-        priceAtPurchase: price, // ✅ IMPORTANT
-      });
+      orderItems.push(buildOrderItemSnapshot(product, { ...it, quantity: qty }, price));
     }
 
     if (!orderItems.length || totalAmount <= 0) {
@@ -128,6 +126,7 @@ exports.createOrder = async (req, res) => {
       coinStatus: "pending",
       coinCreditDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       paymentStatus: "Pending",
+      paymentMethod: "COD",
       orderStatus: "pending",
       customizationUploads: {
         image: customImagePath,
@@ -157,6 +156,15 @@ exports.createOrder = async (req, res) => {
     // ✅ COINS DEDUCT
     user.coinsBalance -= redeemable;
     await user.save();
+
+    try {
+      await syncOrderToShiprocket(order);
+    } catch (shiprocketError) {
+      console.error(
+        `Shiprocket sync failed for order ${order._id}:`,
+        shiprocketError.message
+      );
+    }
 
     // ✅ EMAIL (same as your original — untouched)
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {

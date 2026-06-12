@@ -41,6 +41,14 @@ price: {
   original: { type: Number, required: true }, // MRP
   sale: { type: Number, required: true }      // Discount price
 },
+  sku: { type: String, trim: true, default: "" },
+  hsn: { type: String, trim: true, default: "" },
+  shipping: {
+    weight: { type: Number, min: 0.001 },
+    length: { type: Number, min: 0.5 },
+    breadth: { type: Number, min: 0.5 },
+    height: { type: Number, min: 0.5 },
+  },
   description: { type: String, default: "" },
   details: { type: [String], default: [] },
   washCare: { type: [String], default: [] },

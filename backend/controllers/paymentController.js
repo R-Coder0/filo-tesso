@@ -5,6 +5,8 @@ const Order = require("../models/Order");
 const User = require("../models/User");
 const Product = require("../models/Product");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
+const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
+const { syncOrderToShiprocket } = require("../utils/shiprocket");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -126,7 +128,32 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
+    const payment = await Payment.findOne({
+      razorpay_order_id,
+      user: userId,
+    });
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment order not found",
+      });
+    }
+
+    if (payment.status === "paid" && payment.order) {
+      const existingOrder = await Order.findById(payment.order);
+      return res.status(200).json({
+        success: true,
+        message: "Payment already verified",
+        order: existingOrder,
+      });
+    }
+
     const user = await User.findById(userId);
+    const shippingAddress = {
+      ...(address || {}),
+      email: address?.email || user?.email || "",
+      country: address?.country || "India",
+    };
 
     let totalAmount = 0;
     const products = [];
@@ -161,13 +188,7 @@ exports.verifyPayment = async (req, res) => {
 
       totalAmount += price * qty;
 
-      products.push({
-        product: product._id,
-        quantity: qty,
-        selectedSize,
-        selectedColor: item.selectedColor || "",
-        priceAtPurchase: price, // ✅ FIXED
-      });
+      products.push(buildOrderItemSnapshot(product, { ...item, quantity: qty }, price));
     }
 
     if (!products.length) {
@@ -182,13 +203,20 @@ exports.verifyPayment = async (req, res) => {
     const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
 
     const redeemable = Math.min(
-      Number(redeemCoins),
+      Number(payment.coinsUsed ?? redeemCoins),
       user.coinsBalance,
       totalAfterFirstOrderDiscount
     );
 
     const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
     const coinsEarned = Math.floor(payableAmount * 0.1);
+
+    if (Math.abs(payableAmount - Number(payment.payableAmount)) > 0.01) {
+      return res.status(400).json({
+        success: false,
+        message: "Order total changed. Please restart payment.",
+      });
+    }
 
     console.log(`🪙 Before: ${user.coinsBalance}, Redeeming: ${redeemable}`);
 
@@ -210,8 +238,9 @@ exports.verifyPayment = async (req, res) => {
       coinStatus: "pending",
       coinCreditDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       paymentStatus: "Paid",
+      paymentMethod: "Prepaid",
       orderStatus: "pending",
-      address: address || {},
+      address: shippingAddress,
     });
 
     await order.save();
@@ -240,6 +269,15 @@ exports.verifyPayment = async (req, res) => {
         order: order._id,
       }
     );
+
+    try {
+      await syncOrderToShiprocket(order);
+    } catch (shiprocketError) {
+      console.error(
+        `Shiprocket sync failed for order ${order._id}:`,
+        shiprocketError.message
+      );
+    }
 
     res.status(200).json({
       success: true,
