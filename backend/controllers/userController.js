@@ -219,8 +219,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        phone: user.phone,
-        coinsBalance: user.coinsBalance || 0
+        phone: user.phone
       }
     });
   } catch (err) {
@@ -262,7 +261,6 @@ exports.googleLogin = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        coinsBalance: user.coinsBalance || 0,
       },
     });
   } catch (err) {
@@ -300,7 +298,6 @@ exports.getMe = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      coinsBalance: user.coinsBalance || 0,
     });
   } catch (err) {
     console.error("❌ GetMe error:", err);
@@ -367,7 +364,6 @@ exports.googleAuth = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        coinsBalance: user.coinsBalance || 0,
       },
     });
   } catch (err) {
@@ -411,7 +407,6 @@ exports.updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        coinsBalance: user.coinsBalance || 0,
       },
     });
   } catch (err) {

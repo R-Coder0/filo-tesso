@@ -27,12 +27,7 @@ const paymentSchema = new mongoose.Schema(
 
     payableAmount: {
       type: Number,
-      required: true, // after coins/discount
-    },
-
-    coinsUsed: {
-      type: Number,
-      default: 0,
+      required: true,
     },
 
     currency: {

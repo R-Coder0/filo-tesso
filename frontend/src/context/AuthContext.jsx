@@ -77,7 +77,6 @@ useEffect(() => {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        coinsBalance: Number(data.coinsBalance ?? 0),
       };
       
       console.log("✅ Fresh user data:", freshUser);
@@ -119,7 +118,6 @@ useEffect(() => {
       name: userData.name,
       email: userData.email,
       phone: userData.phone,
-      coinsBalance: Number(userData.coinsBalance ?? 0),
     };
 
     console.log("✅ Normalized user data:", normalized);
@@ -185,30 +183,6 @@ const login = async (identifier, password) => {
     window.location.href = "/login";
   };
 
-  // ✅ Update Coins
-  const updateCoins = (newBalance) => {
-    if (typeof newBalance !== "number") return;
-    
-    setUser((prev) => {
-      const updated = prev
-        ? { ...prev, coinsBalance: newBalance }
-        : { coinsBalance: newBalance };
-      
-      const stored = localStorage.getItem("auth");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        localStorage.setItem(
-          "auth",
-          JSON.stringify({
-            ...parsed,
-            user: { ...parsed.user, coinsBalance: newBalance },
-          })
-        );
-      }
-      return updated;
-    });
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -219,7 +193,6 @@ const login = async (identifier, password) => {
         register,
         googleLogin,
         logout,
-        updateCoins,
       }}
     >
       {children}

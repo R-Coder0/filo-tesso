@@ -1,10 +1,10 @@
 // src/pages/MyOrders.jsx
-import React, { useEffect, useState, useContext, useMemo } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
-import { 
-  Package, Calendar, CreditCard, Coins, FileText, Image, 
-  Clock, CheckCircle, XCircle, Ban, Loader 
+import {
+  Package, Calendar, CreditCard, FileText, Image,
+  Clock, Ban, Loader
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -121,65 +121,6 @@ const MyOrders = () => {
     const hoursDifference = (currentTime - deliveredTime) / (1000 * 60 * 60);
     
     return hoursDifference <= 24; // 24 hours window
-  };
-
-  // Derive coins from orders if context doesn't have a reliable value
-  const derivedCoinsFromOrders = useMemo(() => {
-    try {
-      return (orders || []).reduce(
-        (sum, o) => sum + (Number(o?.coinsEarned) || 0) - (Number(o?.coinsRedeemed) || 0),
-        0
-      );
-    } catch {
-      return 0;
-    }
-  }, [orders]);
-
-  // Prefer context balance if it's a number; otherwise fallback to derived
-  const coinBalance =
-    typeof user?.coinsBalance === "number" ? user.coinsBalance : derivedCoinsFromOrders;
-
-  const getCoinStatusInfo = (order) => {
-    const coinStatus = order.coinStatus || 'pending';
-    const coinCreditDate = order.coinCreditDate ? new Date(order.coinCreditDate) : null;
-    const now = new Date();
-    
-    switch (coinStatus) {
-      case 'credited':
-        return {
-          icon: CheckCircle,
-          color: 'text-green-600',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
-          text: 'Coins Credited',
-          description: `${order.coinsEarned} coins added to your wallet`
-        };
-      
-      case 'cancelled':
-        return {
-          icon: XCircle,
-          color: 'text-red-600',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
-          text: 'Coins Cancelled',
-          description: 'Order was cancelled/returned'
-        };
-      
-      case 'pending':
-      default:
-        const daysRemaining = coinCreditDate ? Math.ceil((coinCreditDate - now) / (1000 * 60 * 60 * 24)) : 10;
-        
-        return {
-          icon: Clock,
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          text: 'Coins Pending',
-          description: daysRemaining > 0 
-            ? `Will be credited in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`
-            : 'Will be credited today'
-        };
-    }
   };
 
   const getOrderStatusInfo = (order) => {
@@ -415,11 +356,6 @@ const MyOrders = () => {
               <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
               <p className="text-gray-600">Track and manage your purchases</p>
             </div>
-            <div className="mt-4 sm:mt-0 flex items-center gap-2 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-3 rounded-full shadow-lg">
-              <Coins className="w-5 h-5" />
-              <span className="font-bold text-lg">{coinBalance}</span>
-              <span className="text-sm opacity-90">Coins</span>
-            </div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-16 text-center">
@@ -443,11 +379,6 @@ const MyOrders = () => {
               <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
               <p className="text-gray-600">Track and manage your purchases</p>
             </div>
-            <div className="mt-4 sm:mt-0 flex items-center gap-2 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-3 rounded-full shadow-lg">
-              <Coins className="w-5 h-5" />
-              <span className="font-bold text-lg">{coinBalance}</span>
-              <span className="text-sm opacity-90">Coins</span>
-            </div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-16 text-center">
@@ -468,20 +399,13 @@ const MyOrders = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-12">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
-            <p className="text-gray-600">Track orders and coin status</p>
-          </div>
-          <div className="mt-4 sm:mt-0 flex items-center justify-center gap-2 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-3 rounded-full shadow-lg">
-            <Coins className="w-5 h-5" />
-            <span className="font-bold text-lg">{coinBalance}</span>
-            <span className="text-sm opacity-90">Coins Available</span>
+            <p className="text-gray-600">Track and manage your purchases</p>
           </div>
         </div>
 
         <div className="space-y-6">
           {orders.map((order) => {
-            const coinStatusInfo = getCoinStatusInfo(order);
             const orderStatusInfo = getOrderStatusInfo(order);
-            const CoinStatusIcon = coinStatusInfo.icon;
             const isThisOrderCancelling = cancellingOrderId === order._id;
             const isThisOrderReturning = returningOrderId === order._id;
             const isNew = isNewOrder(order.createdAt);
@@ -557,7 +481,7 @@ const MyOrders = () => {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 pb-6 border-b border-gray-200">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                         <Calendar className="w-5 h-5 text-gray-600" />
@@ -581,19 +505,6 @@ const MyOrders = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Coins className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 font-medium">Coins Activity</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          <span className="text-green-600">+{order.coinsEarned}</span>
-                          {" / "}
-                          <span className="text-red-600">-{order.coinsRedeemed}</span>
-                        </p>
-                      </div>
-                    </div>
                   </div>
 
                   {order.cancelled && (
@@ -626,11 +537,10 @@ const MyOrders = () => {
                             )}
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
-                            {order.cancellationStatus === 'requested' && 
+                            {order.cancellationStatus === 'requested' &&
                               'Your cancellation request is under review. Admin will process it shortly.'}
-                            {order.cancellationStatus === 'approved' && 
-                              `Your order has been cancelled. ${order.coinsRedeemed > 0 ? 
-                                `${order.coinsRedeemed} coins have been refunded to your account.` : ''}`}
+                            {order.cancellationStatus === 'approved' &&
+                              'Your order has been cancelled.'}
                             {order.cancellationStatus === 'rejected' && 
                               'Your cancellation request was rejected. Please contact support for more details.'}
                           </p>
@@ -644,41 +554,11 @@ const MyOrders = () => {
                     </div>
                   )}
 
-                  {order.coinsEarned > 0 && (
-                    <div className={`${coinStatusInfo.bgColor} ${coinStatusInfo.borderColor} border rounded-xl p-4 mb-6`}>
-                      <div className="flex items-center gap-3">
-                        <CoinStatusIcon className={`w-5 h-5 ${coinStatusInfo.color}`} />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-semibold ${coinStatusInfo.color}`}>
-                              {coinStatusInfo.text}
-                            </span>
-                            {order.coinCreditDate && coinStatusInfo.text === 'Coins Pending' && (
-                              <span className="text-xs text-gray-500">
-                                (until {new Date(order.coinCreditDate).toLocaleDateString()})
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{coinStatusInfo.description}</p>
-                        </div>
-                        <span className={`text-lg font-bold ${coinStatusInfo.color}`}>
-                          +{order.coinsEarned}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="bg-gray-50 rounded-xl p-4 mb-6">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-600">Subtotal</span>
                       <span className="text-sm font-medium text-gray-900">₹{order.totalAmount}</span>
                     </div>
-                    {order.coinsRedeemed > 0 && (
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Coins Redeemed</span>
-                        <span className="text-sm font-medium text-green-600">-₹{order.coinsRedeemed}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                       <span className="text-base font-semibold text-gray-900">Amount Paid</span>
                       <span className="text-lg font-bold text-gray-900">₹{order.payableAmount}</span>

@@ -1,4 +1,11 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { Heart } from "lucide-react";
@@ -18,6 +25,28 @@ import {
   normalizeShopGender,
 } from "../utils/navigationCategories";
 
+const PRODUCTS_PER_PAGE = 20;
+const LOAD_MORE_DELAY_MS = 650;
+
+const getProductKey = (product) =>
+  String(product?._id || product?.productId || product?.id || product?.slug || "");
+
+const mergeUniqueProducts = (currentProducts, newProducts) => {
+  const seen = new Set(currentProducts.map(getProductKey).filter(Boolean));
+  return [
+    ...currentProducts,
+    ...newProducts.filter((product) => {
+      const key = getProductKey(product);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }),
+  ];
+};
+
+const wait = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 export default function HomeNewPopular() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
@@ -27,7 +56,13 @@ export default function HomeNewPopular() {
   const [category, setCategory] = useState("all");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
+  const loadMoreRef = useRef(null);
+  const isLoadingMoreRef = useRef(false);
+  const requestGenerationRef = useRef(0);
 
   const categories = useMemo(
     () => [
@@ -55,21 +90,48 @@ export default function HomeNewPopular() {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
+    const requestGeneration = requestGenerationRef.current + 1;
+    requestGenerationRef.current = requestGeneration;
 
     const fetchProducts = async () => {
       setLoading(true);
+      setLoadingMore(false);
+      isLoadingMoreRef.current = false;
+      setProducts([]);
+      setPage(1);
+      setHasMore(true);
+
       try {
-        const params = new URLSearchParams({ category: gender });
+        const params = new URLSearchParams({
+          category: gender,
+          page: "1",
+          limit: String(PRODUCTS_PER_PAGE),
+        });
         if (category !== "all") params.set("subcategory", category);
 
-        const { data } = await axios.get(`${apiUrl}/api/products?${params.toString()}`);
+        const { data } = await axios.get(
+          `${apiUrl}/api/products?${params.toString()}`,
+          { signal: controller.signal }
+        );
         const list = extractProducts(data);
-        if (isMounted) setProducts(list.slice(0, 5));
+        const totalPages = Number(data?.data?.total_pages || 1);
+
+        if (isMounted && requestGenerationRef.current === requestGeneration) {
+          setProducts(list);
+          setHasMore(totalPages > 1);
+        }
       } catch (error) {
+        if (error.code === "ERR_CANCELED") return;
         console.error("Error fetching home popular products:", error);
-        if (isMounted) setProducts([]);
+        if (isMounted && requestGenerationRef.current === requestGeneration) {
+          setProducts([]);
+          setHasMore(false);
+        }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted && requestGenerationRef.current === requestGeneration) {
+          setLoading(false);
+        }
       }
     };
 
@@ -77,8 +139,72 @@ export default function HomeNewPopular() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [apiUrl, gender, category]);
+
+  const loadMoreProducts = useCallback(async () => {
+    if (loading || isLoadingMoreRef.current || !hasMore) return;
+
+    const requestGeneration = requestGenerationRef.current;
+    const nextPage = page + 1;
+    isLoadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      await wait(LOAD_MORE_DELAY_MS);
+      if (requestGenerationRef.current !== requestGeneration) return;
+
+      const params = new URLSearchParams({
+        category: gender,
+        page: String(nextPage),
+        limit: String(PRODUCTS_PER_PAGE),
+      });
+      if (category !== "all") params.set("subcategory", category);
+
+      const { data } = await axios.get(
+        `${apiUrl}/api/products?${params.toString()}`
+      );
+      if (requestGenerationRef.current !== requestGeneration) return;
+
+      const list = extractProducts(data);
+      const totalPages = Number(data?.data?.total_pages || nextPage);
+
+      setProducts((current) => mergeUniqueProducts(current, list));
+      setPage(nextPage);
+      setHasMore(nextPage < totalPages);
+    } catch (error) {
+      console.error("Error loading more home products:", error);
+      toast.error("More products could not be loaded. Please try again.");
+    } finally {
+      if (requestGenerationRef.current === requestGeneration) {
+        isLoadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    }
+  }, [apiUrl, category, gender, hasMore, loading, page]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !("IntersectionObserver" in window) ||
+      !loadMoreRef.current ||
+      loading ||
+      !hasMore
+    ) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreProducts();
+      },
+      { rootMargin: "500px 0px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadMoreProducts, loading]);
 
   const activeCategoryLabel =
     categories.find((item) => item.value === category)?.label || "All";
@@ -140,7 +266,7 @@ export default function HomeNewPopular() {
         <div className="mt-9">
           {loading ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 xl:grid-cols-5">
-              {Array.from({ length: 5 }).map((_, index) => (
+              {Array.from({ length: 10 }).map((_, index) => (
                 <div key={index} className="animate-pulse">
                   <div className="aspect-[4/5] bg-gray-200" />
                   <div className="mt-3 h-4 w-3/4 bg-gray-200" />
@@ -228,6 +354,25 @@ export default function HomeNewPopular() {
               <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-6 text-gray-500">
                 We are curating fresh {gender} drops for this category. Check back soon for new fits.
               </p>
+            </div>
+          )}
+
+          {!loading && products.length > 0 && (
+            <div ref={loadMoreRef} className="flex min-h-28 items-center justify-center py-8">
+              {loadingMore ? (
+                <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
+                  Loading more products
+                </div>
+              ) : hasMore ? (
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
+                  Scroll for more
+                </span>
+              ) : (
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
+                  You have seen all products
+                </span>
+              )}
             </div>
           )}
         </div>

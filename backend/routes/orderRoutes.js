@@ -7,7 +7,6 @@ const {
   getMyOrders,
   updateOrderStatus,
   deleteOrder,
-  manualCreditCoins,
   cancelOrder, // NEW IMPORT
   getCancellationRequests, // NEW IMPORT
   updateCancellationStatus,
@@ -64,9 +63,6 @@ router.patch('/admin/:orderId/cancellation-status', isAdmin, updateCancellationS
 
 // Admin: update an order's payment status
 router.post('/update-status', isAdmin, updateOrderStatus);
-
-// Admin: manual coin credit endpoint
-router.post('/manual-credit-coins', isAdmin, manualCreditCoins);
 
 // Admin: delete an order by ID
 router.delete('/:id', isAdmin, deleteOrder);

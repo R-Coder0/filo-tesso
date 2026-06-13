@@ -6,6 +6,7 @@ const nodemailer = require("nodemailer");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
+const { sendOrderPlacedEmails } = require("../utils/orderEmails");
 const {
   assignShiprocketAwb,
   syncOrderToShiprocket,
@@ -104,20 +105,9 @@ exports.createOrder = async (req, res) => {
     }
     // 🔥🔥🔥 MAIN FIX END
 
-    // ✅ COINS LOGIC (UNCHANGED BUT SAFE)
-    const redeemRequested = Math.max(0, Number(req.body.redeemCoins || 0));
-
-    if (redeemRequested > user.coinsBalance) {
-      return res.status(400).json({
-        message: `Insufficient coins. You have ${user.coinsBalance}`,
-      });
-    }
-
     const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
     const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
-    const redeemable = Math.min(redeemRequested, totalAfterFirstOrderDiscount);
-    const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
-    const coinsEarned = Math.floor(payableAmount * 0.01);
+    const payableAmount = totalAfterFirstOrderDiscount;
 
     // ✅ CREATE ORDER
     const order = new Order({
@@ -128,10 +118,6 @@ exports.createOrder = async (req, res) => {
       payableAmount,
       firstOrderDiscountRate: firstOrderDiscount.rate,
       firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
-      coinsEarned,
-      coinsRedeemed: redeemable,
-      coinStatus: "pending",
-      coinCreditDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       paymentStatus: "Pending",
       paymentMethod: "COD",
       orderStatus: "pending",
@@ -160,9 +146,22 @@ exports.createOrder = async (req, res) => {
       }
     }
 
-    // ✅ COINS DEDUCT
-    user.coinsBalance -= redeemable;
-    await user.save();
+    try {
+      const emailResults = await sendOrderPlacedEmails(order);
+      for (const result of emailResults) {
+        if (!result.sent) {
+          console.error(
+            `Order email failed for ${result.role} (${getOrderReference(order)}):`,
+            result.error
+          );
+        }
+      }
+    } catch (emailError) {
+      console.error(
+        `Order email setup failed (${getOrderReference(order)}):`,
+        emailError.message
+      );
+    }
 
     try {
       await syncOrderToShiprocket(order);
@@ -173,14 +172,8 @@ exports.createOrder = async (req, res) => {
       );
     }
 
-    // ✅ EMAIL (same as your original — untouched)
-    if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {
-      // 👇 tu apna pura email wala code yahin same rehne de
-    }
-
     res.status(201).json({
       order,
-      coinsBalance: user.coinsBalance,
     });
 
   } catch (err) {
@@ -250,13 +243,7 @@ exports.updateOrderStatus = async (req, res) => {
       }
     }
 
-    // 1) Cancel/return par pending coins cancel
-    if (['cancelled', 'returned'].includes(status) && order.coinStatus === 'pending') {
-      order.coinStatus = 'cancelled';
-      console.log(`❌ Coins cancelled for order ${id} due to ${status}`);
-    }
-
-    // 2) Admin status ke through paymentStatus bhi control kare
+    // Admin status ke through paymentStatus bhi control kare
     if (status === 'delivered') {
       // COD + Online dono ke liye – delivered ka matlab payment mil gaya
       order.paymentStatus = 'Paid';
@@ -302,58 +289,6 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-
-// NEW: Function to credit pending coins (for cron job)
-exports.creditPendingCoins = async () => {
-  try {
-    const ordersToCredit = await Order.find({
-      coinStatus: 'pending',
-      coinCreditDate: { $lte: new Date() },
-      orderStatus: { $nin: ['cancelled', 'returned'] },
-      paymentStatus: 'Paid'
-    }).populate('user');
-
-    let creditedCount = 0;
-
-    for (const order of ordersToCredit) {
-      // Add coins to user's wallet
-      await User.findByIdAndUpdate(order.user._id, {
-        $inc: { coinsBalance: order.coinsEarned }
-      });
-
-      // Update order coin status
-      order.coinStatus = 'credited';
-      await order.save();
-
-      creditedCount++;
-      console.log(`✅ Coins credited: ${order.coinsEarned} to user ${order.user._id} for order ${getOrderReference(order)}`);
-    }
-
-    return creditedCount;
-  } catch (error) {
-    console.error('❌ Error crediting coins:', error);
-    throw error;
-  }
-};
-
-// NEW: Manual coin credit endpoint for testing
-exports.manualCreditCoins = async (req, res) => {
-  try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-
-    const creditedCount = await exports.creditPendingCoins();
-    
-    res.json({ 
-      message: `Successfully credited coins for ${creditedCount} orders`,
-      creditedCount 
-    });
-  } catch (error) {
-    console.error('❌ Manual coin credit failed:', error);
-    res.status(500).json({ message: "Failed to credit coins", error: error.message });
-  }
-};
 
 // NEW: User cancels order
 exports.cancelOrder = async (req, res) => {
@@ -474,22 +409,7 @@ exports.updateCancellationStatus = async (req, res) => {
     order.cancellationStatus = status;
 
     if (status === 'approved') {
-      // Process refund and coin adjustments
       order.orderStatus = 'cancelled';
-      
-      // Refund coins if any were redeemed
-      if (order.coinsRedeemed > 0) {
-        await User.findByIdAndUpdate(order.user._id, {
-          $inc: { coinsBalance: order.coinsRedeemed }
-        });
-        console.log(`✅ Coins refunded: ${order.coinsRedeemed} to user ${order.user._id}`);
-      }
-      
-      // Cancel pending coins
-      if (order.coinsEarned > 0 && order.coinStatus === 'pending') {
-        order.coinStatus = 'cancelled';
-        console.log(`❌ Pending coins cancelled: ${order.coinsEarned} for order ${getOrderReference(order)}`);
-      }
 
       // Send email to user about approved cancellation
       if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {
@@ -509,10 +429,6 @@ exports.updateCancellationStatus = async (req, res) => {
             <h2>Your Cancellation Request Has Been Approved</h2>
             <p>Dear ${order.user.name},</p>
             <p>Your cancellation request for order <strong>#${getOrderReference(order)}</strong> has been approved.</p>
-            ${order.coinsRedeemed > 0 ? 
-              `<p><strong>${order.coinsRedeemed} coins</strong> have been refunded to your account.</p>` : 
-              ''
-            }
             <p><strong>Order Details:</strong></p>
             <ul>
               <li>Order ID: ${getOrderReference(order)}</li>
@@ -724,22 +640,7 @@ exports.updateReturnStatus = async (req, res) => {
     order.returnStatus = status;
 
     if (status === 'approved') {
-      // Process refund and coin adjustments
       order.orderStatus = 'returned';
-      
-      // Refund coins if any were redeemed
-      if (order.coinsRedeemed > 0) {
-        await User.findByIdAndUpdate(order.user._id, {
-          $inc: { coinsBalance: order.coinsRedeemed }
-        });
-        console.log(`✅ Coins refunded: ${order.coinsRedeemed} to user ${order.user._id}`);
-      }
-      
-      // Cancel pending coins if not already credited
-      if (order.coinsEarned > 0 && order.coinStatus === 'pending') {
-        order.coinStatus = 'cancelled';
-        console.log(`❌ Pending coins cancelled: ${order.coinsEarned} for order ${getOrderReference(order)}`);
-      }
 
       // Send email to user about approved return
       if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {
@@ -759,10 +660,6 @@ exports.updateReturnStatus = async (req, res) => {
             <h2>Your Return Request Has Been Approved</h2>
             <p>Dear ${order.user.name},</p>
             <p>Your return request for order <strong>#${getOrderReference(order)}</strong> has been approved.</p>
-            ${order.coinsRedeemed > 0 ? 
-              `<p><strong>${order.coinsRedeemed} coins</strong> have been refunded to your account.</p>` : 
-              ''
-            }
             <p><strong>Return Details:</strong></p>
             <ul>
               <li>Order ID: ${getOrderReference(order)}</li>

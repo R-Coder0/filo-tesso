@@ -1,21 +1,61 @@
 // utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: (process.env.SMTP_SECURE === "true"), // true for 465
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+let transporter;
 
-transporter.verify().then(() => {
-  console.log("Email transporter ready");
-}).catch(err => {
-  console.warn("Email transporter verify failed (this may be fine in dev):", err.message);
-});
+const getTransporter = () => {
+  if (transporter) return transporter;
+
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === "true",
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+    return transporter;
+  }
+
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      auth: {
+        user: process.env.ADMIN_EMAIL,
+        pass: process.env.ADMIN_EMAIL_PASS,
+      },
+    });
+    return transporter;
+  }
+
+  throw new Error("SMTP email credentials are not configured");
+};
+
+const getFromAddress = () =>
+  process.env.FROM_EMAIL ||
+  process.env.SMTP_USER ||
+  process.env.ADMIN_EMAIL;
+
+async function sendEmail({ to, subject, html, text, replyTo }) {
+  if (!to) throw new Error("Email recipient is required");
+
+  return getTransporter().sendMail({
+    from: getFromAddress(),
+    to,
+    subject,
+    html,
+    text,
+    replyTo,
+  });
+}
 
 async function sendOTPEmail(to, otp) {
   const html = `
@@ -26,14 +66,13 @@ async function sendOTPEmail(to, otp) {
     </div>
   `;
 
-  const mailOptions = {
-    from: process.env.FROM_EMAIL || process.env.SMTP_USER,
+  return sendEmail({
     to,
-    subject: "Verify your email — your OTP",
+    subject: "Verify your email - your OTP",
     html,
-  };
-
-  return transporter.sendMail(mailOptions);
+  });
 }
 
-module.exports = { sendOTPEmail };
+const verifyEmailTransport = () => getTransporter().verify();
+
+module.exports = { sendEmail, sendOTPEmail, verifyEmailTransport };

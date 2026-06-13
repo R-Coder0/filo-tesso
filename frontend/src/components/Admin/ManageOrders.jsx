@@ -861,7 +861,7 @@ const ManageOrders = ({ view = "all" }) => {
                         Order ID: {getOrderNumber(order)}
                       </h3>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-700 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 mb-4">
                         <div>
                           <p className="font-medium text-sm text-gray-500">User</p>
                           <p>{order.user?.name} ({order.user?.email})</p>
@@ -869,10 +869,6 @@ const ManageOrders = ({ view = "all" }) => {
                         <div>
                           <p className="font-medium text-sm text-gray-500">Amount</p>
                           <p>₹{order.totalAmount} (Payable: ₹{order.payableAmount})</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm text-gray-500">Coins</p>
-                          <p>Earned: +{order.coinsEarned} | Redeemed: -{order.coinsRedeemed}</p>
                         </div>
                       </div>
 
@@ -1028,7 +1024,7 @@ const ManageOrders = ({ view = "all" }) => {
                         Order ID: {getOrderNumber(order)}
                       </h3>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-700 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 mb-4">
                         <div>
                           <p className="font-medium text-sm text-gray-500">User</p>
                           <p>{order.user?.name} ({order.user?.email})</p>
@@ -1036,10 +1032,6 @@ const ManageOrders = ({ view = "all" }) => {
                         <div>
                           <p className="font-medium text-sm text-gray-500">Amount</p>
                           <p>₹{order.totalAmount} (Payable: ₹{order.payableAmount})</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm text-gray-500">Coins</p>
-                          <p>Earned: +{order.coinsEarned} | Redeemed: -{order.coinsRedeemed}</p>
                         </div>
                       </div>
 

@@ -137,7 +137,6 @@ const Register = () => {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          coinsBalance: Number(user.coinsBalance ?? 0),
         }, 
         token 
       };

@@ -325,6 +325,8 @@ const getProducts = async (req, res) => {
     const rawCat = req.query.category;
     const rawSub = req.query.subcategory;
     const rawSearch = req.query.q || req.query.search;
+    const paginationRequested =
+      req.query.page !== undefined || req.query.limit !== undefined;
 
     const category = rawCat ? String(rawCat).toLowerCase().trim() : null;
     const subcategory = rawSub ? String(rawSub).toLowerCase().trim() : null;
@@ -345,6 +347,26 @@ const getProducts = async (req, res) => {
           ],
         }
       : filter;
+
+    if (paginationRequested) {
+      const { page, limit, skip } = getPagination(req, 20);
+      const [products, total] = await Promise.all([
+        Product.find(finalFilter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Product.countDocuments(finalFilter),
+      ]);
+
+      const mappedProducts =
+        String(req.query.format || "").toLowerCase() === "shiprocket"
+          ? products.map((product) => toShiprocketProduct(req, product))
+          : products.map(toAppProduct);
+
+      return res.json(
+        productListResponse(mappedProducts, { total, page, limit })
+      );
+    }
 
     const products = await Product
       .find(finalFilter)
@@ -514,6 +536,67 @@ const normalizeGalleryInput = (raw) => {
   return values.filter((item) => item.startsWith("/uploads/") || /^https?:\/\//i.test(item));
 };
 
+const MAX_PRODUCT_GALLERY_IMAGES = 10;
+
+const normalizeImageReference = (raw) => {
+  const [image] = normalizeGalleryInput(raw) || [];
+  return image || "";
+};
+
+const parseGalleryOrder = (raw) => {
+  if (!raw) return null;
+
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const buildOrderedGallery = ({ existingImages = [], uploadedImages = [], rawOrder }) => {
+  const normalizedExisting = normalizeGalleryInput(existingImages) || [];
+  const order = parseGalleryOrder(rawOrder);
+
+  if (!order) {
+    return [...normalizedExisting, ...uploadedImages].slice(
+      0,
+      MAX_PRODUCT_GALLERY_IMAGES
+    );
+  }
+
+  const allowedExisting = new Set(normalizedExisting);
+  const orderedImages = [];
+  const addUniqueImage = (image) => {
+    if (
+      image &&
+      orderedImages.length < MAX_PRODUCT_GALLERY_IMAGES &&
+      !orderedImages.includes(image)
+    ) {
+      orderedImages.push(image);
+    }
+  };
+
+  order.forEach((item) => {
+    if (item?.type === "existing") {
+      const image = normalizeImageReference(item.value);
+      if (allowedExisting.has(image)) addUniqueImage(image);
+      return;
+    }
+
+    if (item?.type === "new") {
+      const index = Number(item.index);
+      if (Number.isInteger(index) && index >= 0) {
+        addUniqueImage(uploadedImages[index]);
+      }
+    }
+  });
+
+  normalizedExisting.forEach(addUniqueImage);
+  uploadedImages.forEach(addUniqueImage);
+  return orderedImages;
+};
+
 // POST /api/products  (multipart: image + images[])
 const addProduct = async (req, res) => {
   try {
@@ -573,13 +656,20 @@ const keywords = req.body.keywords
       "gallery",
       "galleryImages",
     ]);
+    const existingMainImage = normalizeImageReference(req.body.existingMainImage);
 
-    if (!mainImageFile) {
+    if (!mainImageFile && !existingMainImage) {
       return res.status(400).json({ message: "Main image is required" });
     }
 
-    const mainImage = `/uploads/${mainImageFile.filename}`;
-    const galleryImages = galleryFiles.map(file => `/uploads/${file.filename}`);
+    const mainImage = mainImageFile
+      ? `/uploads/${mainImageFile.filename}`
+      : existingMainImage;
+    const galleryImages = buildOrderedGallery({
+      existingImages: req.body.existingGallery,
+      uploadedImages: galleryFiles.map(file => `/uploads/${file.filename}`),
+      rawOrder: req.body.galleryOrder,
+    });
 
     const product = await Product.create({
       name,
@@ -723,12 +813,19 @@ if (typeof body.keywords !== "undefined") {
     if (mainImageFile) {
       product.image = `/uploads/${mainImageFile.filename}`;
     }
-    const existingGallery = normalizeGalleryInput(body.existingGallery);
-    if (typeof existingGallery !== "undefined" || galleryFiles.length) {
-      product.gallery = [
-        ...(existingGallery || []),
-        ...galleryFiles.map(file => `/uploads/${file.filename}`),
-      ];
+    if (
+      typeof body.existingGallery !== "undefined" ||
+      typeof body.galleryOrder !== "undefined" ||
+      galleryFiles.length
+    ) {
+      product.gallery = buildOrderedGallery({
+        existingImages:
+          typeof body.existingGallery !== "undefined"
+            ? body.existingGallery
+            : product.gallery,
+        uploadedImages: galleryFiles.map(file => `/uploads/${file.filename}`),
+        rawOrder: body.galleryOrder,
+      });
     }
 
     const updatedProduct = await product.save();

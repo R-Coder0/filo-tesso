@@ -7,6 +7,7 @@ const Product = require("../models/Product");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
+const { sendOrderPlacedEmails } = require("../utils/orderEmails");
 const { syncOrderToShiprocket } = require("../utils/shiprocket");
 
 const razorpay = new Razorpay({
@@ -22,10 +23,8 @@ const getVariantForSize = (product, selectedSize) => {
 // ✅ CREATE ORDER (PAYMENT INIT)
 exports.createOrder = async (req, res) => {
   try {
-    const { cartItems, redeemCoins = 0 } = req.body;
+    const { cartItems } = req.body;
     const userId = req.user._id;
-
-    const user = await User.findById(userId);
 
     let totalAmount = 0;
 
@@ -61,13 +60,7 @@ exports.createOrder = async (req, res) => {
     const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
     const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
 
-    const redeemable = Math.min(
-      Number(redeemCoins),
-      user.coinsBalance,
-      totalAfterFirstOrderDiscount
-    );
-
-    const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
+    const payableAmount = totalAfterFirstOrderDiscount;
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(payableAmount * 100),
@@ -80,7 +73,6 @@ exports.createOrder = async (req, res) => {
       user: userId,
       totalAmount,
       payableAmount,
-      coinsUsed: redeemable,
       status: "created",
     });
 
@@ -109,7 +101,6 @@ exports.verifyPayment = async (req, res) => {
       razorpay_signature,
       cartItems,
       address,
-      redeemCoins = 0,
     } = req.body;
 
     const userId = req.user._id;
@@ -199,31 +190,15 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    // ✅ COINS LOGIC
     const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
     const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
-
-    const redeemable = Math.min(
-      Number(payment.coinsUsed ?? redeemCoins),
-      user.coinsBalance,
-      totalAfterFirstOrderDiscount
-    );
-
-    const payableAmount = Math.max(0, totalAfterFirstOrderDiscount - redeemable);
-    const coinsEarned = Math.floor(payableAmount * 0.1);
+    const payableAmount = totalAfterFirstOrderDiscount;
 
     if (Math.abs(payableAmount - Number(payment.payableAmount)) > 0.01) {
       return res.status(400).json({
         success: false,
         message: "Order total changed. Please restart payment.",
       });
-    }
-
-    console.log(`🪙 Before: ${user.coinsBalance}, Redeeming: ${redeemable}`);
-
-    if (redeemable > 0) {
-      user.coinsBalance -= redeemable;
-      await user.save();
     }
 
     // ✅ CREATE ORDER
@@ -235,10 +210,6 @@ exports.verifyPayment = async (req, res) => {
       payableAmount,
       firstOrderDiscountRate: firstOrderDiscount.rate,
       firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
-      coinsEarned,
-      coinsRedeemed: redeemable,
-      coinStatus: "pending",
-      coinCreditDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       paymentStatus: "Paid",
       paymentMethod: "Prepaid",
       orderStatus: "pending",
@@ -273,6 +244,23 @@ exports.verifyPayment = async (req, res) => {
     );
 
     try {
+      const emailResults = await sendOrderPlacedEmails(order);
+      for (const result of emailResults) {
+        if (!result.sent) {
+          console.error(
+            `Order email failed for ${result.role} (${order.orderNumber || order._id}):`,
+            result.error
+          );
+        }
+      }
+    } catch (emailError) {
+      console.error(
+        `Order email setup failed (${order.orderNumber || order._id}):`,
+        emailError.message
+      );
+    }
+
+    try {
       await syncOrderToShiprocket(order);
     } catch (shiprocketError) {
       console.error(
@@ -285,7 +273,6 @@ exports.verifyPayment = async (req, res) => {
       success: true,
       message: "Payment successful",
       order,
-      coinsBalance: user.coinsBalance,
     });
 
   } catch (err) {

@@ -34,7 +34,7 @@ const loadRazorpayScript = () =>
 const CheckoutPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user, token, updateCoins } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -67,8 +67,6 @@ const CheckoutPage = () => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
 
-  const [availableCoins, setAvailableCoins] = useState(user?.coinsBalance ?? 0);
-  const [redeemCoins, setRedeemCoins] = useState(0);
   const [referralCode, setReferralCode] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
   const [firstOrderDiscount, setFirstOrderDiscount] = useState({
@@ -99,14 +97,6 @@ const CheckoutPage = () => {
       setSavedAddresses([]);
     }
   }, []);
-
-  // coins availability sync
-  useEffect(() => {
-    if (user && typeof user.coinsBalance === "number") {
-      setAvailableCoins(user.coinsBalance);
-      setRedeemCoins((prev) => Math.max(0, Math.min(prev, user.coinsBalance)));
-    }
-  }, [user]);
 
   useEffect(() => {
     if (!token) return;
@@ -173,12 +163,7 @@ const CheckoutPage = () => {
   // Referral discount calculations
   const referralAmount = Math.floor(totalAfterFirstOrderDiscount * referralDiscount);
   const finalAfterReferral = totalAfterFirstOrderDiscount - referralAmount;
-  // Coins are capped to final discounted total
-  const effectiveRedeem = Math.max(
-    0,
-    Math.min(redeemCoins || 0, availableCoins || 0, finalAfterReferral || 0)
-  );
-  const payableAmount = Math.max(0, finalAfterReferral - effectiveRedeem);
+  const payableAmount = Math.max(0, finalAfterReferral);
 
   /*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
    */
@@ -266,7 +251,6 @@ const CheckoutPage = () => {
       form.append("products", JSON.stringify(products));
       form.append("discountRate", String(discountRate));
       form.append("discountedTotal", String(discountedTotal));
-      form.append("redeemCoins", String(effectiveRedeem));
       form.append("payableAmount", String(payableAmount));
       form.append("address", JSON.stringify(address));
 
@@ -285,11 +269,6 @@ const CheckoutPage = () => {
         },
       });
 
-      if (typeof data.coinsBalance === "number") {
-        setAvailableCoins(data.coinsBalance);
-        updateCoins(data.coinsBalance);
-      }
-
       const order = data.order || data;
 
       const orderDetails = {
@@ -303,10 +282,7 @@ const CheckoutPage = () => {
         firstOrderDiscountRate: order.firstOrderDiscountRate ?? firstOrderDiscountRate,
         firstOrderDiscountAmount: order.firstOrderDiscountAmount ?? firstOrderDiscountAmount,
         address,
-        coinsEarned: order.coinsEarned,
-        coinsRedeemed: order.coinsRedeemed ?? effectiveRedeem,
         payableAmount: order.payableAmount ?? payableAmount,
-        coinStatus: order.coinStatus,
       };
 
       navigate("/order-confirmation", { state: orderDetails });
@@ -332,7 +308,6 @@ const CheckoutPage = () => {
         `${apiUrl}/api/payment/create-order`,
         {
           cartItems,
-          redeemCoins: effectiveRedeem,
           address,
           totalAmount: discountedTotal,
           // ✅ YEH LINE ADD KARO
@@ -370,17 +345,11 @@ const CheckoutPage = () => {
                 razorpay_signature: rzpResponse.razorpay_signature,
                 cartItems,
                 address,
-                redeemCoins: effectiveRedeem,
               },
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
             const out = verifyRes?.data || {};
-            if (typeof out.coinsBalance === "number") {
-              setAvailableCoins(out.coinsBalance);
-              updateCoins(out.coinsBalance);
-            }
-
             const finalOrder = out.order || out;
             const orderDetails = {
               orderId: finalOrder.orderNumber || finalOrder._id || order.id,
@@ -393,10 +362,7 @@ const CheckoutPage = () => {
               firstOrderDiscountRate: finalOrder.firstOrderDiscountRate ?? firstOrderDiscountRate,
               firstOrderDiscountAmount: finalOrder.firstOrderDiscountAmount ?? firstOrderDiscountAmount,
               address,
-              coinsEarned: finalOrder.coinsEarned,
-              coinsRedeemed: finalOrder.coinsRedeemed ?? effectiveRedeem,
               payableAmount,
-              coinStatus: finalOrder.coinStatus,
             };
 
             navigate("/order-confirmation", { state: orderDetails });
@@ -425,7 +391,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid lg:grid-cols-3 gap-8">
-        {/* LEFT: Address + Upload + Coins */}
+        {/* LEFT: Address + Upload + Referral */}
         <div className="lg:col-span-2 space-y-8">
           {/* Saved Address Selection */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -535,29 +501,10 @@ const CheckoutPage = () => {
 
 
 
-          {/* Redeem Coins */}
+          {/* Referral */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">Redeem Coins & Referral</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-900">Referral Code</h2>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              {/* Coins input */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={0}
-              max={Math.min(availableCoins, finalAfterReferral)}
-                  value={redeemCoins}
-                  onChange={(e) => {
-                    const v = Number(e.target.value || 0);
-                    setRedeemCoins(Math.max(0, Math.min(v, availableCoins, finalAfterReferral)));
-                  }}
-                  className="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
-                />
-                <span className="text-sm text-gray-600">
-                  Available: <b>{availableCoins}</b>
-                </span>
-              </div>
-
-              {/* Referral input */}
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -648,13 +595,6 @@ const CheckoutPage = () => {
                   </span>
                 </div>
 
-
-                <div className="flex justify-between text-sm">
-                  <span>Coins Redeemed</span>
-                  <span className={effectiveRedeem ? "text-green-700 font-medium" : ""}>
-                    − {formatINR(effectiveRedeem)}
-                  </span>
-                </div>
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Payable</span>
                   <span>{formatINR(payableAmount)}</span>

@@ -51,17 +51,6 @@ const orderSchema = new mongoose.Schema(
     firstOrderDiscountRate: { type: Number, default: 0 },
     firstOrderDiscountAmount: { type: Number, default: 0 },
 
-    coinsEarned: { type: Number, default: 0 },
-    coinsRedeemed: { type: Number, default: 0 },
-
-    coinStatus: {
-      type: String,
-      enum: ["pending", "credited", "cancelled"],
-      default: "pending",
-    },
-
-    coinCreditDate: { type: Date },
-
     paymentStatus: {
       type: String,
       enum: ["Pending", "Paid", "Failed", "Refunded"],

@@ -38,6 +38,12 @@ const emptyProduct = {
   image: null,
   images: [],
   existingGallery: [],
+  sku: "",
+  hsn: "",
+  weight: "",
+  length: "",
+  breadth: "",
+  height: "",
   originalPrice: "",
   salePrice: "",
   stock: "",
@@ -61,6 +67,7 @@ const ManageProducts = () => {
 
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [duplicateSourceId, setDuplicateSourceId] = useState(null);
 
   const [newProduct, setNewProduct] = useState(emptyProduct);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,6 +81,8 @@ const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
   const [mainPreview, setMainPreview] = useState(""); // url string
   const [galleryPreviews, setGalleryPreviews] = useState([]); // [{id, url, file}]
   const [existingMainImage, setExistingMainImage] = useState(""); // for edit mode existing image path
+  const [existingMainImagePath, setExistingMainImagePath] = useState("");
+  const [draggedGalleryId, setDraggedGalleryId] = useState(null);
 
   const axiosAdmin = useMemo(() => {
     return axios.create({
@@ -98,6 +107,11 @@ const [sizeDraft, setSizeDraft] = useState({ size: "", stock: "" });
       return product.subcategories;
     }
     return product.subcategory ? [product.subcategory] : [];
+  };
+
+  const resolveImageUrl = (path) => {
+    if (!path) return "";
+    return /^https?:\/\//i.test(path) ? path : `${apiUrl}${path}`;
   };
 
   const toggleSubcategory = (subcategory) => {
@@ -275,11 +289,14 @@ const removeSizeVariant = (size) => {
     setMainPreview("");
     setGalleryPreviews([]);
     setExistingMainImage("");
+    setExistingMainImagePath("");
+    setDraggedGalleryId(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
+    setDuplicateSourceId(null);
     setNewProduct(emptyProduct);
     setDetailInput("");
     setWashCareInput("");
@@ -289,6 +306,7 @@ const removeSizeVariant = (size) => {
 
   const openAddModal = () => {
     setEditingId(null);
+    setDuplicateSourceId(null);
     setNewProduct(emptyProduct);
     setDetailInput("");
     setWashCareInput("");
@@ -300,6 +318,7 @@ const removeSizeVariant = (size) => {
 
   const openEditModal = (product) => {
     setEditingId(product._id);
+    setDuplicateSourceId(null);
     const existingVariants = product.sizeVariants?.length
       ? product.sizeVariants.map((variant) => ({
           size: String(variant.size || "").toUpperCase(),
@@ -319,6 +338,12 @@ const removeSizeVariant = (size) => {
       slug: product.slug || product.handle || "",
       originalPrice: product.price?.original || "",
       salePrice: product.price?.sale || "",
+      sku: product.sku || "",
+      hsn: product.hsn || "",
+      weight: product.shipping?.weight || "",
+      length: product.shipping?.length || "",
+      breadth: product.shipping?.breadth || "",
+      height: product.shipping?.height || "",
       stock: product.stock ?? "",
       sizeVariants: existingVariants,
       tags: product.tags?.join(", ") || "",
@@ -338,7 +363,8 @@ const removeSizeVariant = (size) => {
       subcategories: selectedSubcategories,
     });
 
-    setExistingMainImage(product.image ? `${apiUrl}${product.image}` : "");
+    setExistingMainImage(resolveImageUrl(product.image));
+    setExistingMainImagePath(product.image || "");
     setMainPreview(""); // only show existing until user selects new
     setGalleryPreviews(
       (product.gallery || []).map((path, index) => ({
@@ -346,7 +372,71 @@ const removeSizeVariant = (size) => {
         file: null,
         path,
         existing: true,
-        url: /^https?:\/\//i.test(path) ? path : `${apiUrl}${path}`,
+        url: resolveImageUrl(path),
+      }))
+    );
+    setDetailInput("");
+    setWashCareInput("");
+    setSizeDraft({ size: "", stock: "" });
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const openDuplicateModal = (product) => {
+    const existingVariants = product.sizeVariants?.length
+      ? product.sizeVariants.map((variant) => ({
+          size: String(variant.size || "").toUpperCase(),
+          stock: Number(variant.stock || 0),
+        }))
+      : (product.sizes || []).map((size) => ({
+          size: String(size || "").toUpperCase(),
+          stock: 0,
+        }));
+    const existingDetails = product.details?.length ? product.details : product.features || [];
+    const existingWashCare = product.washCare || [];
+    const selectedSubcategories = getProductSubcategories(product);
+
+    setEditingId(null);
+    setDuplicateSourceId(product._id);
+    setNewProduct({
+      name: `${product.name || "Product"} Copy`,
+      slug: "",
+      originalPrice: product.price?.original || "",
+      salePrice: product.price?.sale || "",
+      sku: product.sku || "",
+      hsn: product.hsn || "",
+      weight: product.shipping?.weight || "",
+      length: product.shipping?.length || "",
+      breadth: product.shipping?.breadth || "",
+      height: product.shipping?.height || "",
+      stock: product.stock ?? "",
+      sizeVariants: existingVariants,
+      tags: product.tags?.join(", ") || "",
+      metaTitle: product.seo?.metaTitle || "",
+      metaDescription: product.seo?.metaDescription || "",
+      keywords: product.seo?.keywords?.join(", ") || "",
+      description: product.description || "",
+      details: existingDetails.join(", "),
+      detailsArray: existingDetails,
+      washCare: existingWashCare.join(", "),
+      washCareArray: existingWashCare,
+      image: null,
+      images: [],
+      existingGallery: product.gallery || [],
+      category: product.category || "",
+      subcategory: selectedSubcategories[0] || "",
+      subcategories: selectedSubcategories,
+    });
+    setExistingMainImage(resolveImageUrl(product.image));
+    setExistingMainImagePath(product.image || "");
+    setMainPreview("");
+    setGalleryPreviews(
+      (product.gallery || []).map((path, index) => ({
+        id: `duplicate-${index}-${path}`,
+        file: null,
+        path,
+        existing: true,
+        url: resolveImageUrl(path),
       }))
     );
     setDetailInput("");
@@ -373,17 +463,13 @@ const removeSizeVariant = (size) => {
 
   const handleGalleryChange = (fileList) => {
     const selectedFiles = fileList ? Array.from(fileList) : [];
-    const existingItems = galleryPreviews.filter((g) => g.existing);
-    const availableSlots = Math.max(0, MAX_GALLERY_IMAGES - existingItems.length);
+    const availableSlots = Math.max(0, MAX_GALLERY_IMAGES - galleryPreviews.length);
     const files = selectedFiles.slice(0, availableSlots);
 
-    // cleanup old newly selected previews; keep existing image URLs intact
-    galleryPreviews.forEach((g) => {
-      if (!g.existing && g.url?.startsWith("blob:")) URL.revokeObjectURL(g.url);
-    });
-
     if (selectedFiles.length > availableSlots) {
-      setError(`Maximum ${MAX_GALLERY_IMAGES} gallery images allowed. Remove existing images to add more.`);
+      setError(
+        `Maximum ${MAX_GALLERY_IMAGES} gallery images allowed. Remove an image to add more.`
+      );
     } else {
       setError(null);
     }
@@ -394,11 +480,13 @@ const removeSizeVariant = (size) => {
       url: URL.createObjectURL(file),
     }));
 
-    const nextPreviews = [...existingItems, ...mapped];
+    const nextPreviews = [...galleryPreviews, ...mapped];
     setNewProduct((p) => ({
       ...p,
-      images: files,
-      existingGallery: existingItems.map((item) => item.path).filter(Boolean),
+      images: nextPreviews.filter((item) => !item.existing && item.file).map((item) => item.file),
+      existingGallery: nextPreviews
+        .filter((item) => item.existing && item.path)
+        .map((item) => item.path),
     }));
     setGalleryPreviews(nextPreviews);
   };
@@ -416,7 +504,43 @@ const removeSizeVariant = (size) => {
     }));
   };
 
-  const appendProductFormData = (formData, { includeExistingGallery = false } = {}) => {
+  const moveGalleryItem = (id, direction) => {
+    setGalleryPreviews((current) => {
+      const currentIndex = current.findIndex((item) => item.id === id);
+      const nextIndex = currentIndex + direction;
+      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= current.length) {
+        return current;
+      }
+
+      const reordered = [...current];
+      [reordered[currentIndex], reordered[nextIndex]] = [
+        reordered[nextIndex],
+        reordered[currentIndex],
+      ];
+      return reordered;
+    });
+  };
+
+  const dropGalleryItem = (targetId) => {
+    if (!draggedGalleryId || draggedGalleryId === targetId) {
+      setDraggedGalleryId(null);
+      return;
+    }
+
+    setGalleryPreviews((current) => {
+      const sourceIndex = current.findIndex((item) => item.id === draggedGalleryId);
+      const targetIndex = current.findIndex((item) => item.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+
+      const reordered = [...current];
+      const [movedItem] = reordered.splice(sourceIndex, 1);
+      reordered.splice(targetIndex, 0, movedItem);
+      return reordered;
+    });
+    setDraggedGalleryId(null);
+  };
+
+  const appendProductFormData = (formData) => {
     const detailsForSubmit = getDetailsForSubmit();
     const washCareForSubmit = getWashCareForSubmit();
     const subcategoriesForSubmit = newProduct.subcategories || [];
@@ -426,6 +550,12 @@ const removeSizeVariant = (size) => {
     formData.append("slug", newProduct.slug);
     formData.append("originalPrice", newProduct.originalPrice);
     formData.append("salePrice", newProduct.salePrice);
+    formData.append("sku", newProduct.sku || "");
+    formData.append("hsn", newProduct.hsn || "");
+    formData.append("weight", newProduct.weight || "");
+    formData.append("length", newProduct.length || "");
+    formData.append("breadth", newProduct.breadth || "");
+    formData.append("height", newProduct.height || "");
     formData.append("stock", newProduct.stock);
     formData.append("sizeVariants", JSON.stringify(newProduct.sizeVariants || []));
     formData.append("tags", newProduct.tags);
@@ -440,15 +570,29 @@ const removeSizeVariant = (size) => {
     detailsForSubmit.forEach((detail) => formData.append("details", detail));
     washCareForSubmit.forEach((item) => formData.append("washCare", item));
 
-    if (includeExistingGallery) {
-      formData.append("existingGallery", JSON.stringify(newProduct.existingGallery || []));
-    }
+    const existingGallery = galleryPreviews
+      .filter((item) => item.existing && item.path)
+      .map((item) => item.path);
+    const newGalleryItems = galleryPreviews.filter((item) => !item.existing && item.file);
+    const newGalleryIndexes = new Map(
+      newGalleryItems.map((item, index) => [item.id, index])
+    );
+    const galleryOrder = galleryPreviews.map((item) =>
+      item.existing
+        ? { type: "existing", value: item.path }
+        : { type: "new", index: newGalleryIndexes.get(item.id) }
+    );
 
+    formData.append("existingGallery", JSON.stringify(existingGallery));
+    formData.append("galleryOrder", JSON.stringify(galleryOrder));
     if (newProduct.image) formData.append("image", newProduct.image);
-
-    if (newProduct.images?.length > 0) {
-      newProduct.images.slice(0, MAX_GALLERY_IMAGES).forEach((img) => formData.append("images", img));
+    if (!newProduct.image && existingMainImagePath) {
+      formData.append("existingMainImage", existingMainImagePath);
     }
+
+    newGalleryItems
+      .slice(0, MAX_GALLERY_IMAGES)
+      .forEach((item) => formData.append("images", item.file));
 
     return {
       subcategoriesForSubmit,
@@ -467,10 +611,9 @@ const removeSizeVariant = (size) => {
 
       if (editingId) {
         const formData = new FormData();
-        appendProductFormData(formData, { includeExistingGallery: true });
+        appendProductFormData(formData);
         await axiosAdmin.put(`/${editingId}`, formData);
       } else {
-        // ✅ Create with multipart (images + fields)
         const formData = new FormData();
         appendProductFormData(formData);
 
@@ -479,7 +622,13 @@ const removeSizeVariant = (size) => {
 
       await fetchProducts();
       closeModal();
-      toast.success(editingId ? "Product updated successfully" : "Product added successfully");
+      toast.success(
+        editingId
+          ? "Product updated successfully"
+          : duplicateSourceId
+            ? "Product duplicated successfully"
+            : "Product added successfully"
+      );
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Failed to save product");
       toast.error(err.response?.data?.message || err.message || "Failed to save product");
@@ -568,7 +717,7 @@ const removeSizeVariant = (size) => {
                     <div className="w-full sm:w-24 sm:h-24 h-44 rounded-lg bg-gray-100 overflow-hidden border shrink-0">
                       {product.image ? (
                         <img
-                          src={`${apiUrl}${product.image}`}
+                          src={resolveImageUrl(product.image)}
                           alt={product.name}
                           className="w-full h-full object-cover"
                           loading="lazy"
@@ -644,6 +793,13 @@ const removeSizeVariant = (size) => {
                           Edit
                         </button>
                         <button
+                          onClick={() => openDuplicateModal(product)}
+                          disabled={isLoading}
+                          className="px-4 py-2 border border-gray-400 bg-white text-gray-800 font-semibold hover:border-black hover:bg-gray-100"
+                        >
+                          Duplicate
+                        </button>
+                        <button
                           onClick={() => handleDelete(product._id)}
                           disabled={isLoading}
                           className="px-4 py-2 hover:bg-black :bg-transparent text-black border-black border cursor-pointer hover:text-white font-semibold"
@@ -685,10 +841,18 @@ const removeSizeVariant = (size) => {
       <div className="sticky top-0 z-10 bg-white p-4 sm:p-2 border-b border-gray-200 flex items-start justify-between">
         <div className="pr-8">
           <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-            {editingId ? "Edit Product" : "Add Product"}
+            {editingId
+              ? "Edit Product"
+              : duplicateSourceId
+                ? "Duplicate Product"
+                : "Add Product"}
           </h3>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            {editingId ? "Update basic details." : "Upload image and fill product details."}
+            {editingId
+              ? "Update product details and gallery order."
+              : duplicateSourceId
+                ? "Change the title, images, or category, then create a new product."
+                : "Upload image and fill product details."}
           </p>
 
           {error && (
@@ -728,7 +892,7 @@ const removeSizeVariant = (size) => {
                   <span className="text-xs text-gray-500">No preview</span>
                 )}
               </div>
-              {(mainPreview || existingMainImage) && (
+              {mainPreview && (
                 <div className="mt-2 flex justify-end">
                   <button
                     type="button"
@@ -750,29 +914,56 @@ const removeSizeVariant = (size) => {
                   <span className="text-xs text-gray-500">No gallery selected</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {galleryPreviews.map((g) => (
-                    <div key={g.id} className="relative group overflow-hidden border bg-white">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {galleryPreviews.map((g, index) => (
+                    <div
+                      key={g.id}
+                      draggable
+                      onDragStart={() => setDraggedGalleryId(g.id)}
+                      onDragEnd={() => setDraggedGalleryId(null)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => dropGalleryItem(g.id)}
+                      className={`relative group overflow-hidden border bg-white cursor-grab ${
+                        draggedGalleryId === g.id ? "opacity-50 border-black" : "border-gray-200"
+                      }`}
+                    >
                       <img src={g.url} alt="Gallery" className="w-full h-20 object-cover" />
+                      <span className="absolute left-1 top-1 flex h-6 min-w-6 items-center justify-center bg-black px-1 text-[11px] font-bold text-white">
+                        {index + 1}
+                      </span>
                       {g.existing && (
-                        <span className="absolute bottom-1 left-1 rounded bg-white/85 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700">
+                        <span className="absolute right-1 top-1 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-700">
                           Existing
                         </span>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryItem(g.id)}
-                        className="
-                          absolute top-1 right-1
-                          bg-black/60 text-white text-xs
-                          rounded px-2 py-1
-                          opacity-100 sm:opacity-0 sm:group-hover:opacity-100
-                          transition
-                        "
-                        title="Remove"
-                      >
-                        ✕
-                      </button>
+                      <div className="grid grid-cols-3 border-t border-gray-200 bg-white">
+                        <button
+                          type="button"
+                          onClick={() => moveGalleryItem(g.id, -1)}
+                          disabled={index === 0}
+                          className="py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                          title="Move left"
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveGalleryItem(g.id, 1)}
+                          disabled={index === galleryPreviews.length - 1}
+                          className="border-x border-gray-200 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                          title="Move right"
+                        >
+                          →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryItem(g.id)}
+                          className="py-1.5 text-xs font-bold text-red-600 hover:bg-red-50"
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -780,7 +971,7 @@ const removeSizeVariant = (size) => {
 
               {galleryPreviews.length > 0 && (
                 <p className="text-xs text-gray-500 mt-2">
-                  Tap ✕ to remove any image.
+                  Drag images or use arrows to set their display order.
                 </p>
               )}
             </div>
@@ -1064,7 +1255,7 @@ const removeSizeVariant = (size) => {
             {/* Main Image - Improved */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                {editingId ? "New Main Image (optional)" : "Main Image"}
+                {editingId || duplicateSourceId ? "New Main Image (optional)" : "Main Image"}
               </label>
               <div className="relative">
                 <input
@@ -1073,20 +1264,24 @@ const removeSizeVariant = (size) => {
                   onChange={(e) => handleMainImageChange(e.target.files?.[0] || null)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   id="main-image-upload"
-                  required={!editingId}
+                  required={!editingId && !existingMainImagePath}
                 />
                 <div className="w-full p-3 border border-gray-300 bg-white flex items-center justify-between">
                   <span className="text-gray-600 text-sm truncate mr-2">
-                    {mainPreview ? 'Image selected' : editingId ? 'Choose new image (optional)' : 'Click to upload main image'}
+                    {mainPreview
+                      ? "Image selected"
+                      : editingId || duplicateSourceId
+                        ? "Choose new image (optional)"
+                        : "Click to upload main image"}
                   </span>
                   <span className="bg-gray-100 text-gray-700 px-3 py-1 text-sm font-medium border">
                     Browse
                   </span>
                 </div>
               </div>
-              {editingId && (
+              {(editingId || duplicateSourceId) && (
                 <p className="text-xs text-gray-500 mt-1">
-                  (Optional) Agar change nahi karna, to blank chhodo.
+                  Leave blank to keep the current main image.
                 </p>
               )}
             </div>
@@ -1101,7 +1296,10 @@ const removeSizeVariant = (size) => {
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={(e) => handleGalleryChange(e.target.files)}
+                  onChange={(e) => {
+                    handleGalleryChange(e.target.files);
+                    e.target.value = "";
+                  }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   id="gallery-images-upload"
                 />
@@ -1117,7 +1315,7 @@ const removeSizeVariant = (size) => {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                You can select up to {MAX_GALLERY_IMAGES} images at once
+                Add images in multiple selections, up to {MAX_GALLERY_IMAGES} total.
               </p>
             </div>
 
@@ -1259,7 +1457,13 @@ const removeSizeVariant = (size) => {
                 : "bg-black hover:bg-white hover:text-black hover:border-black border border-transparent"
             }`}
           >
-            {isLoading ? "Processing..." : editingId ? "Update Product" : "Add Product"}
+            {isLoading
+              ? "Processing..."
+              : editingId
+                ? "Update Product"
+                : duplicateSourceId
+                  ? "Create Duplicate"
+                  : "Add Product"}
           </button>
         </div>
       </form>

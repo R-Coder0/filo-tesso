@@ -1,14 +1,11 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import {
   User,
-  Coins,
   Package,
   LogOut,
-  Clock,
   Heart,
   MapPin,
   Plus,
@@ -103,8 +100,6 @@ const AddressForm = ({ onSave, onClose, initialData }) => {
 export default function Profile() {
   const { user, logout, token } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [pendingCoins, setPendingCoins] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL;
   const { wishlist } = useWishlist();
@@ -202,34 +197,10 @@ export default function Profile() {
     });
   };
 
-  useEffect(() => {
-    const fetchPendingCoins = async () => {
-      try {
-        const { data } = await axios.get(`${apiUrl}/api/orders/my-orders`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const pending = (data || []).reduce(
-          (total, order) =>
-            order.coinStatus === "pending" ? total + order.coinsEarned : total,
-          0
-        );
-        setPendingCoins(pending);
-      } catch (error) {
-        console.error("Error fetching pending coins:", error);
-        setPendingCoins(0);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user && token) fetchPendingCoins();
-  }, [user, token, apiUrl]);
-
   if (!user) {
     navigate("/login", { replace: true });
     return null;
   }
-
-  const coins = Number(user?.coinsBalance ?? 0);
 
   const NavButton = ({ active, onClick, children, danger }) => (
     <button
@@ -477,38 +448,12 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* Coins & Stats */}
-                <div className="grid grid-cols-2 gap-2 px-4 sm:mb-6 sm:gap-4 sm:px-0 lg:grid-cols-3">
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                        <Coins className="h-4 w-4 text-gray-700" strokeWidth={1.7} />
-                      </div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Available</p>
-                    </div>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                      {coins.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Coins</p>
-                  </div>
-
-                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                        <Clock className="h-4 w-4 text-gray-700" strokeWidth={1.7} />
-                      </div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Pending</p>
-                    </div>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                      {loading ? "..." : pendingCoins.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Coins</p>
-                  </div>
-
+                {/* Wishlist Stats */}
+                <div className="px-4 sm:mb-6 sm:px-0">
                   <button
                     type="button"
                     onClick={() => navigate("/wishlist")}
-                    className="col-span-2 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-black sm:p-5 lg:col-span-1"
+                    className="w-full rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-black sm:p-5"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">

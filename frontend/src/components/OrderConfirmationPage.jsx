@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FaCheckCircle, FaClock } from "react-icons/fa";
+import { FaCheckCircle } from "react-icons/fa";
 
 const formatINR = (n) =>
   new Intl.NumberFormat("en-IN", {
@@ -43,10 +43,7 @@ const OrderConfirmationPage = () => {
     firstOrderDiscountAmount,
     totalAmount,
     address,
-    coinsEarned,
-    coinsRedeemed,
     payableAmount,
-    coinStatus = "pending", // NEW: Get coin status
   } = orderDetails;
 
   const isPaid = Boolean(paymentStatus);
@@ -118,12 +115,6 @@ const OrderConfirmationPage = () => {
                 <span>- {formatINR(firstOrderDiscountAmount)}</span>
               </div>
             )}
-            {coinsRedeemed > 0 && (
-              <div className="flex justify-between text-blue-600">
-                <span>Coins Redeemed:</span>
-                <span>- {formatINR(coinsRedeemed)}</span>
-              </div>
-            )}
             <div className="flex justify-between border-t border-gray-200 pt-3 mt-2">
               <span className="text-lg font-semibold text-gray-900">
                 Total Payable:
@@ -134,49 +125,6 @@ const OrderConfirmationPage = () => {
             </div>
           </div>
 
-          {/* UPDATED: Coin earning message with 10 days info */}
-          {(coinsEarned || coinsEarned === 0) && (
-            <div className={`mt-4 p-3 rounded-lg border ${
-              coinStatus === 'credited' 
-                ? 'bg-green-50 border-green-200' 
-                : 'bg-blue-50 border-blue-200'
-            }`}>
-              <div className="flex items-center gap-3">
-                {coinStatus === 'credited' ? (
-                  <FaCheckCircle className="text-green-500 text-lg" />
-                ) : (
-                  <FaClock className="text-blue-500 text-lg" />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-800">
-                    {coinStatus === 'credited' 
-                      ? 'Coins Credited! 🎉' 
-                      : 'Coins Pending Credit'
-                    }
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {coinStatus === 'credited' 
-                      ? `Your ${coinsEarned} coins have been added to your wallet.`
-                      : `You will earn ${coinsEarned} coins after 10 days (if order is not cancelled/returned).`
-                    }
-                  </p>
-                </div>
-                <span className={`text-lg font-bold ${
-                  coinStatus === 'credited' ? 'text-green-600' : 'text-blue-600'
-                }`}>
-                  +{coinsEarned}
-                </span>
-              </div>
-              
-              {/* Additional info for pending coins */}
-              {coinStatus === 'pending' && (
-                <div className="mt-2 text-xs text-gray-500 bg-white p-2 rounded border border-gray-200">
-                  <p>🛡️ <strong>Coin Protection:</strong> Coins will be automatically credited after 10 days.</p>
-                  <p className="mt-1">❌ Coins will not be credited if order is cancelled or returned within 10 days.</p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Ordered Items */}

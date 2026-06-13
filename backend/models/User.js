@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, unique: true, sparse: true, trim: true },
   password: { type: String }, // ◀ Required हटा दिया
   googleId: { type: String }, // ◀ नया field
-  coinsBalance: { type: Number, required: true, default: 0 },
 
   // Email verification
   isVerified: { type: Boolean, default: false },
