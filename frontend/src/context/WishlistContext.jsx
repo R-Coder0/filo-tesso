@@ -7,7 +7,7 @@ const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { token, user } = useContext(AuthContext);
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -23,6 +23,7 @@ export const WishlistProvider = ({ children }) => {
     } else {
       // Agar user logged out hai toh wishlist clear kar do
       setWishlist([]);
+      setLoading(false);
     }
   }, [token, user]);
 

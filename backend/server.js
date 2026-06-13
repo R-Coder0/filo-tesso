@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const { backfillOrderNumbers } = require("./utils/orderNumber");
+const { verifyEmailTransport } = require("./utils/sendEmail");
 
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -91,6 +92,17 @@ const repairOrdersMissingShipment = async () => {
 
 const startServer = async () => {
   await connectDB();
+  try {
+    await verifyEmailTransport();
+    console.log("Email SMTP connection verified");
+  } catch (error) {
+    console.error("Email SMTP verification failed:", {
+      code: error.code,
+      command: error.command,
+      responseCode: error.responseCode,
+      message: error.message,
+    });
+  }
   const backfilledOrders = await backfillOrderNumbers();
   if (backfilledOrders > 0) {
     console.log(`Assigned public order numbers to ${backfilledOrders} existing orders`);

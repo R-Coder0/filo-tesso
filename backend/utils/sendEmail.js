@@ -3,20 +3,33 @@ const nodemailer = require("nodemailer");
 
 let transporter;
 
+const cleanEnvValue = (value) => String(value || "").trim();
+
+const getSmtpPassword = () => {
+  const password = cleanEnvValue(
+    process.env.SMTP_PASS || process.env.ADMIN_EMAIL_PASS
+  );
+  const host = cleanEnvValue(process.env.SMTP_HOST).toLowerCase();
+
+  // Google displays app passwords in groups; SMTP expects the same 16 characters.
+  return host === "smtp.gmail.com" ? password.replace(/\s+/g, "") : password;
+};
+
 const getTransporter = () => {
   if (transporter) return transporter;
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    const host = cleanEnvValue(process.env.SMTP_HOST);
     transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host,
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === "true",
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: cleanEnvValue(process.env.SMTP_USER),
+        pass: getSmtpPassword(),
       },
     });
     return transporter;
@@ -29,8 +42,8 @@ const getTransporter = () => {
       greetingTimeout: 10000,
       socketTimeout: 15000,
       auth: {
-        user: process.env.ADMIN_EMAIL,
-        pass: process.env.ADMIN_EMAIL_PASS,
+        user: cleanEnvValue(process.env.ADMIN_EMAIL),
+        pass: getSmtpPassword(),
       },
     });
     return transporter;

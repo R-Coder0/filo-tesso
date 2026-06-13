@@ -236,7 +236,7 @@ export default function HomeNewPopular() {
   };
 
   return (
-    <section className="bg-white py-12 md:py-14">
+    <section className="bg-white pb-6 pt-12 md:pb-8 md:pt-14">
       <div className="mx-auto max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-2xl font-black uppercase tracking-tight text-gray-950 md:text-3xl">
@@ -357,20 +357,16 @@ export default function HomeNewPopular() {
             </div>
           )}
 
-          {!loading && products.length > 0 && (
-            <div ref={loadMoreRef} className="flex min-h-28 items-center justify-center py-8">
+          {!loading && products.length > 0 && hasMore && (
+            <div ref={loadMoreRef} className="flex min-h-12 items-center justify-center pt-4">
               {loadingMore ? (
                 <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
                   Loading more products
                 </div>
-              ) : hasMore ? (
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
-                  Scroll for more
-                </span>
               ) : (
                 <span className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
-                  You have seen all products
+                  Scroll for more
                 </span>
               )}
             </div>
