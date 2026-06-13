@@ -11,6 +11,10 @@ const orderRoutes = require("./routes/orderRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const shiprocketRoutes = require("./routes/shiprocketRoutes");
+const { handleTrackingWebhook } = require("./controllers/shiprocketController");
+const {
+  verifyShiprocketApiKey,
+} = require("./middleware/shiprocketApiKey");
 const reviewRoutes = require("./routes/reveiwRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const testimonialRoutes = require("./routes/testimonialroutes")
@@ -63,6 +67,11 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.post(
+  "/api/logistics/tracking-hook",
+  verifyShiprocketApiKey,
+  handleTrackingWebhook
+);
 app.use("/api/shiprocket", shiprocketRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/payment", paymentRoutes);

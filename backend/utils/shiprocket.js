@@ -243,6 +243,166 @@ const createShiprocketOrder = async (order) => {
   return { data, payload };
 };
 
+const assignShiprocketAwb = async (order) => {
+  const shipmentId = order.shiprocket?.shipmentId;
+  if (!shipmentId) {
+    throw new Error("Shiprocket shipment ID is not available");
+  }
+  if (order.shiprocket?.awbCode) return order.shiprocket;
+
+  const { data } = await shiprocketRequest({
+    method: "post",
+    url: "/courier/assign/awb",
+    data: { shipment_id: Number(shipmentId) },
+  });
+
+  if (data?.awb_assign_status === 0) {
+    const assignmentError =
+      data?.response?.data?.awb_assign_error ||
+      data?.message ||
+      "Shiprocket could not assign an AWB";
+    throw new Error(assignmentError);
+  }
+
+  const assignment = data?.response?.data || {};
+  order.shiprocket = {
+    ...order.shiprocket?.toObject?.(),
+    status: assignment.awb_code
+      ? "AWB ASSIGNED"
+      : data?.success
+        ? "AWB assignment processing"
+        : order.shiprocket?.status,
+    awbCode: assignment.awb_code
+      ? String(assignment.awb_code)
+      : order.shiprocket?.awbCode,
+    courierCompanyId: assignment.courier_company_id
+      ? String(assignment.courier_company_id)
+      : order.shiprocket?.courierCompanyId,
+    courierName: assignment.courier_name || order.shiprocket?.courierName,
+    lastAttemptAt: new Date(),
+    lastError: "",
+    response: {
+      ...(order.shiprocket?.response || {}),
+      awbAssignment: data,
+    },
+  };
+  await order.save();
+
+  return order.shiprocket;
+};
+
+const getShiprocketShipmentDetails = async (shipmentId) => {
+  const { data } = await shiprocketRequest({
+    method: "get",
+    url: `/shipments/${shipmentId}`,
+  });
+
+  return data?.data || data;
+};
+
+const getShiprocketTracking = async (shipmentId) => {
+  const { data } = await shiprocketRequest({
+    method: "get",
+    url: `/courier/track/shipment/${shipmentId}`,
+  });
+
+  return data?.tracking_data || {};
+};
+
+const refreshShiprocketShipment = async (order) => {
+  const shipmentId = order.shiprocket?.shipmentId;
+  if (!shipmentId) {
+    throw new Error("Shiprocket shipment ID is not available");
+  }
+
+  const shipment = await getShiprocketShipmentDetails(shipmentId);
+  let tracking = {};
+
+  try {
+    tracking = await getShiprocketTracking(shipmentId);
+  } catch (error) {
+    tracking = { error: getShiprocketError(error) };
+  }
+
+  const shipmentTrack = tracking.shipment_track?.[0] || {};
+  const awbCode = shipmentTrack.awb_code || shipment.awb || "";
+  const currentStatus =
+    shipmentTrack.current_status ||
+    shipment.status_name ||
+    shipment.status ||
+    order.shiprocket?.status ||
+    "";
+
+  order.shiprocket = {
+    ...order.shiprocket?.toObject?.(),
+    syncStatus: "synced",
+    orderId: String(
+      shipmentTrack.order_id || shipment.order_id || order.shiprocket?.orderId || ""
+    ),
+    shipmentId: String(
+      shipmentTrack.shipment_id || shipment.id || shipmentId
+    ),
+    status: String(currentStatus),
+    statusCode:
+      Number(tracking.shipment_status || shipment.status) ||
+      order.shiprocket?.statusCode,
+    awbCode: String(awbCode),
+    courierCompanyId: String(
+      shipmentTrack.courier_company_id ||
+      shipment.sr_courier_id ||
+      order.shiprocket?.courierCompanyId ||
+      ""
+    ),
+    courierName:
+      shipment.courier || order.shiprocket?.courierName || "",
+    labelUrl: shipment.label_url || order.shiprocket?.labelUrl || "",
+    trackingUrl: tracking.track_url || order.shiprocket?.trackingUrl || "",
+    lastTrackedAt: new Date(),
+    lastError: "",
+    response: {
+      ...(order.shiprocket?.response || {}),
+      shipment,
+      tracking,
+    },
+  };
+  await order.save();
+
+  return order.shiprocket;
+};
+
+const generateShiprocketLabel = async (order) => {
+  if (!order.shiprocket?.shipmentId) {
+    throw new Error("Shiprocket shipment ID is not available");
+  }
+
+  await refreshShiprocketShipment(order);
+  if (!order.shiprocket?.awbCode) {
+    throw new Error("AWB is not assigned yet. Assign a courier in Shiprocket first");
+  }
+
+  if (order.shiprocket.labelUrl) {
+    return order.shiprocket.labelUrl;
+  }
+
+  const { data } = await shiprocketRequest({
+    method: "post",
+    url: "/courier/generate/label",
+    data: { shipment_id: [Number(order.shiprocket.shipmentId)] },
+  });
+
+  if (!data?.label_url) {
+    throw new Error(data?.response || "Shiprocket label was not generated");
+  }
+
+  order.shiprocket.labelUrl = data.label_url;
+  order.shiprocket.response = {
+    ...(order.shiprocket?.response || {}),
+    label: data,
+  };
+  await order.save();
+  return data.label_url;
+};
+
 const syncOrderToShiprocket = async (order, { force = false } = {}) => {
   if (!order) throw new Error("Order is required");
   if (order.shiprocket?.orderId && !force) return order.shiprocket;
@@ -293,9 +453,14 @@ const syncOrderToShiprocket = async (order, { force = false } = {}) => {
 };
 
 module.exports = {
+  assignShiprocketAwb,
   buildShiprocketOrderPayload,
   createShiprocketOrder,
+  generateShiprocketLabel,
   getShiprocketError,
+  getShiprocketShipmentDetails,
   getShiprocketToken,
+  getShiprocketTracking,
+  refreshShiprocketShipment,
   syncOrderToShiprocket,
 };

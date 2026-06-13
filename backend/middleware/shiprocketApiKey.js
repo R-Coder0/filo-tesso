@@ -16,7 +16,7 @@ const verifyShiprocketApiKey = (req, res, next) => {
   if (!configuredKey) {
     return res.status(503).json({
       success: false,
-      message: "Shiprocket catalog API is not configured",
+      message: "Shiprocket API key is not configured",
     });
   }
 

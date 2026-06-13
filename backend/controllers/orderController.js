@@ -6,7 +6,10 @@ const nodemailer = require("nodemailer");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
-const { syncOrderToShiprocket } = require("../utils/shiprocket");
+const {
+  assignShiprocketAwb,
+  syncOrderToShiprocket,
+} = require("../utils/shiprocket");
 
 const getVariantForSize = (product, selectedSize) => {
   const variants = product.sizeVariants || [];
@@ -161,15 +164,6 @@ exports.createOrder = async (req, res) => {
     user.coinsBalance -= redeemable;
     await user.save();
 
-    try {
-      await syncOrderToShiprocket(order);
-    } catch (shiprocketError) {
-      console.error(
-        `Shiprocket sync failed for order ${getOrderReference(order)}:`,
-        shiprocketError.message
-      );
-    }
-
     // ✅ EMAIL (same as your original — untouched)
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {
       // 👇 tu apna pura email wala code yahin same rehne de
@@ -204,8 +198,21 @@ exports.getMyOrders = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { id, status } = req.body;
-    const order = await Order.findById(id);
-    
+    const allowedStatuses = [
+      "pending",
+      "confirmed",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "returned",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid order status" });
+    }
+
+    const order = await Order.findById(id).populate("products.product");
+
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -235,7 +242,31 @@ exports.updateOrderStatus = async (req, res) => {
     order.orderStatus = status;
     await order.save();
 
-    res.json({ message: "Order status updated", order });
+    let shiprocketWarning = "";
+    if (status === "shipped") {
+      try {
+        if (!order.shiprocket?.orderId) {
+          await syncOrderToShiprocket(order);
+        }
+        if (!order.shiprocket?.awbCode) {
+          await assignShiprocketAwb(order);
+        }
+      } catch (shiprocketError) {
+        shiprocketWarning = shiprocketError.message;
+        console.error(
+          `Shiprocket sync failed for order ${getOrderReference(order)}:`,
+          shiprocketWarning
+        );
+      }
+    }
+
+    res.json({
+      message: shiprocketWarning
+        ? "Order marked shipped, but Shiprocket sync failed"
+        : "Order status updated",
+      order,
+      shiprocketWarning,
+    });
   } catch (err) {
     console.error("❌ Error updating order status:", err);
     res.status(500).json({ message: "Failed to update status" });

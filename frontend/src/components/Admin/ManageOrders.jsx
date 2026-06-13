@@ -1,7 +1,20 @@
 // src/components/Admin/ManageOrders.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Package, Calendar, CreditCard, CheckCircle, XCircle, Clock, Ban, AlertCircle, Loader, RefreshCw } from "lucide-react";
+import {
+  Ban,
+  CheckCircle,
+  Clock,
+  Eye,
+  FileDown,
+  Loader,
+  Package,
+  RefreshCw,
+  Trash2,
+  Truck,
+  X,
+  XCircle,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
 import { showToastConfirm } from "../../utils/toastConfirm";
 
@@ -13,6 +26,250 @@ const pageTitle = {
 
 const getOrderNumber = (order) => order.orderNumber || order._id;
 
+const getItemName = (item) =>
+  item.name || item.product?.name || "Unknown Product";
+
+const getItemImage = (item) => item.product?.image || "/placeholder.jpg";
+
+const getItemPrice = (item) =>
+  item.priceAtPurchase ?? item.product?.price?.sale ?? 0;
+
+const OrderDetailsModal = ({
+  apiUrl,
+  downloading,
+  onClose,
+  onDownloadLabel,
+  onRefreshShipment,
+  order,
+  refreshing,
+}) => {
+  if (!order) return null;
+
+  const shipment = order.shiprocket || {};
+  const hasCustomization =
+    order.customizationUploads?.image ||
+    order.customizationUploads?.pdf ||
+    order.customizationUploads?.selectedSide;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-gray-200 bg-white px-6 py-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
+              Order details
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold text-gray-950">
+              {getOrderNumber(order)}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-gray-200 p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-950"
+            aria-label="Close order details"
+            title="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6 p-6">
+          <div className="grid gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Order date", new Date(order.createdAt).toLocaleString()],
+              ["Order status", order.orderStatus || "pending"],
+              ["Payment", `${order.paymentMethod} · ${order.paymentStatus}`],
+              ["Payable amount", `₹${order.payableAmount}`],
+            ].map(([label, value]) => (
+              <div key={label} className="bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  {label}
+                </p>
+                <p className="mt-1 text-sm font-semibold capitalize text-gray-900">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                Customer & shipping
+              </h4>
+              <div className="mt-4 space-y-1 text-sm leading-6 text-gray-600">
+                <p className="font-semibold text-gray-950">{order.address?.name || "—"}</p>
+                <p>{order.address?.phone || "—"}</p>
+                <p>{order.address?.email || "—"}</p>
+                <p className="pt-2">
+                  {order.address?.street || "—"}
+                  <br />
+                  {order.address?.city || "—"}, {order.address?.state || "—"}{" "}
+                  {order.address?.postalCode || ""}
+                  <br />
+                  {order.address?.country || "India"}
+                </p>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-gray-200 bg-gray-950 p-5 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+                    Shiprocket
+                  </p>
+                  <h4 className="mt-1 text-lg font-semibold">
+                    {shipment.status || shipment.syncStatus || "Not started"}
+                  </h4>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onRefreshShipment(order)}
+                    disabled={!shipment.shipmentId || refreshing}
+                    className="rounded-lg border border-white/20 p-2 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                    aria-label="Refresh shipment"
+                    title="Refresh shipment"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDownloadLabel(order)}
+                    disabled={!shipment.awbCode || downloading}
+                    className="rounded-lg border border-white/20 p-2 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                    aria-label="Download shipment label"
+                    title={
+                      shipment.awbCode
+                        ? "Download shipment label"
+                        : "Label available after AWB assignment"
+                    }
+                  >
+                    {downloading ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileDown className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-gray-400">SR Order ID</dt>
+                  <dd className="mt-1 break-all font-medium">{shipment.orderId || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Shipment ID</dt>
+                  <dd className="mt-1 break-all font-medium">{shipment.shipmentId || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">AWB</dt>
+                  <dd className="mt-1 break-all font-medium">{shipment.awbCode || "Awaiting"}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Courier</dt>
+                  <dd className="mt-1 font-medium">{shipment.courierName || "Awaiting"}</dd>
+                </div>
+              </dl>
+              {shipment.lastError && (
+                <p className="mt-4 rounded-lg bg-red-500/15 p-3 text-xs text-red-200">
+                  {shipment.lastError}
+                </p>
+              )}
+            </section>
+          </div>
+
+          <section>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+              Products
+            </h4>
+            <div className="mt-3 overflow-hidden rounded-xl border border-gray-200">
+              {(order.products || []).map((item, index) => (
+                <div
+                  key={`${item.product?._id || item.product || index}-${index}`}
+                  className={`flex items-center gap-4 p-4 ${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  }`}
+                >
+                  <img
+                    src={`${apiUrl}${getItemImage(item)}`}
+                    alt={getItemName(item)}
+                    className="h-16 w-16 rounded-lg border border-gray-200 object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-gray-950">
+                      {getItemName(item)}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Qty {item.quantity} · ₹{getItemPrice(item)} · Size{" "}
+                      {item.selectedSize || "—"}
+                      {item.selectedColor ? ` · ${item.selectedColor}` : ""}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-400">{item.sku || "No SKU"}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {hasCustomization && (
+            <section className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                Customization
+              </h4>
+              <p className="mt-3 text-sm text-gray-600">
+                Design side: {order.customizationUploads?.selectedSide || "—"}
+              </p>
+              <div className="mt-3 flex flex-wrap items-start gap-4">
+                {order.customizationUploads?.image && (
+                  <img
+                    src={`${apiUrl}${order.customizationUploads.image}`}
+                    alt="Custom upload"
+                    className="h-28 w-28 rounded-lg border border-gray-200 object-cover"
+                  />
+                )}
+                {order.customizationUploads?.pdf && (
+                  <a
+                    href={`${apiUrl}${order.customizationUploads.pdf}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                  >
+                    View customization PDF
+                  </a>
+                )}
+              </div>
+            </section>
+          )}
+
+          {(order.cancelled || order.returnRequested) && (
+            <section className="rounded-xl border border-orange-200 bg-orange-50 p-5 text-sm text-orange-900">
+              {order.cancelled && (
+                <p>
+                  Cancellation {order.cancellationStatus}:{" "}
+                  {order.cancellationReason || "No reason provided"}
+                </p>
+              )}
+              {order.returnRequested && (
+                <p>
+                  Return {order.returnStatus}:{" "}
+                  {order.returnReason || "No reason provided"}
+                </p>
+              )}
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ManageOrders = ({ view = "all" }) => {
   const [orders, setOrders] = useState([]);
   const [cancellationRequests, setCancellationRequests] = useState([]);
@@ -23,10 +280,18 @@ const ManageOrders = ({ view = "all" }) => {
   const [processingCancellation, setProcessingCancellation] = useState(null);
   const [processingReturn, setProcessingReturn] = useState(null); // ✅ ADDED
   const [deletingOrderId, setDeletingOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [shipmentAction, setShipmentAction] = useState(null);
   const apiUrl = import.meta.env.VITE_API_URL;
   // Axios instance with admin token auth
   const axiosAdmin = axios.create({
     baseURL: `${apiUrl}/api/orders`,
+    headers: {
+      authorization: import.meta.env.VITE_ADMIN_TOKEN,
+    },
+  });
+  const axiosShiprocket = axios.create({
+    baseURL: `${apiUrl}/api/shiprocket`,
     headers: {
       authorization: import.meta.env.VITE_ADMIN_TOKEN,
     },
@@ -37,19 +302,30 @@ const ManageOrders = ({ view = "all" }) => {
     fetchOrders();
     fetchCancellationRequests();
     fetchReturnRequests(); // ✅ ADDED
+
+    const refreshTimer = setInterval(() => {
+      if (view === "all") fetchOrders(true);
+    }, 30000);
+
+    return () => clearInterval(refreshTimer);
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await axiosAdmin.get("/admin");
       // Sort orders: newest first (based on createdAt timestamp)
       const sortedOrders = res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(sortedOrders);
+      setSelectedOrder((current) =>
+        current
+          ? sortedOrders.find((order) => order._id === current._id) || current
+          : null
+      );
     } catch (error) {
       console.error("Error fetching orders", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -119,6 +395,7 @@ const ManageOrders = ({ view = "all" }) => {
       await fetchCancellationRequests();
       await fetchReturnRequests(); // ✅ ADDED
       toast.success("Order deleted successfully");
+      setSelectedOrder((current) => (current?._id === id ? null : current));
       setDeletingOrderId(null);
     } catch (err) {
       console.error("Failed to delete order", err);
@@ -141,14 +418,22 @@ const ManageOrders = ({ view = "all" }) => {
     try {
       setUpdatingOrderId(orderId);
       
-      await axiosAdmin.post("/update-status", { 
-        id: orderId, 
-        status: newStatus 
+      const response = await axiosAdmin.post("/update-status", {
+        id: orderId,
+        status: newStatus,
       });
       await fetchOrders();
       
       setUpdatingOrderId(null);
-      toast.success(`Order status updated to ${newStatus}`);
+      if (response.data.shiprocketWarning) {
+        toast.error(`Marked shipped, but Shiprocket failed: ${response.data.shiprocketWarning}`);
+      } else {
+        toast.success(
+          newStatus === "shipped"
+            ? "Order shipped and sent to Shiprocket"
+            : `Order status updated to ${newStatus}`
+        );
+      }
     } catch (error) {
       console.error("Error updating order status", error);
       setUpdatingOrderId(null);
@@ -156,45 +441,46 @@ const ManageOrders = ({ view = "all" }) => {
     }
   };
 
-  const getStatusBadge = (order) => {
-    if (order.cancelled) {
-      switch (order.cancellationStatus) {
-        case 'requested':
-          return <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Cancellation Requested</span>;
-        case 'approved':
-          return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">Cancelled</span>;
-        case 'rejected':
-          return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Cancellation Rejected</span>;
-      }
+  const handleRefreshShipment = async (order) => {
+    try {
+      setShipmentAction({ orderId: order._id, type: "refresh" });
+      await axiosShiprocket.post(`/orders/${order._id}/refresh`);
+      await fetchOrders(true);
+      toast.success("Shipment details refreshed");
+    } catch (error) {
+      console.error("Failed to refresh shipment", error);
+      toast.error(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to refresh shipment"
+      );
+    } finally {
+      setShipmentAction(null);
     }
+  };
 
-    // ✅ ADDED: Return status badge
-    if (order.returnRequested) {
-      switch (order.returnStatus) {
-        case 'requested':
-          return <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">Return Requested</span>;
-        case 'approved':
-          return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Return Approved</span>;
-        case 'rejected':
-          return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Return Rejected</span>;
-      }
+  const handleDownloadLabel = async (order) => {
+    try {
+      setShipmentAction({ orderId: order._id, type: "label" });
+      const response = await axiosShiprocket.get(`/orders/${order._id}/label`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${getOrderNumber(order)}-label.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+      await fetchOrders(true);
+      toast.success("Shipment label downloaded");
+    } catch (error) {
+      console.error("Failed to download shipment label", error);
+      toast.error("Label is available after Shiprocket assigns an AWB");
+    } finally {
+      setShipmentAction(null);
     }
-    
-    const status = order.orderStatus || 'pending';
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-blue-100 text-blue-800',
-      shipped: 'bg-purple-100 text-purple-800',
-      delivered: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-      returned: 'bg-gray-100 text-gray-800'
-    };
-    
-    return (
-      <span className={`px-2 py-1 ${colors[status] || 'bg-gray-100 text-gray-800'} text-xs font-medium rounded capitalize`}>
-        {status}
-      </span>
-    );
   };
 
   const getPaymentStatusBadge = (status) => {
@@ -258,290 +544,219 @@ const ManageOrders = ({ view = "all" }) => {
       </div>
 
       {activeTab === "all" ? (
-        // All Orders Tab - Now sorted with newest first
-        <div className="space-y-6">
+        <>
           {orders.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <div className="rounded-xl border border-gray-200 bg-white py-14 text-center shadow-sm">
+              <Package className="mx-auto mb-4 h-14 w-14 text-gray-300" />
               <p className="text-gray-600">No orders found.</p>
             </div>
           ) : (
-            orders.map((order) => {
-              const isUpdating = updatingOrderId === order._id;
-              const isDeleting = deletingOrderId === order._id;
-              const isNew = isNewOrder(order.createdAt);
-              
-              return (
-                <div
-                  key={order._id}
-                  className={`p-6 border rounded-2xl shadow-md hover:shadow-lg transition relative ${
-                    order.cancelled ? 'border-orange-200 bg-orange-50' : 
-                    order.returnRequested ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
-                  } ${isUpdating || isDeleting ? 'opacity-70' : ''}`}
-                >
-                  {/* New Order Badge */}
-                  {isNew && (
-                    <div className="absolute -top-2 -left-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold z-10 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      NEW
-                    </div>
-                  )}
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="min-w-[1180px] w-full border-collapse text-left">
+                  <thead className="bg-gray-950 text-white">
+                    <tr className="text-xs uppercase tracking-[0.12em]">
+                      <th className="px-4 py-4 font-semibold">Order</th>
+                      <th className="px-4 py-4 font-semibold">Customer</th>
+                      <th className="px-4 py-4 font-semibold">Date</th>
+                      <th className="px-4 py-4 font-semibold">Payment</th>
+                      <th className="px-4 py-4 font-semibold">Items</th>
+                      <th className="px-4 py-4 font-semibold">Status</th>
+                      <th className="px-4 py-4 font-semibold">Shipment</th>
+                      <th className="px-4 py-4 text-center font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order, index) => {
+                      const isUpdating = updatingOrderId === order._id;
+                      const isDeleting = deletingOrderId === order._id;
+                      const isRefreshing =
+                        shipmentAction?.orderId === order._id &&
+                        shipmentAction.type === "refresh";
+                      const isDownloading =
+                        shipmentAction?.orderId === order._id &&
+                        shipmentAction.type === "label";
+                      const shipment = order.shiprocket || {};
 
-                  {/* Loading Overlay */}
-                  {(isUpdating || isDeleting) && (
-                    <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
-                      <div className="text-center">
-                        <Loader className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">
-                          {isUpdating ? 'Updating status...' : 'Deleting order...'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col lg:flex-row justify-between gap-6 relative">
-                    {/* Left Side */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-md md:text-xl font-semibold text-gray-800">
-                          Order ID: {getOrderNumber(order)}
-                        </h3>
-                        {getStatusBadge(order)}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-gray-700 mb-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
-                          {isNew && <span className="text-xs text-green-600 font-medium">(New)</span>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">₹{order.payableAmount}</span>
-                          {getPaymentStatusBadge(order.paymentStatus)}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-gray-500" />
-                         <span className="text-sm">{order.products?.length || 0} items</span>
-                        </div>
-                      </div>
-
-                      {/* Cancellation Info */}
-                      {order.cancelled && (
-                        <div className="mb-4 p-3 bg-orange-100 border border-orange-200 rounded-lg">
-                          <div className="flex items-center gap-2 text-orange-800">
-                            <AlertCircle className="w-4 h-4" />
-                            <span className="font-medium">Cancellation {order.cancellationStatus}</span>
-                          </div>
-                          {order.cancellationReason && (
-                            <p className="text-sm text-orange-700 mt-1">
-                              <strong>Reason:</strong> {order.cancellationReason}
-                            </p>
-                          )}
-                          {order.cancelledAt && (
-                            <p className="text-xs text-orange-600 mt-1">
-                              Requested: {new Date(order.cancelledAt).toLocaleString()}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* ✅ ADDED: Return Info */}
-                      {order.returnRequested && (
-                        <div className="mb-4 p-3 bg-blue-100 border border-blue-200 rounded-lg">
-                          <div className="flex items-center gap-2 text-blue-800">
-                            <RefreshCw className="w-4 h-4" />
-                            <span className="font-medium">Return {order.returnStatus}</span>
-                          </div>
-                          {order.returnReason && (
-                            <p className="text-sm text-blue-700 mt-1">
-                              <strong>Reason:</strong> {order.returnReason}
-                            </p>
-                          )}
-                          {order.returnRequestedAt && (
-                            <p className="text-xs text-blue-600 mt-1">
-                              Requested: {new Date(order.returnRequestedAt).toLocaleString()}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Full Address */}
-                      <div className="mt-4">
-                        <p className="text-gray-800 font-semibold mb-1">Shipping Address:</p>
-                        <p className="text-gray-600 leading-relaxed">
-                          <strong>Name:</strong> {order.address?.name}<br />
-                          <strong>Phone:</strong> {order.address?.phone}<br />
-                          {order.address?.email && (<><strong>Email:</strong> {order.address.email}<br /></>)}
-                          <strong>Street:</strong> {order.address?.street}<br />
-                          <strong>City:</strong> {order.address?.city}<br />
-                          <strong>State:</strong> {order.address?.state}<br />
-                          <strong>Postal Code:</strong> {order.address?.postalCode}
-                        </p>
-                      </div>
-
-                      {/* Product List with Image and Size/Color */}
-                      <div className="mt-4">
-                        <p className="text-gray-800 font-semibold mb-1">Products:</p>
-                        <ul className="space-y-4">
-                          {(order.products || []).map((item, idx) => (
-                            <li key={idx} className="flex items-center gap-4">
-                              <img
-                                src={`${apiUrl}${item.product?.image || "/placeholder.jpg"}`}
-                                alt={item.product?.name || "Product"}
-                                className="w-16 h-16 object-cover rounded shadow"
-                              />
-                              <div>
-                                <p className="text-gray-700 font-medium">
-                                  {item.product?.name || "Unknown Product"}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  Qty: {item.quantity} | ₹{item.product?.price?.sale || 0} | Size: {item.selectedSize || "—"}
-                                  {item.selectedColor ? ` | Color: ${item.selectedColor}` : ""}
-                                </p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Customization uploads if present */}
-                      {(order.customizationUploads?.image || order.customizationUploads?.pdf || order.customizationUploads?.selectedSide) && (
-                        <div className="mt-4">
-                          <p className="text-gray-800 font-semibold mb-1">Customization:</p>
-                          {order.customizationUploads?.selectedSide && (
-                            <div className="mb-2">
-                              <p className="text-sm text-gray-700">
-                                <strong>Design Side:</strong> {order.customizationUploads.selectedSide}
-                              </p>
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-2">
-                            {order.customizationUploads?.image && (
-                              <div>
-                                <img
-                                  src={`${apiUrl}${order.customizationUploads.image}`}
-                                  alt="Custom upload"
-                                  className="w-28 h-28 object-cover rounded border"
-                                />
-                                <p className="text-xs text-gray-500 mt-1 break-all">{order.customizationUploads.image}</p>
-                              </div>
-                            )}
-                            {order.customizationUploads?.pdf && (
-                              <a
-                                href={`${apiUrl}${order.customizationUploads.pdf}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-blue-600 hover:underline text-sm break-all"
-                              >
-                                View PDF
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right Side - Actions */}
-                    <div className="flex flex-col items-start lg:items-end gap-3">
-                      {/* Order Status Update */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">Update Status:</label>
-                        <select 
-                          value={order.orderStatus}
-                          onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          disabled={isUpdating || isDeleting}
+                      return (
+                        <tr
+                          key={order._id}
+                          className={`border-t border-gray-200 align-middle transition hover:bg-gray-100 ${
+                            index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                          } ${isUpdating || isDeleting ? "opacity-60" : ""}`}
                         >
-                          <option value="pending">Pending</option>
-                          <option value="confirmed">Confirmed</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                          <option value="returned">Returned</option>
-                        </select>
-                      </div>
-
-                      {/* Cancellation Actions */}
-                      {order.cancelled && order.cancellationStatus === 'requested' && (
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleUpdateCancellationStatus(order._id, 'rejected')}
-                            disabled={isProcessingCancellation(order._id, 'rejected') || isUpdating || isDeleting}
-                            className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isProcessingCancellation(order._id, 'rejected') ? (
-                              <Loader className="w-3 h-3 animate-spin" />
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-bold text-gray-950">
+                                {getOrderNumber(order)}
+                              </span>
+                              {isNewOrder(order.createdAt) && (
+                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                                  NEW
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">
+                              {order.paymentMethod}
+                            </p>
+                          </td>
+                          <td className="px-4 py-4">
+                            <p className="max-w-[170px] truncate text-sm font-semibold text-gray-900">
+                              {order.address?.name || "—"}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {order.address?.phone || "—"}
+                            </p>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-600">
+                            {new Date(order.createdAt).toLocaleDateString("en-IN")}
+                          </td>
+                          <td className="px-4 py-4">
+                            <p className="text-sm font-bold text-gray-950">
+                              ₹{order.payableAmount}
+                            </p>
+                            <div className="mt-1">
+                              {getPaymentStatusBadge(order.paymentStatus)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-600">
+                            {order.products?.reduce(
+                              (total, item) => total + Number(item.quantity || 0),
+                              0
+                            ) || 0}
+                          </td>
+                          <td className="px-4 py-4">
+                            <select
+                              value={order.orderStatus || "pending"}
+                              onChange={(event) =>
+                                handleUpdateOrderStatus(order._id, event.target.value)
+                              }
+                              disabled={isUpdating || isDeleting}
+                              className="w-32 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium capitalize text-gray-800 outline-none transition focus:border-gray-950 disabled:cursor-wait"
+                              aria-label={`Update ${getOrderNumber(order)} status`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                              <option value="returned">Returned</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-4">
+                            {shipment.shipmentId ? (
+                              <div className="space-y-1 text-xs text-gray-600">
+                                <p>
+                                  <span className="font-semibold text-gray-900">SR:</span>{" "}
+                                  {shipment.orderId || "—"}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Shipment:</span>{" "}
+                                  {shipment.shipmentId}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">AWB:</span>{" "}
+                                  {shipment.awbCode || "Awaiting"}
+                                </p>
+                                {shipment.status && (
+                                  <p className="font-medium text-purple-700">
+                                    {shipment.status}
+                                  </p>
+                                )}
+                              </div>
                             ) : (
-                              <XCircle className="w-3 h-3" />
+                              <div className="flex items-center gap-2 text-xs text-gray-400">
+                                <Truck className="h-4 w-4" />
+                                {shipment.syncStatus === "failed"
+                                  ? "Sync failed"
+                                  : "Not shipped"}
+                              </div>
                             )}
-                            {isProcessingCancellation(order._id, 'rejected') ? 'Rejecting...' : 'Reject'}
-                          </button>
-                          <button
-                            onClick={() => handleUpdateCancellationStatus(order._id, 'approved')}
-                            disabled={isProcessingCancellation(order._id, 'approved') || isUpdating || isDeleting}
-                            className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isProcessingCancellation(order._id, 'approved') ? (
-                              <Loader className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <CheckCircle className="w-3 h-3" />
-                            )}
-                            {isProcessingCancellation(order._id, 'approved') ? 'Approving...' : 'Approve'}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* ✅ ADDED: Return Actions */}
-                      {order.returnRequested && order.returnStatus === 'requested' && (
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleUpdateReturnStatus(order._id, 'rejected')}
-                            disabled={isProcessingReturn(order._id, 'rejected') || isUpdating || isDeleting}
-                            className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isProcessingReturn(order._id, 'rejected') ? (
-                              <Loader className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <XCircle className="w-3 h-3" />
-                            )}
-                            {isProcessingReturn(order._id, 'rejected') ? 'Rejecting...' : 'Reject'}
-                          </button>
-                          <button
-                            onClick={() => handleUpdateReturnStatus(order._id, 'approved')}
-                            disabled={isProcessingReturn(order._id, 'approved') || isUpdating || isDeleting}
-                            className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isProcessingReturn(order._id, 'approved') ? (
-                              <Loader className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <CheckCircle className="w-3 h-3" />
-                            )}
-                            {isProcessingReturn(order._id, 'approved') ? 'Approving...' : 'Approve'}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => handleDelete(order._id)}
-                        disabled={isDeleting || isUpdating}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isDeleting ? (
-                          <Loader className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <XCircle className="w-3 h-3" />
-                        )}
-                        {isDeleting ? 'Deleting...' : 'Delete Order'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrder(order)}
+                                className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 transition hover:border-gray-950 hover:bg-gray-950 hover:text-white"
+                                aria-label="View order details"
+                                title="View order details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRefreshShipment(order)}
+                                disabled={!shipment.shipmentId || isRefreshing}
+                                className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 transition hover:border-gray-950 hover:bg-gray-950 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                                aria-label="Refresh shipment"
+                                title="Refresh Shiprocket shipment"
+                              >
+                                <RefreshCw
+                                  className={`h-4 w-4 ${
+                                    isRefreshing ? "animate-spin" : ""
+                                  }`}
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadLabel(order)}
+                                disabled={!shipment.awbCode || isDownloading}
+                                className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 transition hover:border-gray-950 hover:bg-gray-950 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                                aria-label="Download shipment label"
+                                title={
+                                  shipment.awbCode
+                                    ? "Download shipment label"
+                                    : "Label available after AWB assignment"
+                                }
+                              >
+                                {isDownloading ? (
+                                  <Loader className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <FileDown className="h-4 w-4" />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(order._id)}
+                                disabled={isDeleting || isUpdating}
+                                className="rounded-lg border border-red-200 bg-white p-2 text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label="Delete order"
+                                title="Delete order"
+                              >
+                                {isDeleting ? (
+                                  <Loader className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
-        </div>
+
+          <OrderDetailsModal
+            apiUrl={apiUrl}
+            downloading={
+              shipmentAction?.orderId === selectedOrder?._id &&
+              shipmentAction?.type === "label"
+            }
+            onClose={() => setSelectedOrder(null)}
+            onDownloadLabel={handleDownloadLabel}
+            onRefreshShipment={handleRefreshShipment}
+            order={selectedOrder}
+            refreshing={
+              shipmentAction?.orderId === selectedOrder?._id &&
+              shipmentAction?.type === "refresh"
+            }
+          />
+        </>
       ) : activeTab === "cancellations" ? (
         // Cancellation Requests Tab - Also sorted with newest first
         <div className="space-y-6">

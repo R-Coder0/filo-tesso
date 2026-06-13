@@ -7,7 +7,6 @@ const Product = require("../models/Product");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
-const { syncOrderToShiprocket } = require("../utils/shiprocket");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -271,15 +270,6 @@ exports.verifyPayment = async (req, res) => {
         order: order._id,
       }
     );
-
-    try {
-      await syncOrderToShiprocket(order);
-    } catch (shiprocketError) {
-      console.error(
-        `Shiprocket sync failed for order ${order.orderNumber || order._id}:`,
-        shiprocketError.message
-      );
-    }
 
     res.status(200).json({
       success: true,
