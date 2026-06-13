@@ -293,7 +293,7 @@ const CheckoutPage = () => {
       const order = data.order || data;
 
       const orderDetails = {
-        orderId: order._id || "COD" + Date.now(),
+        orderId: order.orderNumber || order._id || "COD" + Date.now(),
         paymentStatus: order.paymentStatus === "Paid",
         cartItems,
         subtotal,
@@ -350,7 +350,7 @@ const CheckoutPage = () => {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount, // in paise
         currency: order.currency || "INR",
-        name: "ChargeVita",
+        name: "Filoteso",
         description: "Order Payment",
         order_id: order.id,
         prefill: {
@@ -383,7 +383,7 @@ const CheckoutPage = () => {
 
             const finalOrder = out.order || out;
             const orderDetails = {
-              orderId: finalOrder._id || order.id,
+              orderId: finalOrder.orderNumber || finalOrder._id || order.id,
               paymentStatus: true,
               cartItems,
               subtotal,

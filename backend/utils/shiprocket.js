@@ -186,7 +186,7 @@ const buildShiprocketOrderPayload = (order) => {
   const subTotal = Number(order.payableAmount ?? totalAmount);
 
   return {
-    order_id: String(order._id),
+    order_id: order.orderNumber || String(order._id),
     order_date: formatShiprocketDate(order.createdAt),
     pickup_location: defaults.pickupLocation,
     comment: "Filo Teso website order",

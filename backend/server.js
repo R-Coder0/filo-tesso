@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const { backfillOrderNumbers } = require("./utils/orderNumber");
 const cron = require('node-cron');
 const { creditPendingCoins } = require('./controllers/orderController');
 require("dotenv").config();
@@ -42,7 +43,6 @@ app.use(
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-connectDB();
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 console.log('🕒 Setting up daily coin credit cron job...');
 cron.schedule('0 0 * * *', async () => {
@@ -77,4 +77,18 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
+const startServer = async () => {
+  await connectDB();
+  const backfilledOrders = await backfillOrderNumbers();
+  if (backfilledOrders > 0) {
+    console.log(`Assigned public order numbers to ${backfilledOrders} existing orders`);
+  }
+
+  app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+};
+
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

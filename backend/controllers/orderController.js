@@ -5,6 +5,7 @@ const User = require("../models/User");
 const nodemailer = require("nodemailer");
 const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
+const { getNextOrderNumber } = require("../utils/orderNumber");
 const { syncOrderToShiprocket } = require("../utils/shiprocket");
 
 const getVariantForSize = (product, selectedSize) => {
@@ -18,6 +19,8 @@ const parseProducts = (raw) => {
   // when multipart, products may come as JSON string
   try { return JSON.parse(raw); } catch { return []; }
 };
+
+const getOrderReference = (order) => order.orderNumber || String(order._id);
 
 exports.createOrder = async (req, res) => {
   try {
@@ -115,6 +118,7 @@ exports.createOrder = async (req, res) => {
 
     // ✅ CREATE ORDER
     const order = new Order({
+      orderNumber: await getNextOrderNumber(),
       user: userId,
       products: orderItems,
       totalAmount,
@@ -161,7 +165,7 @@ exports.createOrder = async (req, res) => {
       await syncOrderToShiprocket(order);
     } catch (shiprocketError) {
       console.error(
-        `Shiprocket sync failed for order ${order._id}:`,
+        `Shiprocket sync failed for order ${getOrderReference(order)}:`,
         shiprocketError.message
       );
     }
@@ -262,7 +266,7 @@ exports.creditPendingCoins = async () => {
       await order.save();
 
       creditedCount++;
-      console.log(`✅ Coins credited: ${order.coinsEarned} to user ${order.user._id} for order ${order._id}`);
+      console.log(`✅ Coins credited: ${order.coinsEarned} to user ${order.user._id} for order ${getOrderReference(order)}`);
     }
 
     return creditedCount;
@@ -345,10 +349,10 @@ exports.cancelOrder = async (req, res) => {
       const mailOptions = {
         from: '"Shop Notification" <no-reply@yourstore.com>',
         to: process.env.ADMIN_EMAIL,
-        subject: `❌ Cancellation Request for Order #${order._id}`,
+        subject: `❌ Cancellation Request for Order #${getOrderReference(order)}`,
         html: `
           <h2>Cancellation Request Received</h2>
-          <p><strong>Order ID:</strong> ${order._id}</p>
+          <p><strong>Order ID:</strong> ${getOrderReference(order)}</p>
           <p><strong>User:</strong> ${order.user.name} (${order.user.email})</p>
           <p><strong>Reason:</strong> ${reason}</p>
           <p><strong>Requested At:</strong> ${new Date().toLocaleString()}</p>
@@ -424,7 +428,7 @@ exports.updateCancellationStatus = async (req, res) => {
       // Cancel pending coins
       if (order.coinsEarned > 0 && order.coinStatus === 'pending') {
         order.coinStatus = 'cancelled';
-        console.log(`❌ Pending coins cancelled: ${order.coinsEarned} for order ${order._id}`);
+        console.log(`❌ Pending coins cancelled: ${order.coinsEarned} for order ${getOrderReference(order)}`);
       }
 
       // Send email to user about approved cancellation
@@ -440,18 +444,18 @@ exports.updateCancellationStatus = async (req, res) => {
         const mailOptions = {
           from: '"Shop Support" <support@yourstore.com>',
           to: order.user.email,
-          subject: `✅ Order Cancellation Approved - #${order._id}`,
+          subject: `✅ Order Cancellation Approved - #${getOrderReference(order)}`,
           html: `
             <h2>Your Cancellation Request Has Been Approved</h2>
             <p>Dear ${order.user.name},</p>
-            <p>Your cancellation request for order <strong>#${order._id}</strong> has been approved.</p>
+            <p>Your cancellation request for order <strong>#${getOrderReference(order)}</strong> has been approved.</p>
             ${order.coinsRedeemed > 0 ? 
               `<p><strong>${order.coinsRedeemed} coins</strong> have been refunded to your account.</p>` : 
               ''
             }
             <p><strong>Order Details:</strong></p>
             <ul>
-              <li>Order ID: ${order._id}</li>
+              <li>Order ID: ${getOrderReference(order)}</li>
               <li>Total Amount: ₹${order.totalAmount}</li>
               <li>Cancellation Reason: ${order.cancellationReason}</li>
             </ul>
@@ -486,11 +490,11 @@ exports.updateCancellationStatus = async (req, res) => {
         const mailOptions = {
           from: '"Shop Support" <support@yourstore.com>',
           to: order.user.email,
-          subject: `❌ Order Cancellation Rejected - #${order._id}`,
+          subject: `❌ Order Cancellation Rejected - #${getOrderReference(order)}`,
           html: `
             <h2>Your Cancellation Request Has Been Rejected</h2>
             <p>Dear ${order.user.name},</p>
-            <p>Your cancellation request for order <strong>#${order._id}</strong> has been rejected.</p>
+            <p>Your cancellation request for order <strong>#${getOrderReference(order)}</strong> has been rejected.</p>
             <p><strong>Reason:</strong> Your order is already being processed and cannot be cancelled at this stage.</p>
             <p>If you have any questions, please contact our support team.</p>
             <p>Thank you,<br>Your Store Team</p>
@@ -593,10 +597,10 @@ exports.requestReturn = async (req, res) => {
       const mailOptions = {
         from: '"Shop Notification" <no-reply@yourstore.com>',
         to: process.env.ADMIN_EMAIL,
-        subject: `🔄 Return Request for Order #${order._id}`,
+        subject: `🔄 Return Request for Order #${getOrderReference(order)}`,
         html: `
           <h2>Return Request Received</h2>
-          <p><strong>Order ID:</strong> ${order._id}</p>
+          <p><strong>Order ID:</strong> ${getOrderReference(order)}</p>
           <p><strong>User:</strong> ${order.user.name} (${order.user.email})</p>
           <p><strong>Reason:</strong> ${reason}</p>
           <p><strong>Delivered At:</strong> ${order.updatedAt.toLocaleString()}</p>
@@ -674,7 +678,7 @@ exports.updateReturnStatus = async (req, res) => {
       // Cancel pending coins if not already credited
       if (order.coinsEarned > 0 && order.coinStatus === 'pending') {
         order.coinStatus = 'cancelled';
-        console.log(`❌ Pending coins cancelled: ${order.coinsEarned} for order ${order._id}`);
+        console.log(`❌ Pending coins cancelled: ${order.coinsEarned} for order ${getOrderReference(order)}`);
       }
 
       // Send email to user about approved return
@@ -690,18 +694,18 @@ exports.updateReturnStatus = async (req, res) => {
         const mailOptions = {
           from: '"Shop Support" <support@yourstore.com>',
           to: order.user.email,
-          subject: `✅ Return Request Approved - #${order._id}`,
+          subject: `✅ Return Request Approved - #${getOrderReference(order)}`,
           html: `
             <h2>Your Return Request Has Been Approved</h2>
             <p>Dear ${order.user.name},</p>
-            <p>Your return request for order <strong>#${order._id}</strong> has been approved.</p>
+            <p>Your return request for order <strong>#${getOrderReference(order)}</strong> has been approved.</p>
             ${order.coinsRedeemed > 0 ? 
               `<p><strong>${order.coinsRedeemed} coins</strong> have been refunded to your account.</p>` : 
               ''
             }
             <p><strong>Return Details:</strong></p>
             <ul>
-              <li>Order ID: ${order._id}</li>
+              <li>Order ID: ${getOrderReference(order)}</li>
               <li>Total Amount: ₹${order.totalAmount}</li>
               <li>Return Reason: ${order.returnReason}</li>
             </ul>
@@ -736,11 +740,11 @@ exports.updateReturnStatus = async (req, res) => {
         const mailOptions = {
           from: '"Shop Support" <support@yourstore.com>',
           to: order.user.email,
-          subject: `❌ Return Request Rejected - #${order._id}`,
+          subject: `❌ Return Request Rejected - #${getOrderReference(order)}`,
           html: `
             <h2>Your Return Request Has Been Rejected</h2>
             <p>Dear ${order.user.name},</p>
-            <p>Your return request for order <strong>#${order._id}</strong> has been rejected.</p>
+            <p>Your return request for order <strong>#${getOrderReference(order)}</strong> has been rejected.</p>
             <p><strong>Reason:</strong> The return window has expired or the product doesn't meet return criteria.</p>
             <p>If you have any questions, please contact our support team.</p>
             <p>Thank you,<br>Your Store Team</p>

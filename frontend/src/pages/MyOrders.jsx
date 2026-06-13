@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
+const getOrderNumber = (order) => order.orderNumber || order._id;
+
 const MyOrders = () => {
   const { user, token } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
@@ -263,7 +265,7 @@ const MyOrders = () => {
           {!isCancelling ? (
             <>
               <p className="text-gray-600 mb-4">
-                Are you sure you want to cancel order #{orderToCancel._id?.slice(-8)}?
+                Are you sure you want to cancel order #{getOrderNumber(orderToCancel)}?
               </p>
               
               <div className="mb-4">
@@ -339,7 +341,7 @@ const MyOrders = () => {
           {!isReturning ? (
             <>
               <p className="text-gray-600 mb-4">
-                Are you sure you want to return order #{orderToReturn._id?.slice(-8)}?
+                Are you sure you want to return order #{getOrderNumber(orderToReturn)}?
                 <br />
                 <span className="text-sm text-blue-600">
                   Return window: 24 hours from delivery
@@ -504,7 +506,7 @@ const MyOrders = () => {
                       </div>
                       <div>
                         <p className="text-white/70 text-xs font-medium uppercase tracking-wider">Order ID</p>
-                        <p className="text-white font-mono text-sm">{order._id}</p>
+                        <p className="text-white font-mono text-sm">{getOrderNumber(order)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

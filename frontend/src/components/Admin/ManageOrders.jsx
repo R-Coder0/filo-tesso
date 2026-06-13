@@ -11,6 +11,8 @@ const pageTitle = {
   returns: "Return Requests",
 };
 
+const getOrderNumber = (order) => order.orderNumber || order._id;
+
 const ManageOrders = ({ view = "all" }) => {
   const [orders, setOrders] = useState([]);
   const [cancellationRequests, setCancellationRequests] = useState([]);
@@ -302,7 +304,7 @@ const ManageOrders = ({ view = "all" }) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                         <h3 className="text-md md:text-xl font-semibold text-gray-800">
-                          Order ID: {order._id}
+                          Order ID: {getOrderNumber(order)}
                         </h3>
                         {getStatusBadge(order)}
                       </div>
@@ -599,7 +601,7 @@ const ManageOrders = ({ view = "all" }) => {
                       </div>
 
                       <h3 className="text-xl font-semibold mb-2 text-gray-800">
-                        Order ID: {order._id}
+                        Order ID: {getOrderNumber(order)}
                       </h3>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-700 mb-4">
@@ -766,7 +768,7 @@ const ManageOrders = ({ view = "all" }) => {
                       </div>
 
                       <h3 className="text-xl font-semibold mb-2 text-gray-800">
-                        Order ID: {order._id}
+                        Order ID: {getOrderNumber(order)}
                       </h3>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-700 mb-4">

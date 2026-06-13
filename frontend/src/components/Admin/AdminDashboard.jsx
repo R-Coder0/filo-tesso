@@ -265,7 +265,7 @@ export default function AdminDashboard() {
                           {order.address?.name || order.user?.name || "Customer"}
                         </p>
                         <p className="mt-0.5 text-xs text-gray-500">
-                          {order._id}
+                          {order.orderNumber || order._id}
                         </p>
                       </div>
                       <span className="font-semibold text-gray-900">

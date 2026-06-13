@@ -168,7 +168,9 @@ export default function AdminLayout({ children }) {
           id: `cancel-${order._id}`,
           type: "cancel",
           title: "Cancellation requested",
-          message: order.cancellationReason || `Order ${order._id}`,
+          message:
+            order.cancellationReason ||
+            `Order ${order.orderNumber || order._id}`,
           time: order.cancelledAt || order.createdAt,
           to: "/admin/cancellations",
         })),
@@ -176,7 +178,8 @@ export default function AdminLayout({ children }) {
           id: `return-${order._id}`,
           type: "return",
           title: "Return requested",
-          message: order.returnReason || `Order ${order._id}`,
+          message:
+            order.returnReason || `Order ${order.orderNumber || order._id}`,
           time: order.returnRequestedAt || order.createdAt,
           to: "/admin/returns",
         })),
