@@ -132,10 +132,14 @@ const OrderDetailsModal = ({
                   <button
                     type="button"
                     onClick={() => onRefreshShipment(order)}
-                    disabled={!shipment.shipmentId || refreshing}
+                    disabled={refreshing}
                     className="rounded-lg border border-white/20 p-2 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Refresh shipment"
-                    title="Refresh shipment"
+                    title={
+                      shipment.shipmentId
+                        ? "Refresh shipment"
+                        : "Retry Shiprocket sync"
+                    }
                   >
                     <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                   </button>
@@ -426,7 +430,9 @@ const ManageOrders = ({ view = "all" }) => {
       
       setUpdatingOrderId(null);
       if (response.data.shiprocketWarning) {
-        toast.error(`Marked shipped, but Shiprocket failed: ${response.data.shiprocketWarning}`);
+        toast.error(
+          `Order shipped, but AWB assignment is pending: ${response.data.shiprocketWarning}`
+        );
       } else {
         toast.success(
           newStatus === "shipped"
@@ -437,7 +443,12 @@ const ManageOrders = ({ view = "all" }) => {
     } catch (error) {
       console.error("Error updating order status", error);
       setUpdatingOrderId(null);
-      toast.error("Failed to update order status");
+      await fetchOrders(true);
+      toast.error(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to update order status"
+      );
     }
   };
 
@@ -453,6 +464,28 @@ const ManageOrders = ({ view = "all" }) => {
         error.response?.data?.error ||
           error.response?.data?.message ||
           "Failed to refresh shipment"
+      );
+    } finally {
+      setShipmentAction(null);
+    }
+  };
+
+  const handleSyncOrRefreshShipment = async (order) => {
+    if (order.shiprocket?.shipmentId) {
+      return handleRefreshShipment(order);
+    }
+
+    try {
+      setShipmentAction({ orderId: order._id, type: "sync" });
+      await axiosShiprocket.post(`/orders/${order._id}/sync`);
+      await fetchOrders(true);
+      toast.success("Order synced with Shiprocket");
+    } catch (error) {
+      console.error("Failed to sync order with Shiprocket", error);
+      toast.error(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to sync order with Shiprocket"
       );
     } finally {
       setShipmentAction(null);
@@ -572,7 +605,7 @@ const ManageOrders = ({ view = "all" }) => {
                       const isDeleting = deletingOrderId === order._id;
                       const isRefreshing =
                         shipmentAction?.orderId === order._id &&
-                        shipmentAction.type === "refresh";
+                        ["refresh", "sync"].includes(shipmentAction.type);
                       const isDownloading =
                         shipmentAction?.orderId === order._id &&
                         shipmentAction.type === "label";
@@ -637,7 +670,12 @@ const ManageOrders = ({ view = "all" }) => {
                             >
                               <option value="pending">Pending</option>
                               <option value="confirmed">Confirmed</option>
-                              <option value="shipped">Shipped</option>
+                              <option
+                                value="shipped"
+                                disabled={!shipment.shipmentId}
+                              >
+                                Shipped
+                              </option>
                               <option value="delivered">Delivered</option>
                               <option value="cancelled">Cancelled</option>
                               <option value="returned">Returned</option>
@@ -686,11 +724,15 @@ const ManageOrders = ({ view = "all" }) => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleRefreshShipment(order)}
-                                disabled={!shipment.shipmentId || isRefreshing}
+                                onClick={() => handleSyncOrRefreshShipment(order)}
+                                disabled={isRefreshing}
                                 className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 transition hover:border-gray-950 hover:bg-gray-950 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
                                 aria-label="Refresh shipment"
-                                title="Refresh Shiprocket shipment"
+                                title={
+                                  shipment.shipmentId
+                                    ? "Refresh Shiprocket shipment"
+                                    : "Retry Shiprocket sync"
+                                }
                               >
                                 <RefreshCw
                                   className={`h-4 w-4 ${
@@ -749,11 +791,11 @@ const ManageOrders = ({ view = "all" }) => {
             }
             onClose={() => setSelectedOrder(null)}
             onDownloadLabel={handleDownloadLabel}
-            onRefreshShipment={handleRefreshShipment}
+            onRefreshShipment={handleSyncOrRefreshShipment}
             order={selectedOrder}
             refreshing={
               shipmentAction?.orderId === selectedOrder?._id &&
-              shipmentAction?.type === "refresh"
+              ["refresh", "sync"].includes(shipmentAction?.type)
             }
           />
         </>

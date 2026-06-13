@@ -15,6 +15,7 @@ const { handleTrackingWebhook } = require("./controllers/shiprocketController");
 const {
   verifyShiprocketApiKey,
 } = require("./middleware/shiprocketApiKey");
+const Order = require("./models/Order");
 const reviewRoutes = require("./routes/reveiwRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const testimonialRoutes = require("./routes/testimonialroutes")
@@ -87,11 +88,33 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+const repairOrdersMissingShipment = async () => {
+  const result = await Order.updateMany(
+    {
+      orderStatus: "shipped",
+      $or: [
+        { "shiprocket.shipmentId": { $exists: false } },
+        { "shiprocket.shipmentId": null },
+        { "shiprocket.shipmentId": "" },
+      ],
+    },
+    { $set: { orderStatus: "confirmed" } }
+  );
+
+  return result.modifiedCount || 0;
+};
+
 const startServer = async () => {
   await connectDB();
   const backfilledOrders = await backfillOrderNumbers();
   if (backfilledOrders > 0) {
     console.log(`Assigned public order numbers to ${backfilledOrders} existing orders`);
+  }
+  const repairedOrders = await repairOrdersMissingShipment();
+  if (repairedOrders > 0) {
+    console.log(
+      `Reset ${repairedOrders} shipped orders without Shiprocket shipment IDs to confirmed`
+    );
   }
 
   app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

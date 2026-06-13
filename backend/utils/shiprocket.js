@@ -14,6 +14,7 @@ const positiveNumber = (value, fallback) => {
 
 const getDefaults = () => ({
   pickupLocation: process.env.SHIPROCKET_PICKUP_LOCATION || "warehouse",
+  channelId: positiveNumber(process.env.SHIPROCKET_CHANNEL_ID, 0),
   length: positiveNumber(process.env.SHIPROCKET_DEFAULT_LENGTH, 10),
   breadth: positiveNumber(process.env.SHIPROCKET_DEFAULT_BREADTH, 10),
   height: positiveNumber(process.env.SHIPROCKET_DEFAULT_HEIGHT, 2),
@@ -185,7 +186,7 @@ const buildShiprocketOrderPayload = (order) => {
   const totalAmount = Number(order.totalAmount || 0);
   const subTotal = Number(order.payableAmount ?? totalAmount);
 
-  return {
+  const payload = {
     order_id: order.orderNumber || String(order._id),
     order_date: formatShiprocketDate(order.createdAt),
     pickup_location: defaults.pickupLocation,
@@ -214,6 +215,12 @@ const buildShiprocketOrderPayload = (order) => {
     height: Number(Math.max(packageHeight, defaults.height).toFixed(2)),
     weight: Number(Math.max(totalWeight, defaults.weight).toFixed(3)),
   };
+
+  if (defaults.channelId) {
+    payload.channel_id = defaults.channelId;
+  }
+
+  return payload;
 };
 
 const getShiprocketError = (error) => {
@@ -241,6 +248,68 @@ const createShiprocketOrder = async (order) => {
   });
 
   return { data, payload };
+};
+
+const getShiprocketOrderDetails = async (orderId) => {
+  const { data } = await shiprocketRequest({
+    method: "get",
+    url: `/orders/show/${orderId}`,
+  });
+
+  return data?.data || data;
+};
+
+const getShipmentFromOrderDetails = (details) => {
+  if (!details) return {};
+  if (Array.isArray(details.shipments)) return details.shipments[0] || {};
+  return details.shipments || {};
+};
+
+const wait = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+const recoverShiprocketShipment = async (order, { attempts = 3 } = {}) => {
+  const shiprocketOrderId = order.shiprocket?.orderId;
+  if (!shiprocketOrderId) return order.shiprocket;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const details = await getShiprocketOrderDetails(shiprocketOrderId);
+    const shipment = getShipmentFromOrderDetails(details);
+
+    if (!shipment.id) {
+      if (attempt < attempts) await wait(700);
+      continue;
+    }
+
+    order.shiprocket = {
+      ...order.shiprocket?.toObject?.(),
+      syncStatus: "synced",
+      orderId: String(details.id || shiprocketOrderId),
+      shipmentId: String(shipment.id),
+      status: shipment.status || details.status || order.shiprocket?.status || "",
+      statusCode:
+        Number(details.status_code || shipment.status_code) ||
+        order.shiprocket?.statusCode,
+      awbCode: shipment.awb ? String(shipment.awb) : order.shiprocket?.awbCode,
+      courierCompanyId: shipment.courier_id
+        ? String(shipment.courier_id)
+        : order.shiprocket?.courierCompanyId,
+      courierName: shipment.courier || order.shiprocket?.courierName,
+      labelUrl: shipment.label_url || order.shiprocket?.labelUrl || "",
+      lastAttemptAt: new Date(),
+      syncedAt: order.shiprocket?.syncedAt || new Date(),
+      lastError: "",
+      response: {
+        ...(order.shiprocket?.response || {}),
+        orderDetails: details,
+      },
+    };
+    await order.save();
+
+    return order.shiprocket;
+  }
+
+  return order.shiprocket;
 };
 
 const assignShiprocketAwb = async (order) => {
@@ -405,7 +474,35 @@ const generateShiprocketLabel = async (order) => {
 
 const syncOrderToShiprocket = async (order, { force = false } = {}) => {
   if (!order) throw new Error("Order is required");
-  if (order.shiprocket?.orderId && !force) return order.shiprocket;
+  if (
+    order.shiprocket?.orderId &&
+    order.shiprocket?.shipmentId &&
+    !force
+  ) {
+    return order.shiprocket;
+  }
+
+  if (order.shiprocket?.orderId && !order.shiprocket?.shipmentId && !force) {
+    try {
+      await recoverShiprocketShipment(order);
+      if (order.shiprocket?.shipmentId) return order.shiprocket;
+      throw new Error(
+        "Shiprocket order exists, but its shipment ID is not available yet"
+      );
+    } catch (error) {
+      const statusCode = error.response?.status;
+      const message = getShiprocketError(error);
+      const orderNotFound =
+        [400, 404].includes(statusCode) && /order.*not found/i.test(message);
+
+      if (!orderNotFound) throw error;
+
+      order.shiprocket.orderId = "";
+      order.shiprocket.shipmentId = "";
+      order.shiprocket.lastError = "";
+      await order.save();
+    }
+  }
 
   order.shiprocket = {
     ...order.shiprocket?.toObject?.(),
@@ -417,24 +514,40 @@ const syncOrderToShiprocket = async (order, { force = false } = {}) => {
 
   try {
     const { data } = await createShiprocketOrder(order);
+    const createdOrder = data?.data?.order_id ? data.data : data;
     order.shiprocket = {
       syncStatus: "synced",
-      orderId: data.order_id ? String(data.order_id) : "",
-      shipmentId: data.shipment_id ? String(data.shipment_id) : "",
-      status: data.status || "",
-      statusCode:
-        typeof data.status_code === "number" ? data.status_code : undefined,
-      awbCode: data.awb_code ? String(data.awb_code) : "",
-      courierCompanyId: data.courier_company_id
-        ? String(data.courier_company_id)
+      orderId: createdOrder.order_id ? String(createdOrder.order_id) : "",
+      shipmentId: createdOrder.shipment_id
+        ? String(createdOrder.shipment_id)
         : "",
-      courierName: data.courier_name || "",
+      status: createdOrder.status || "",
+      statusCode:
+        typeof createdOrder.status_code === "number"
+          ? createdOrder.status_code
+          : undefined,
+      awbCode: createdOrder.awb_code ? String(createdOrder.awb_code) : "",
+      courierCompanyId: createdOrder.courier_company_id
+        ? String(createdOrder.courier_company_id)
+        : "",
+      courierName: createdOrder.courier_name || "",
       lastAttemptAt: new Date(),
       syncedAt: new Date(),
       lastError: "",
       response: data,
     };
     await order.save();
+
+    if (!order.shiprocket.shipmentId && order.shiprocket.orderId) {
+      await recoverShiprocketShipment(order);
+    }
+
+    if (!order.shiprocket.shipmentId) {
+      throw new Error(
+        "Shiprocket did not return a shipment ID. Check API user, channel ID, and pickup location"
+      );
+    }
+
     return order.shiprocket;
   } catch (error) {
     const message = getShiprocketError(error);
@@ -458,9 +571,11 @@ module.exports = {
   createShiprocketOrder,
   generateShiprocketLabel,
   getShiprocketError,
+  getShiprocketOrderDetails,
   getShiprocketShipmentDetails,
   getShiprocketToken,
   getShiprocketTracking,
+  recoverShiprocketShipment,
   refreshShiprocketShipment,
   syncOrderToShiprocket,
 };

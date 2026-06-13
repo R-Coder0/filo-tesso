@@ -164,6 +164,15 @@ exports.createOrder = async (req, res) => {
     user.coinsBalance -= redeemable;
     await user.save();
 
+    try {
+      await syncOrderToShiprocket(order);
+    } catch (shiprocketError) {
+      console.error(
+        `Shiprocket sync failed for order ${getOrderReference(order)}:`,
+        shiprocketError.message
+      );
+    }
+
     // ✅ EMAIL (same as your original — untouched)
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {
       // 👇 tu apna pura email wala code yahin same rehne de
@@ -217,6 +226,30 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    let shiprocketWarning = "";
+    if (status === "shipped") {
+      try {
+        if (!order.shiprocket?.shipmentId) {
+          await syncOrderToShiprocket(order);
+        }
+
+        if (!order.shiprocket?.shipmentId) {
+          return res.status(409).json({
+            message: "Order cannot be marked shipped without a Shiprocket shipment ID",
+          });
+        }
+      } catch (shiprocketError) {
+        console.error(
+          `Shiprocket sync failed for order ${getOrderReference(order)}:`,
+          shiprocketError.message
+        );
+        return res.status(502).json({
+          message: "Order was not marked shipped",
+          error: shiprocketError.message,
+        });
+      }
+    }
+
     // 1) Cancel/return par pending coins cancel
     if (['cancelled', 'returned'].includes(status) && order.coinStatus === 'pending') {
       order.coinStatus = 'cancelled';
@@ -242,12 +275,8 @@ exports.updateOrderStatus = async (req, res) => {
     order.orderStatus = status;
     await order.save();
 
-    let shiprocketWarning = "";
     if (status === "shipped") {
       try {
-        if (!order.shiprocket?.orderId) {
-          await syncOrderToShiprocket(order);
-        }
         if (!order.shiprocket?.awbCode) {
           await assignShiprocketAwb(order);
         }
@@ -262,7 +291,7 @@ exports.updateOrderStatus = async (req, res) => {
 
     res.json({
       message: shiprocketWarning
-        ? "Order marked shipped, but Shiprocket sync failed"
+        ? "Order marked shipped, but AWB assignment is pending"
         : "Order status updated",
       order,
       shiprocketWarning,
