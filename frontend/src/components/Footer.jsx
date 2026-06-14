@@ -174,11 +174,11 @@ export default function Footer() {
             </a>
 
             <a
-              href="mailto:filoteso.rk@gmail.com"
+              href="mailto:support@filoteso.co.in"
               className="flex items-center gap-3 font-medium text-white hover:underline"
             >
               <Mail className="h-4 w-4 text-gray-500" />
-              filoteso.rk@gmail.com
+              support@filoteso.co.in
             </a>
           </div>
 

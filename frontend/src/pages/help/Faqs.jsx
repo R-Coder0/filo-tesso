@@ -172,8 +172,8 @@ export default function FAQPage() {
           <div className="mt-3 text-sm text-gray-800">
             <div>
               Email:{" "}
-              <a className="font-semibold text-blue-700 hover:underline" to="mailto:filoteso.rk@gmail.com">
-                filoteso.rk@gmail.com
+              <a className="font-semibold text-blue-700 hover:underline" to="mailto:support@filoteso.co.in">
+                support@filoteso.co.in
               </a>
             </div>
             <div className="mt-1">

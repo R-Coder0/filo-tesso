@@ -156,7 +156,7 @@ export default function TermsAndServicesPage() {
             please contact us at:
           </p>
           <p className="mt-2 font-medium text-gray-900">
-            Email: filoteso.rk@gmail.com
+            Email: support@filoteso.co.in
             <br />
           </p>
         </section>

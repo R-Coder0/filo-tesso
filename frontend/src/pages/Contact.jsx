@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export default function ContactPage() {
   const phoneDisplay = "+91 9310966458";
   const phoneDial = "+919310966458";
-  const email = "filoteso.rk@gmail.com";
+  const email = "support@filoteso.co.in";
   const instagram =
     "https://www.instagram.com/filoteso.co.in/?hl=en";
 

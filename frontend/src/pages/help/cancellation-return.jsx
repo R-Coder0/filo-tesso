@@ -161,7 +161,7 @@ export default function CancellationAndReturnsPage() {
           <div className="mt-3 rounded-2xl border bg-gray-50 p-4">
             <p className="font-semibold text-gray-900">Filo Teso Support</p>
             <p className="mt-1">
-              Email: <span className="font-medium">filoteso.rk@gmail.com</span>
+              Email: <span className="font-medium">support@filoteso.co.in</span>
               {/* <br />
               Phone: <span className="font-medium">+91 98795 11957</span> */}
             </p>
