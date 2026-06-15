@@ -17,7 +17,7 @@ import {
 
 const SIDE_MENU_LINKS = [
   { label: "About", path: "/#about" },
-  { label: "Blogs", path: "/blogs" },
+  { label: "Blogs", path: "/blog" },
   { label: "Contact", path: "/contact" },
   { label: "New Arrival", path: "/products?sort=newest" },
   { label: "Bestseller", path: "/products?sort=bestseller" },

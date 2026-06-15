@@ -28,6 +28,9 @@ const Home = lazy(() => import("./pages/Home"));
 const ProductList = lazy(() => import("./components/ProductList"));
 const ProductDetail = lazy(() => import("./components/ProductDetailPage"));
 const CheckoutPage = lazy(() => import("./components/CheckoutPage"));
+const ShiprocketCheckoutReturn = lazy(
+  () => import("./components/ShiprocketCheckoutReturn")
+);
 const OrderConfirm = lazy(() => import("./components/OrderConfirmationPage"));
 const Login = lazy(() => import("./components/Login"));
 const Register = lazy(() => import("./components/Register"));
@@ -41,7 +44,7 @@ const ManageOrders = lazy(() => import("./components/Admin/ManageOrders"));
 const CartSidebar = lazy(() => import("./components/CartSidebar"));
 const RequireAuth = lazy(() => import("./components/RequireAuth"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoutes"));
-
+const BlogPage = lazy(() => import("./pages/BlogPage"));
 
 const LoadingSpinner = memo(() => (
   <div className="flex items-center justify-center min-h-screen">
@@ -128,7 +131,16 @@ const location = useLocation();
             <Route path="/consumer-policies/return-and-refund" element={<ReturnsAndRefundsPage/>}/>
             <Route path="/consumer-policies/security" element={<SecurityPolicyPage/>}/>
             <Route path="/consumer-policies/terms-and-conditions" element={<TermsAndServicesPage/>}/>
+            <Route path="/blog" element={<BlogPage />} />
             <Route path="/contact" element={<ContactPage/>}/>
+            <Route
+              path="/shiprocket-checkout-return"
+              element={
+                <RequireAuth>
+                  <ShiprocketCheckoutReturn />
+                </RequireAuth>
+              }
+            />
             <Route
               path="/checkout"
               element={

@@ -1,5 +1,11 @@
 // src/pages/CheckoutPage.jsx
-import React, { useState, useEffect, useContext, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+  useRef,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -19,6 +25,16 @@ const formatINR = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
+const getStoredCheckoutState = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return JSON.parse(sessionStorage.getItem("checkoutState"));
+  } catch {
+    return null;
+  }
+};
+
 const loadRazorpayScript = () =>
   new Promise((resolve) => {
     const script = document.createElement("script");
@@ -28,22 +44,76 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
+const loadShiprocketCheckout = (sellerDomain) =>
+  new Promise((resolve, reject) => {
+    let domainInput = document.getElementById("sellerDomain");
+    if (!domainInput) {
+      domainInput = document.createElement("input");
+      domainInput.type = "hidden";
+      domainInput.id = "sellerDomain";
+      document.body.appendChild(domainInput);
+    }
+    domainInput.value = sellerDomain;
+
+    if (!document.getElementById("shiprocket-checkout-styles")) {
+      const stylesheet = document.createElement("link");
+      stylesheet.id = "shiprocket-checkout-styles";
+      stylesheet.rel = "stylesheet";
+      stylesheet.href =
+        "https://checkout-ui.shiprocket.com/assets/styles/shopify.css";
+      document.head.appendChild(stylesheet);
+    }
+
+    if (window.HeadlessCheckout) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.getElementById(
+      "shiprocket-checkout-script"
+    );
+    if (existingScript) {
+      existingScript.addEventListener("load", resolve, { once: true });
+      existingScript.addEventListener(
+        "error",
+        () => reject(new Error("Shiprocket Checkout SDK failed to load")),
+        { once: true }
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "shiprocket-checkout-script";
+    script.src =
+      "https://checkout-ui.shiprocket.com/assets/js/channels/shopify.js";
+    script.onload = resolve;
+    script.onerror = () =>
+      reject(new Error("Shiprocket Checkout SDK failed to load"));
+    document.body.appendChild(script);
+  });
+
 /* -----------------------------
    MAIN COMPONENT
 ------------------------------*/
 const CheckoutPage = () => {
-  const { state } = useLocation();
+  const location = useLocation();
+  const { state } = location;
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
+  const nativeCheckout =
+    new URLSearchParams(location.search).get("native") === "1";
+  const autoLaunchAttempted = useRef(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
+
+  const checkoutState = state || getStoredCheckoutState();
 
   // cart/price data passed from cart sidebar
   const {
     cartItems: initialCartItems,
     subtotal: initialSubtotal,
     customUploads, // { isCustomize, singleFile }
-  } = state || {
+  } = checkoutState || {
     cartItems: [],
     subtotal: 0,
     customUploads: null,
@@ -74,6 +144,8 @@ const CheckoutPage = () => {
     eligible: false,
     percentage: 15,
   });
+  const [shiprocketOpening, setShiprocketOpening] = useState(false);
+  const [shiprocketError, setShiprocketError] = useState("");
 
 
   const preSelectedFile = customUploads?.singleFile || null;
@@ -87,6 +159,22 @@ const CheckoutPage = () => {
     // no items -> redirect home
     if (!initialCartItems || initialCartItems.length === 0) navigate("/");
   }, [initialCartItems, navigate]);
+
+  useEffect(() => {
+    if (!state?.cartItems?.length) return;
+
+    const serializableState = {
+      cartItems: state.cartItems,
+      subtotal: state.subtotal,
+      customUploads: state.customUploads
+        ? {
+            isCustomize: state.customUploads.isCustomize,
+            selectedSide: state.customUploads.selectedSide,
+          }
+        : null,
+    };
+    sessionStorage.setItem("checkoutState", JSON.stringify(serializableState));
+  }, [state]);
 
   // Load saved addresses from localStorage
   useEffect(() => {
@@ -230,6 +318,60 @@ const CheckoutPage = () => {
     const required = ["name", "phone", "street", "city", "state", "postalCode"];
     return required.every((k) => (address[k] || "").trim() !== "");
   }, [address]);
+
+  const openShiprocketCheckout = async (event) => {
+    event?.preventDefault?.();
+    if (!token) return toast.error("Please login to place order.");
+    if (!cartItems.length) return toast.error("Your cart is empty.");
+
+    setShiprocketOpening(true);
+    setShiprocketError("");
+
+    try {
+      const { data } = await axios.post(
+        `${apiUrl}/api/payment/shiprocket-checkout/token`,
+        { cartItems },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      await loadShiprocketCheckout(data.sellerDomain);
+      if (!window.HeadlessCheckout?.addToCart) {
+        throw new Error("Shiprocket Checkout is not available");
+      }
+
+      window.HeadlessCheckout.addToCart(
+        event || { preventDefault() {} },
+        data.token,
+        {
+          fallbackUrl: `${window.location.origin}/checkout?native=1`,
+        }
+      );
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Shiprocket Checkout could not be opened.";
+      console.error("Shiprocket Checkout failed:", error);
+      setShiprocketError(message);
+      toast.error(message);
+    } finally {
+      setShiprocketOpening(false);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      nativeCheckout ||
+      autoLaunchAttempted.current ||
+      !token ||
+      !cartItems.length
+    ) {
+      return;
+    }
+
+    autoLaunchAttempted.current = true;
+    openShiprocketCheckout();
+  }, [nativeCheckout, token, cartItems.length]);
 
   /* -----------------------------
      COD FLOW
@@ -388,6 +530,72 @@ const CheckoutPage = () => {
   /* -----------------------------
      RENDER
   ------------------------------*/
+  if (!nativeCheckout) {
+    return (
+      <div className="min-h-[70vh] bg-gradient-to-b from-[#f8f7fb] to-white px-4 py-16">
+        <div className="mx-auto max-w-xl overflow-hidden rounded-3xl border border-[#e7e3f2] bg-white shadow-[0_24px_80px_rgba(42,28,77,0.12)]">
+          <div className="bg-gradient-to-r from-[#5f3dc4] via-[#7253d6] to-[#8b6de9] px-8 py-10 text-white">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/75">
+              Filo Teso
+            </p>
+            <h1 className="text-3xl font-semibold">Shiprocket Checkout</h1>
+            <p className="mt-2 max-w-md text-sm leading-6 text-white/80">
+              Secure one-click checkout with saved addresses, UPI, cards and
+              Cash on Delivery.
+            </p>
+          </div>
+
+          <div className="px-8 py-9">
+            <div className="mb-7 flex items-center justify-between rounded-2xl bg-[#f7f5fc] px-5 py-4">
+              <div>
+                <p className="text-sm text-gray-500">Order total</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-950">
+                  {formatINR(payableAmount)}
+                </p>
+              </div>
+              <div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-[#6546c7] shadow-sm">
+                {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
+              </div>
+            </div>
+
+            {shiprocketError && (
+              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {shiprocketError}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={openShiprocketCheckout}
+              disabled={shiprocketOpening || !token}
+              className="w-full rounded-xl bg-[#6546c7] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-[#6546c7]/20 transition hover:bg-[#583bb5] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {shiprocketOpening
+                ? "Opening Shiprocket Checkout..."
+                : "Continue with Shiprocket Checkout"}
+            </button>
+
+            <p className="mt-4 text-center text-xs text-gray-500">
+              Powered by Shiprocket Checkout
+            </p>
+
+            {shiprocketError && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/checkout?native=1", { state: checkoutState })
+                }
+                className="mt-4 w-full text-sm font-medium text-gray-600 underline underline-offset-4"
+              >
+                Use fallback checkout
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid lg:grid-cols-3 gap-8">

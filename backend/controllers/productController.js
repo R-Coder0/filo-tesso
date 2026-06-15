@@ -1,6 +1,11 @@
 // controllers/productController.js
 const Product = require("../models/Product");
 const { CATEGORY_MAP, ALL_CATEGORIES } = require("../config/categories");
+const {
+  getCatalogVariants,
+  getProductNumericId,
+  getVariantNumericId,
+} = require("../utils/shiprocketCatalog");
 
 const BRAND_VENDOR = "Filo Teso";
 const DEFAULT_COLLECTION_IMAGE = "/uploads/products/productone.jpg";
@@ -48,15 +53,6 @@ const escapeHtml = (value) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-
-const objectIdToNumericId = (id) => {
-  const hex = String(id || "").replace(/[^a-fA-F0-9]/g, "");
-  if (!hex) return Math.floor(100000000 + Math.random() * 900000000);
-  return 100000000 + (parseInt(hex.slice(-8), 16) % 900000000);
-};
-
-const getProductNumericId = (product) =>
-  Number(product?.productId) || objectIdToNumericId(product?._id);
 
 const getProductSlug = (product) =>
   product?.slug || slugify(product?.name) || `product-${getProductNumericId(product)}`;
@@ -148,11 +144,6 @@ const getProductBodyHtml = (product) => {
   return description ? `<p>${escapeHtml(description)}</p>` : "";
 };
 
-const getVariantNumericId = (product, index) => {
-  const base = getProductNumericId(product);
-  return Number(`${String(base).slice(0, 8)}${index + 1}`);
-};
-
 const toShiprocketVariant = (req, product, variant, index) => {
   const size = String(variant?.size || "").trim();
   const optionValues = {};
@@ -185,13 +176,7 @@ const toShiprocketVariant = (req, product, variant, index) => {
 };
 
 const toShiprocketProduct = (req, product) => {
-  const sizeVariants = Array.isArray(product?.sizeVariants) ? product.sizeVariants : [];
-  const fallbackSizes = Array.isArray(product?.sizes) ? product.sizes : [];
-  const variants = sizeVariants.length
-    ? sizeVariants
-    : fallbackSizes.length
-      ? fallbackSizes.map((size) => ({ size, stock: product?.stock || 0 }))
-      : [{ size: "", stock: product?.stock || 0 }];
+  const variants = getCatalogVariants(product);
 
   const optionValues = variants
     .map((variant) => String(variant?.size || "").trim())
