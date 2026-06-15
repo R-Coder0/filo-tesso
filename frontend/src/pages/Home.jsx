@@ -4,6 +4,7 @@ import Hero from '../section/Hero'
 import HomeDiscountBanner from '../components/HomeDiscountBanner'
 import TshirtCategoryStrip from '../components/TshirtCategoryStrip'
 import HomeNewPopular from '../components/HomeNewPopular'
+import InstagramCarousel from '../components/InstagramCarousel'
 
 const Home = () => {
   return (
@@ -27,6 +28,7 @@ const Home = () => {
       <HomeDiscountBanner />
       <TshirtCategoryStrip />
       <HomeNewPopular />
+      <InstagramCarousel />
     </div>
   )
 }

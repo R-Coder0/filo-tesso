@@ -94,14 +94,16 @@ const getProductRouteParams = (pathname) => {
 }
 
 const loadHomeSsrData = async () => {
-  const [latest, allProducts, oversize, ...categoryLists] = await Promise.all([
-    safeFetchJson('/api/products/latest?limit=20'),
-    safeFetchJson('/api/products'),
-    safeFetchJson('/api/products?subcategory=oversize-tshirt'),
-    ...PRODUCT_CATEGORIES.map((category) =>
-      safeFetchJson(buildApiPath('/api/products', { category })),
-    ),
-  ])
+  const [latest, allProducts, oversize, instagramFeed, ...categoryLists] =
+    await Promise.all([
+      safeFetchJson('/api/products/latest?limit=20'),
+      safeFetchJson('/api/products'),
+      safeFetchJson('/api/products?subcategory=oversize-tshirt'),
+      safeFetchJson('/api/instagram/posts'),
+      ...PRODUCT_CATEGORIES.map((category) =>
+        safeFetchJson(buildApiPath('/api/products', { category })),
+      ),
+    ])
 
   const categoryWise = categoryLists.map((data) => toProductList(data))
   const bestsellers = interleave(categoryWise)
@@ -111,6 +113,7 @@ const loadHomeSsrData = async () => {
     homeProducts: toProductList(allProducts).slice(0, 8),
     homeOversizeProducts: toProductList(oversize).slice(0, 8),
     homeBestsellerProducts: dedupeProducts(bestsellers),
+    homeInstagramFeed: instagramFeed,
   }
 }
 

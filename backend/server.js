@@ -19,6 +19,7 @@ const Order = require("./models/Order");
 const reviewRoutes = require("./routes/reveiwRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const testimonialRoutes = require("./routes/testimonialroutes")
+const instagramRoutes = require("./routes/instagramRoutes");
 // ✅ NEW LINE: Wishlist route import
 const wishlistRoutes = require("./routes/wishlistRoutes");
 const path = require("path");
@@ -66,6 +67,7 @@ app.use("/api/payment", paymentRoutes);
 // ✅ NEW LINE: Wishlist route mount
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/instagram", instagramRoutes);
 
 
 app.get("/", (req, res) => {
