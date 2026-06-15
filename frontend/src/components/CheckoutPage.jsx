@@ -532,66 +532,38 @@ const CheckoutPage = () => {
   ------------------------------*/
   if (!nativeCheckout) {
     return (
-      <div className="min-h-[70vh] bg-gradient-to-b from-[#f8f7fb] to-white px-4 py-16">
-        <div className="mx-auto max-w-xl overflow-hidden rounded-3xl border border-[#e7e3f2] bg-white shadow-[0_24px_80px_rgba(42,28,77,0.12)]">
-          <div className="bg-gradient-to-r from-[#5f3dc4] via-[#7253d6] to-[#8b6de9] px-8 py-10 text-white">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/75">
-              Filo Teso
-            </p>
-            <h1 className="text-3xl font-semibold">Shiprocket Checkout</h1>
-            <p className="mt-2 max-w-md text-sm leading-6 text-white/80">
-              Secure one-click checkout with saved addresses, UPI, cards and
-              Cash on Delivery.
-            </p>
-          </div>
-
-          <div className="px-8 py-9">
-            <div className="mb-7 flex items-center justify-between rounded-2xl bg-[#f7f5fc] px-5 py-4">
-              <div>
-                <p className="text-sm text-gray-500">Order total</p>
-                <p className="mt-1 text-2xl font-semibold text-gray-950">
-                  {formatINR(payableAmount)}
-                </p>
-              </div>
-              <div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-[#6546c7] shadow-sm">
-                {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
-              </div>
-            </div>
-
-            {shiprocketError && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {shiprocketError}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={openShiprocketCheckout}
-              disabled={shiprocketOpening || !token}
-              className="w-full rounded-xl bg-[#6546c7] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-[#6546c7]/20 transition hover:bg-[#583bb5] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {shiprocketOpening
-                ? "Opening Shiprocket Checkout..."
-                : "Continue with Shiprocket Checkout"}
-            </button>
-
-            <p className="mt-4 text-center text-xs text-gray-500">
-              Powered by Shiprocket Checkout
-            </p>
-
-            {shiprocketError && (
+      <div className="flex min-h-[70vh] items-center justify-center bg-white px-4">
+        {shiprocketError ? (
+          <div className="max-w-md text-center">
+            <p className="text-sm leading-6 text-red-700">{shiprocketError}</p>
+            <div className="mt-5 flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={openShiprocketCheckout}
+                disabled={shiprocketOpening}
+                className="rounded-lg bg-[#6546c7] px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {shiprocketOpening ? "Opening..." : "Retry Shiprocket Checkout"}
+              </button>
               <button
                 type="button"
                 onClick={() =>
                   navigate("/checkout?native=1", { state: checkoutState })
                 }
-                className="mt-4 w-full text-sm font-medium text-gray-600 underline underline-offset-4"
+                className="text-xs font-medium text-gray-500 underline underline-offset-4"
               >
                 Use fallback checkout
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#e7e0fb] border-t-[#6546c7]" />
+            <p className="mt-4 text-sm font-medium text-gray-600">
+              Opening secure checkout...
+            </p>
+          </div>
+        )}
       </div>
     );
   }

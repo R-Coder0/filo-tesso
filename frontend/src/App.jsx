@@ -21,6 +21,7 @@ import ReturnsAndRefundsPage from "./pages/consumer-policies/return&refund";
 import SecurityPolicyPage from "./pages/consumer-policies/security";
 import TermsAndServicesPage from "./pages/consumer-policies/t&c";
 import ContactPage from "./pages/Contact";
+import BlogDetailPage from "./pages/BlogDetailPage";
 
 // Lazy components
 const Navbar = lazy(() => import("./components/navBar"));
@@ -132,6 +133,7 @@ const location = useLocation();
             <Route path="/consumer-policies/security" element={<SecurityPolicyPage/>}/>
             <Route path="/consumer-policies/terms-and-conditions" element={<TermsAndServicesPage/>}/>
             <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogDetailPage />} />
             <Route path="/contact" element={<ContactPage/>}/>
             <Route
               path="/shiprocket-checkout-return"
