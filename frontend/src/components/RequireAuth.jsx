@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 const RequireAuth = ({ children }) => {
-  const { user, loading } = useContext(AuthContext);
+  const { user, token, loading } = useContext(AuthContext);
   const location = useLocation();
 
   if (loading) {
@@ -17,9 +17,12 @@ const RequireAuth = ({ children }) => {
     );
   }
 
-  if (!user) {
+  if (!user || !token) {
     if (typeof window !== "undefined") {
-      localStorage.setItem("redirectAfterLogin", location.pathname);
+      localStorage.setItem(
+        "redirectAfterLogin",
+        `${location.pathname}${location.search}`
+      );
     }
     return <Navigate to="/login" replace />;
   }

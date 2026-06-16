@@ -25,6 +25,9 @@ const formatINR = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
+const isAuthError = (error) => error?.response?.status === 401;
+const sessionExpiredMessage = "Your session has expired. Please login again.";
+
 const getStoredCheckoutState = () => {
   if (typeof window === "undefined") return null;
 
@@ -348,9 +351,11 @@ const CheckoutPage = () => {
       );
     } catch (error) {
       const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Shiprocket Checkout could not be opened.";
+        isAuthError(error)
+          ? sessionExpiredMessage
+          : error?.response?.data?.message ||
+            error?.message ||
+            "Shiprocket Checkout could not be opened.";
       console.error("Shiprocket Checkout failed:", error);
       setShiprocketError(message);
       toast.error(message);
@@ -430,7 +435,11 @@ const CheckoutPage = () => {
       navigate("/order-confirmation", { state: orderDetails });
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to place order. Please try again.");
+      toast.error(
+        isAuthError(err)
+          ? sessionExpiredMessage
+          : err?.response?.data?.message || "Failed to place order. Please try again."
+      );
     }
   };
 
@@ -510,7 +519,11 @@ const CheckoutPage = () => {
             navigate("/order-confirmation", { state: orderDetails });
           } catch (err) {
             console.error(err);
-            toast.error("Payment verified but order creation failed. Please contact support.");
+            toast.error(
+              isAuthError(err)
+                ? sessionExpiredMessage
+                : "Payment verified but order creation failed. Please contact support."
+            );
           }
         },
       };
@@ -523,7 +536,11 @@ const CheckoutPage = () => {
       rzp.open();
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.message || "Payment initialization failed.");
+      toast.error(
+        isAuthError(err)
+          ? sessionExpiredMessage
+          : err?.response?.data?.message || "Payment initialization failed."
+      );
     }
   };
 

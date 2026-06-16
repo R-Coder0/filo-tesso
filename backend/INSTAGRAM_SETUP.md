@@ -1,4 +1,4 @@
-# Automatic Instagram Feed
+meta # Automatic Instagram Feed
 
 The storefront reads Instagram posts from:
 

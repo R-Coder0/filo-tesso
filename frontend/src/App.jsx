@@ -9,7 +9,7 @@ import Footer from "./components/Footer";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import ReviewSubmissionPage from "./pages/Reveiwpage";
 import WishlistPage from "./pages/WishlistPage";
-import MarqueeOffers from "./section/Marquee";
+// import MarqueeOffers from "./section/Marquee";
 import ScrollToTop from "./components/ScrollToTop";
 import Collaborate from "./pages/Collaborate";
 import CancellationAndReturnsPage from "./pages/help/cancellation-return";
