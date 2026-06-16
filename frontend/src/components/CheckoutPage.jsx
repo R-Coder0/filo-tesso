@@ -337,6 +337,10 @@ const CheckoutPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      if (data.orderId && typeof window !== "undefined") {
+        sessionStorage.setItem("shiprocketCheckoutOrderId", data.orderId);
+      }
+
       await loadShiprocketCheckout(data.sellerDomain);
       if (!window.HeadlessCheckout?.addToCart) {
         throw new Error("Shiprocket Checkout is not available");

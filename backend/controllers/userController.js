@@ -381,24 +381,39 @@ exports.updateProfile = async (req, res) => {
     console.log("🔄 Update profile request received:", req.body);
     console.log("🔄 Update profile - req.user:", req.user);
     
-    const { name } = req.body;
+    const { name, phone } = req.body;
     const userId = req.user.id;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: "Name is required" });
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { name: name.trim() },
-      { new: true }
-    ).select("-password");
-
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("✅ Profile updated successfully:", user.name);
+    const normalizedPhone = normalizePhone(phone);
+    if (phone && !isValidPhone(phone)) {
+      return res.status(400).json({ message: "Please enter a valid 10-digit phone number." });
+    }
+
+    if (normalizedPhone) {
+      const phoneOwner = await User.findOne({
+        phone: normalizedPhone,
+        _id: { $ne: user._id },
+      });
+
+      if (phoneOwner) {
+        return res.status(400).json({ message: "Phone number already registered." });
+      }
+    }
+
+    user.name = name.trim();
+    user.phone = normalizedPhone || undefined;
+    await user.save();
+
+    console.log("✅ Profile updated successfully:", user.name, user.phone);
     
     res.json({
       message: "Profile updated successfully",

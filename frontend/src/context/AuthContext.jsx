@@ -296,6 +296,34 @@ const login = async (identifier, password) => {
     return userData;
   };
 
+  const updateProfile = async (profileData) => {
+    if (!token) {
+      throw new Error("Please login again to update your profile.");
+    }
+
+    const { data } = await axios.put(
+      `${import.meta.env.VITE_API_URL}/api/users/profile`,
+      profileData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const freshUser = normalizeUser(data.user || data);
+    setUser(freshUser);
+
+    if (isBrowser) {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        localStorage.setItem(
+          AUTH_STORAGE_KEY,
+          JSON.stringify({ ...parsed, user: freshUser })
+        );
+      }
+    }
+
+    return freshUser;
+  };
+
   // ✅ Logout
   const logout = () => {
     console.log("🚪 Logging out...");
@@ -315,6 +343,7 @@ const login = async (identifier, password) => {
         login,
         register,
         googleLogin,
+        updateProfile,
         logout,
       }}
     >

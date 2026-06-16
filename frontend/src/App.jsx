@@ -113,7 +113,14 @@ const location = useLocation();
             <Route path="/order-confirmation" element={<OrderConfirm />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/profile"
+              element={
+                <RequireAuth>
+                  <Profile />
+                </RequireAuth>
+              }
+            />
             <Route path="/reveiw"  element={<ReviewSubmissionPage/>}/>
             <Route
               path="/wishlist"
