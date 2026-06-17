@@ -1,7 +1,13 @@
 const express = require("express");
-const { getInstagramFeed } = require("../services/instagramService");
+const {
+  getInstagramConfigStatus,
+  getInstagramFeed,
+} = require("../services/instagramService");
 
 const router = express.Router();
+
+const getHttpStatus = (error) =>
+  error.status >= 400 && error.status < 600 ? error.status : 502;
 
 router.get("/posts", async (req, res) => {
   try {
@@ -10,19 +16,29 @@ router.get("/posts", async (req, res) => {
     res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=900");
     res.json(feed);
   } catch (error) {
-    const status =
-      error.code === "INSTAGRAM_NOT_CONFIGURED"
-        ? 503
-        : error.status >= 400 && error.status < 600
-          ? error.status
-          : 502;
+    const status = getHttpStatus(error);
+    const metaError = error.response?.data || error.metaError || null;
 
-    console.error("GET /api/instagram/posts error:", error.message);
+    console.error("GET /api/instagram/posts error:", {
+      message: error.message,
+      code: error.code,
+      status,
+      safeUrl: error.safeUrl,
+      missing: error.missing,
+      config: getInstagramConfigStatus(),
+      metaError,
+    });
+
     res.status(status).json({
       message:
-        status === 503
-          ? "Instagram feed is not configured"
-          : "Instagram feed could not be loaded",
+        error.publicMessage ||
+        metaError?.message ||
+        "Instagram feed could not be loaded",
+      code: error.code || "INSTAGRAM_FEED_ERROR",
+      missing: error.missing,
+      metaStatus: error.metaStatus,
+      metaError,
+      config: getInstagramConfigStatus(),
     });
   }
 });

@@ -226,10 +226,10 @@ export default function BlogPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="grid gap-6">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="grid gap-6 md:grid-cols-2">
               {isLoading ? (
-                <div className="rounded-[28px] border border-neutral-200 bg-neutral-50 px-6 py-14 text-center">
+                <div className="rounded-[28px] border border-neutral-200 bg-neutral-50 px-6 py-14 text-center md:col-span-2">
                   <h3 className="text-2xl font-bold tracking-[-0.04em]">
                     Loading blogs...
                   </h3>
@@ -238,7 +238,7 @@ export default function BlogPage() {
                   </p>
                 </div>
               ) : errorText ? (
-                <div className="rounded-[28px] border border-red-200 bg-red-50 px-6 py-14 text-center">
+                <div className="rounded-[28px] border border-red-200 bg-red-50 px-6 py-14 text-center md:col-span-2">
                   <h3 className="text-2xl font-bold tracking-[-0.04em] text-red-700">
                     Blog API Error
                   </h3>
@@ -248,21 +248,21 @@ export default function BlogPage() {
                 filteredPosts.map((post) => (
                   <article
                     key={post.id}
-                    className="group grid gap-5 rounded-[28px] border border-neutral-200 bg-white p-4 transition duration-300 hover:-translate-y-1 hover:border-neutral-950 hover:shadow-[0_24px_70px_rgba(0,0,0,0.08)] md:grid-cols-[290px_minmax(0,1fr)] md:gap-7"
+                    className="group flex h-full flex-col rounded-[28px] border border-neutral-200 bg-white p-4 transition duration-300 hover:-translate-y-1 hover:border-neutral-950 hover:shadow-[0_24px_70px_rgba(0,0,0,0.08)]"
                   >
                     <a
                       href={`/blog/${post.slug}`}
-                      className="block h-[240px] overflow-hidden rounded-[22px] bg-neutral-100 md:h-full md:min-h-[230px]"
+                      className="block aspect-[16/10] overflow-hidden rounded-[22px] bg-neutral-100"
                     >
                       <img
                         src={post.image}
                         alt={post.imageAlt || post.title}
                         loading="lazy"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        className="h-full w-full object-contain transition duration-300 group-hover:opacity-90"
                       />
                     </a>
 
-                    <div className="flex flex-col justify-center p-1 md:py-3 md:pr-3">
+                    <div className="flex flex-1 flex-col p-1 pt-5">
                       <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-neutral-500">
                         <span className="inline-flex items-center gap-1.5">
                           <Tag size={14} />
@@ -280,7 +280,7 @@ export default function BlogPage() {
                         </span>
                       </div>
 
-                      <h3 className="text-2xl font-bold leading-tight tracking-[-0.04em] text-neutral-950 sm:text-3xl">
+                      <h3 className="text-2xl font-bold leading-tight tracking-[-0.04em] text-neutral-950">
                         <a
                           href={`/blog/${post.slug}`}
                           className="transition hover:underline hover:decoration-neutral-950 hover:underline-offset-4"
@@ -289,13 +289,13 @@ export default function BlogPage() {
                         </a>
                       </h3>
 
-                      <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600 sm:text-[15px]">
+                      <p className="mt-4 line-clamp-3 text-sm leading-7 text-neutral-600 sm:text-[15px]">
                         {post.excerpt}
                       </p>
 
                       <a
                         href={`/blog/${post.slug}`}
-                        className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-bold text-neutral-950"
+                        className="mt-auto inline-flex w-fit items-center gap-2 pt-6 text-sm font-bold text-neutral-950"
                       >
                         Read Article
                         <ArrowRight
@@ -307,7 +307,7 @@ export default function BlogPage() {
                   </article>
                 ))
               ) : (
-                <div className="rounded-[28px] border border-dashed border-neutral-300 bg-neutral-50 px-6 py-14 text-center">
+                <div className="rounded-[28px] border border-dashed border-neutral-300 bg-neutral-50 px-6 py-14 text-center md:col-span-2">
                   <h3 className="text-2xl font-bold tracking-[-0.04em]">
                     No blogs found
                   </h3>

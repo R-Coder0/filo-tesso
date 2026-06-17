@@ -283,15 +283,15 @@ export default function BlogDetailPage() {
               </span>
             </div>
 
-            <h1 className="text-[42px] font-bold leading-[1.02] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl">
+            <h1 className="text-[42px] font-bold leading-[1.02] tracking-[-0.06em] text-white sm:text-6xl lg:text-5xl">
               {post.title}
             </h1>
 
-            {post.excerpt && (
+            {/* {post.excerpt && (
               <p className="mt-6 max-w-3xl text-base leading-8 text-white/75 sm:text-lg">
                 {post.excerpt}
               </p>
-            )}
+            )} */}
 
             <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-white/75">
               <span className="inline-flex items-center gap-2">
