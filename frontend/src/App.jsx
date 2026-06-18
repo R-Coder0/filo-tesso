@@ -3,6 +3,7 @@ import React, { lazy, Suspense, memo } from "react";
 import { useLocation } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { Helmet } from "react-helmet-async";
 import { useUI } from "./context/UIContext"; // ✅ add this
 import Profile from "./pages/Profile";
 import Footer from "./components/Footer";
@@ -22,6 +23,7 @@ import SecurityPolicyPage from "./pages/consumer-policies/security";
 import TermsAndServicesPage from "./pages/consumer-policies/t&c";
 import ContactPage from "./pages/Contact";
 import BlogDetailPage from "./pages/BlogDetailPage";
+import AboutPage from "./pages/About";
 
 // Lazy components
 const Navbar = lazy(() => import("./components/navBar"));
@@ -46,6 +48,7 @@ const CartSidebar = lazy(() => import("./components/CartSidebar"));
 const RequireAuth = lazy(() => import("./components/RequireAuth"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoutes"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
+const SITE_ORIGIN = "https://filoteso.co.in";
 
 const LoadingSpinner = memo(() => (
   <div className="flex items-center justify-center min-h-screen">
@@ -70,9 +73,17 @@ const location = useLocation();
   // ✅ Check if route starts with /admin
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isHomeRoute = location.pathname === "/";
+  const canonicalPath =
+    location.pathname === "/" ? "/" : location.pathname.replace(/\/+$/g, "");
+  const canonicalUrl =
+    canonicalPath === "/" ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${canonicalPath}`;
 
   return (
     <>
+      <Helmet>
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:url" content={canonicalUrl} />
+      </Helmet>
       {/* <MarqueeOffers/> */}
       <Toaster
         position="top-right"
@@ -141,6 +152,7 @@ const location = useLocation();
             <Route path="/consumer-policies/terms-and-conditions" element={<TermsAndServicesPage/>}/>
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:slug" element={<BlogDetailPage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage/>}/>
             <Route
               path="/shiprocket-checkout-return"

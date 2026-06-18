@@ -16,7 +16,7 @@ import {
 } from "../utils/navigationCategories";
 
 const SIDE_MENU_LINKS = [
-  { label: "About", path: "/#about" },
+  { label: "About", path: "/about" },
   { label: "Blogs", path: "/blog" },
   { label: "Contact", path: "/contact" },
   { label: "New Arrival", path: "/products?sort=newest" },

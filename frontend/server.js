@@ -9,6 +9,7 @@ const base = process.env.BASE || '/'
 const ABORT_DELAY = 10000
 const API_TIMEOUT_MS = 3500
 const PRODUCT_CATEGORIES = ['men', 'women', 'customize']
+const SITE_ORIGIN = 'https://filoteso.co.in'
 
 // Cached production assets
 const templateHtml = isProduction
@@ -166,6 +167,121 @@ const injectSsrData = (htmlEnd, data) => {
   return htmlEnd.replace('</div>', `</div>${script}`)
 }
 
+const removeHeadTag = (html, pattern) => html.replace(pattern, '')
+
+const routeSeo = {
+  '/about': {
+    title: 'About Filo Teso | Premium Streetwear Clothing Brand in India',
+    description:
+      'Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion.',
+    keywords:
+      'about filo teso, filo teso streetwear, streetwear clothing brand india, premium streetwear brand india, indian streetwear brand, filo teso clothing, premium graphic tees india, oversized t shirts india, modern streetwear fashion',
+    canonical: 'https://filoteso.co.in/about',
+  },
+  '/contact': {
+    title: 'Contact Filo Teso | Customer Support & Store Information',
+    description:
+      "Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs.",
+    keywords:
+      'contact filo teso, filo teso customer support, contact streetwear brand india, filo teso contact information, customer service filo teso, streetwear clothing support, filo teso help',
+    canonical: 'https://filoteso.co.in/contact',
+  },
+}
+
+const normalizeCanonicalPath = (pathname) => {
+  const cleanPathname = String(pathname || '/').split('#')[0].split('?')[0]
+  if (!cleanPathname || cleanPathname === '/') return '/'
+  return cleanPathname.replace(/\/+$/, '')
+}
+
+const getCanonicalUrl = (pathname) => {
+  const cleanPath = normalizeCanonicalPath(pathname)
+  return cleanPath === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${cleanPath}`
+}
+
+const escapeHtml = (value) =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
+const getRouteSeo = (requestUrl) => {
+  const { pathname } = new URL(requestUrl, 'http://localhost')
+  const normalizedPath = normalizeCanonicalPath(pathname)
+
+  return {
+    canonical: getCanonicalUrl(normalizedPath),
+    ...routeSeo[normalizedPath],
+  }
+}
+
+const buildRouteSeoTags = (seo) => {
+  const tags = []
+
+  if (seo.title) {
+    tags.push(`<title>${escapeHtml(seo.title)}</title>`)
+    tags.push(`<meta name="title" content="${escapeHtml(seo.title)}" />`)
+    tags.push(`<meta property="og:title" content="${escapeHtml(seo.title)}" />`)
+    tags.push(`<meta name="twitter:title" content="${escapeHtml(seo.title)}" />`)
+  }
+
+  if (seo.description) {
+    tags.push(
+      `<meta name="description" content="${escapeHtml(seo.description)}" />`,
+    )
+    tags.push(
+      `<meta property="og:description" content="${escapeHtml(seo.description)}" />`,
+    )
+    tags.push(
+      `<meta name="twitter:description" content="${escapeHtml(seo.description)}" />`,
+    )
+  }
+
+  if (seo.keywords) {
+    tags.push(`<meta name="keywords" content="${escapeHtml(seo.keywords)}" />`)
+  }
+
+  tags.push(`<meta property="og:url" content="${escapeHtml(seo.canonical)}" />`)
+  tags.push(`<link rel="canonical" href="${escapeHtml(seo.canonical)}" />`)
+
+  return tags.map((tag) => `    ${tag}`).join('\n')
+}
+
+const injectRouteSeoHead = (htmlStart, seo) => {
+  if (!seo?.canonical) return htmlStart
+
+  let next = htmlStart
+
+  if (seo.title) {
+    next = removeHeadTag(next, /\s*<title\b[\s\S]*?<\/title>/i)
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']title["'])[^>]*>/i)
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bproperty=["']og:title["'])[^>]*>/i)
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']twitter:title["'])[^>]*>/i)
+  }
+
+  if (seo.description) {
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']description["'])[^>]*>/i)
+    next = removeHeadTag(
+      next,
+      /\s*<meta\b(?=[^>]*\bproperty=["']og:description["'])[^>]*>/i,
+    )
+    next = removeHeadTag(
+      next,
+      /\s*<meta\b(?=[^>]*\bname=["']twitter:description["'])[^>]*>/i,
+    )
+  }
+
+  if (seo.keywords) {
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']keywords["'])[^>]*>/i)
+  }
+
+  next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bproperty=["']og:url["'])[^>]*>/i)
+  next = removeHeadTag(next, /\s*<link\b(?=[^>]*\brel=["']canonical["'])[^>]*>/i)
+
+  return next.replace('</head>', `${buildRouteSeoTags(seo)}\n  </head>`)
+}
+
 // Add Vite or respective production middlewares
 /** @type {import('vite').ViteDevServer | undefined} */
 let vite
@@ -207,6 +323,8 @@ app.use('*all', async (req, res) => {
 
     let didError = false
 
+    const seo = getRouteSeo(url)
+
     const { pipe, abort } = render(url, {
       onShellError() {
         res.status(500)
@@ -226,7 +344,7 @@ app.use('*all', async (req, res) => {
 
         const [htmlStart, htmlEnd] = template.split(`<!--app-html-->`)
 
-        res.write(htmlStart)
+        res.write(injectRouteSeoHead(htmlStart, seo))
 
         transformStream.on('finish', () => {
           res.end(injectSsrData(htmlEnd, ssrData))
