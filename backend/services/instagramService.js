@@ -65,9 +65,12 @@ const getGraphBaseUrl = () =>
   DEFAULT_GRAPH_API_BASE_URL;
 
 const appendAppSecretProof = (urlValue, appSecretProof) => {
-  if (!appSecretProof) return cleanEnvValue(urlValue);
+  const cleanUrlValue = cleanEnvValue(urlValue);
 
-  const url = new URL(String(urlValue));
+  if (!cleanUrlValue) return "";
+  if (!appSecretProof) return cleanUrlValue;
+
+  const url = new URL(cleanUrlValue);
   url.searchParams.set("appsecret_proof", appSecretProof);
   return url.toString();
 };
