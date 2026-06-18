@@ -11,6 +11,7 @@ import {
   Tag,
   UserRound,
 } from "lucide-react";
+import ClientHelmet from "../components/ClientHelmet";
 
 const WP_API_BASE =
   import.meta.env.VITE_WP_API_BASE ||
@@ -188,6 +189,10 @@ export default function BlogDetailPage() {
     };
   }, [post]);
 
+  const canonicalUrl = post
+    ? `https://filoteso.co.in/blog/${post.slug}`
+    : `https://filoteso.co.in/blog/${slug}`;
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -236,6 +241,20 @@ export default function BlogDetailPage() {
 
   return (
     <main className="min-h-screen bg-white text-neutral-950">
+      <ClientHelmet>
+        <title>{post.title} | Filo Teso Blog</title>
+        <meta name="description" content={post.excerpt} />
+        <meta
+          name="keywords"
+          content={`${post.title}, filo teso blog, streetwear fashion, modern streetwear fashion, premium streetwear brand india`}
+        />
+        <meta property="og:title" content={`${post.title} | Filo Teso Blog`} />
+        <meta property="og:description" content={post.excerpt} />
+        <meta property="og:image" content={post.image} />
+        <meta property="og:url" content={canonicalUrl} />
+        <link rel="canonical" href={canonicalUrl} />
+      </ClientHelmet>
+
       {articleSchema && (
         <script
           type="application/ld+json"

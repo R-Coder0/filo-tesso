@@ -1,5 +1,5 @@
 import React from 'react'
-import { Helmet } from "react-helmet-async";
+import ClientHelmet from '../components/ClientHelmet'
 import Hero from '../section/Hero'
 import HomeDiscountBanner from '../components/HomeDiscountBanner'
 import TshirtCategoryStrip from '../components/TshirtCategoryStrip'
@@ -9,7 +9,7 @@ import InstagramCarousel from '../components/InstagramCarousel'
 const Home = () => {
   return (
     <div>
-      <Helmet>
+      <ClientHelmet>
         <title>Filo Teso | Premium Streetwear Clothing Brand in India</title>
         <meta
           name="title"
@@ -23,7 +23,7 @@ const Home = () => {
           name="keywords"
           content="streetwear clothing brand india, premium streetwear brand india, graphic streetwear clothing, streetwear fashion india, premium graphic t shirts india, urban streetwear brand india, modern streetwear clothing, graphic tees india, premium fashion brand india, filo teso"
         />
-      </Helmet>
+      </ClientHelmet>
       <Hero />
       <HomeDiscountBanner />
       <TshirtCategoryStrip />

@@ -3,11 +3,11 @@ import React, { lazy, Suspense, memo } from "react";
 import { useLocation } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { Helmet } from "react-helmet-async";
 import { useUI } from "./context/UIContext"; // ✅ add this
 import Profile from "./pages/Profile";
 import Footer from "./components/Footer";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
+import ClientHelmet from "./components/ClientHelmet";
 import ReviewSubmissionPage from "./pages/Reveiwpage";
 import WishlistPage from "./pages/WishlistPage";
 // import MarqueeOffers from "./section/Marquee";
@@ -80,10 +80,10 @@ const location = useLocation();
 
   return (
     <>
-      <Helmet>
+      <ClientHelmet>
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:url" content={canonicalUrl} />
-      </Helmet>
+      </ClientHelmet>
       {/* <MarqueeOffers/> */}
       <Toaster
         position="top-right"

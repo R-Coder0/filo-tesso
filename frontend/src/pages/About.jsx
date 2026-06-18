@@ -1,5 +1,5 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
+import ClientHelmet from "../components/ClientHelmet";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "../assets/1hero.webp";
@@ -43,7 +43,7 @@ const brandValues = [
 export default function AboutPage() {
   return (
     <>
-      <Helmet>
+      <ClientHelmet>
         <title>
           About Filo Teso | Premium Streetwear Clothing Brand in India
         </title>
@@ -74,7 +74,7 @@ export default function AboutPage() {
           content="Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion."
         />
         <link rel="canonical" href="https://filoteso.co.in/about" />
-      </Helmet>
+      </ClientHelmet>
 
       <div className="bg-white text-gray-950">
         <section className="relative min-h-[58vh] overflow-hidden bg-black text-white">

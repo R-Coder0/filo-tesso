@@ -7,7 +7,7 @@ import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
 import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
-import { Helmet } from "react-helmet-async";
+import ClientHelmet from "./ClientHelmet";
 import { ChevronLeft, ChevronRight, Droplets, Heart, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useSsrData } from "../context/SsrDataContext";
@@ -275,11 +275,11 @@ const ProductDetailPage = () => {
 
   return (
     <>
-      <Helmet>
+      <ClientHelmet>
         <title>{product?.seo?.metaTitle || product?.name}</title>
         <meta name="description" content={product?.seo?.metaDescription || product?.description?.slice(0, 150)} />
         <meta name="keywords" content={product?.seo?.keywords?.join(", ") || `${product?.name}, buy online`} />
-      </Helmet>
+      </ClientHelmet>
 
       {/* ── Toast ── */}
       {toast && (

@@ -1,5 +1,5 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
+import ClientHelmet from "../components/ClientHelmet";
 import {
   Clock,
   HelpCircle,
@@ -64,7 +64,7 @@ export default function ContactPage() {
 
   return (
     <>
-      <Helmet>
+      <ClientHelmet>
         <title>Contact Filo Teso | Customer Support & Store Information</title>
         <meta
           name="title"
@@ -93,7 +93,7 @@ export default function ContactPage() {
           content="Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs."
         />
         <link rel="canonical" href="https://filoteso.co.in/contact" />
-      </Helmet>
+      </ClientHelmet>
 
       <div className="bg-white text-gray-950">
         <section className="bg-black text-white">
