@@ -44,7 +44,15 @@ const getCheckoutOrderDetails = (orderId) =>
     timestamp: new Date().toISOString(),
   });
 
+const syncCheckoutProduct = (productPayload) =>
+  shiprocketCheckoutRequest("/wh/v1/custom/product", productPayload);
+
+const syncCheckoutCollection = (collectionPayload) =>
+  shiprocketCheckoutRequest("/wh/v1/custom/collection", collectionPayload);
+
 module.exports = {
   createCheckoutAccessToken,
   getCheckoutOrderDetails,
+  syncCheckoutCollection,
+  syncCheckoutProduct,
 };

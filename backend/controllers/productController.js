@@ -6,6 +6,10 @@ const {
   getProductNumericId,
   getVariantNumericId,
 } = require("../utils/shiprocketCatalog");
+const {
+  syncCheckoutCollection,
+  syncCheckoutProduct,
+} = require("../utils/shiprocketCheckout");
 
 const BRAND_VENDOR = "Filo Teso";
 const DEFAULT_COLLECTION_IMAGE = "/uploads/products/productone.jpg";
@@ -275,6 +279,65 @@ const findCollection = (identifier) => {
       collection.id === numericId ||
       `${collection.id}` === `${identifier}`
   );
+};
+
+const getProductCollections = (product) => {
+  const handles = new Set();
+  if (product?.category) {
+    handles.add(product.category);
+  }
+
+  for (const subcategory of getProductSubcategories(product)) {
+    if (product?.category && subcategory) {
+      handles.add(`${product.category}-${subcategory}`);
+    }
+  }
+
+  return [...handles]
+    .map((handle) => findCollection(handle))
+    .filter(Boolean);
+};
+
+const syncProductToShiprocketCheckout = async (req, product) => {
+  const result = {
+    product: { synced: false },
+    collections: [],
+  };
+
+  for (const collection of getProductCollections(product)) {
+    const collectionResult = {
+      handle: collection.handle,
+      synced: false,
+    };
+
+    try {
+      collectionResult.response = await syncCheckoutCollection(
+        collectionToResponse(req, collection)
+      );
+      collectionResult.synced = true;
+    } catch (error) {
+      collectionResult.error =
+        error?.response?.data?.message ||
+        error?.response?.data?.error?.message ||
+        error.message;
+    }
+
+    result.collections.push(collectionResult);
+  }
+
+  try {
+    result.product.response = await syncCheckoutProduct(
+      toShiprocketProduct(req, product)
+    );
+    result.product.synced = true;
+  } catch (error) {
+    result.product.error =
+      error?.response?.data?.message ||
+      error?.response?.data?.error?.message ||
+      error.message;
+  }
+
+  return result;
 };
 
 const productListResponse = (products, pagination = {}) => ({
@@ -688,7 +751,19 @@ const keywords = req.body.keywords
     });
 
 
-    res.status(201).json({ message: "Product added successfully!", product });
+    const shiprocketSync = await syncProductToShiprocketCheckout(req, product);
+    if (!shiprocketSync.product.synced) {
+      console.error(
+        `Shiprocket Checkout product sync failed for ${product.name}:`,
+        shiprocketSync.product.error
+      );
+    }
+
+    res.status(201).json({
+      message: "Product added successfully!",
+      product,
+      shiprocketSync,
+    });
   } catch (error) {
     console.error("❌ Error adding product:", error);
     res.status(500).json({ message: "Error adding product", error: error.message });
@@ -816,7 +891,18 @@ if (typeof body.keywords !== "undefined") {
     }
 
     const updatedProduct = await product.save();
-    res.json(updatedProduct);
+    const shiprocketSync = await syncProductToShiprocketCheckout(
+      req,
+      updatedProduct
+    );
+    if (!shiprocketSync.product.synced) {
+      console.error(
+        `Shiprocket Checkout product sync failed for ${updatedProduct.name}:`,
+        shiprocketSync.product.error
+      );
+    }
+
+    res.json({ product: updatedProduct, shiprocketSync });
   } catch (err) {
     console.error("❌ Failed to update product:", err);
     res.status(500).json({ message: "Failed to update product", error: err.message });
