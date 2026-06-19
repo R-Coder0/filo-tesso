@@ -149,7 +149,9 @@ const toShiprocketVariant = (req, product, variant, index) => {
   const optionValues = {};
   if (size) optionValues.Size = size;
   const weight = Number(product?.shipping?.weight || 0.5);
-  const baseSku = product?.sku || `FT-${getProductNumericId(product)}`;
+  const numericId = getProductNumericId(product);
+  const customSku = String(product?.sku || "").trim();
+  const baseSku = customSku ? `${customSku}-${numericId}` : `FT-${numericId}`;
 
   return {
     id: getVariantNumericId(product, index),

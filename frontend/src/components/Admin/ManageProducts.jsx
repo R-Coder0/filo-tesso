@@ -403,7 +403,7 @@ const removeSizeVariant = (size) => {
       slug: "",
       originalPrice: product.price?.original || "",
       salePrice: product.price?.sale || "",
-      sku: product.sku || "",
+      sku: "",
       hsn: product.hsn || "",
       weight: product.shipping?.weight || "",
       length: product.shipping?.length || "",

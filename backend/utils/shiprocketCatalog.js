@@ -26,7 +26,7 @@ const getCatalogVariants = (product) => {
 
 const getVariantNumericId = (product, index) => {
   const base = getProductNumericId(product);
-  return Number(`${String(base).slice(0, 8)}${index + 1}`);
+  return Number(`${base}${String(index + 1).padStart(2, "0")}`);
 };
 
 const getSelectedVariant = (product, selectedSize) => {
