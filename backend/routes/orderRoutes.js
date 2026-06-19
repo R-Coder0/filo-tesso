@@ -16,30 +16,12 @@ const {
 } = require('../controllers/orderController');
 const { isAdmin, protect } = require('../middleware/authMiddleware');
 const { uploadOrder } = require('../middleware/UploadMiddleware');
-const {
-  getFirstOrderDiscountSetting,
-  isFirstOrderForUser,
-} = require('../utils/firstOrderDiscount');
 
 // User: create a new order
 router.post('/', protect, uploadOrder, createOrder);
 
 // User: fetch logged-in user's orders
 router.get('/my-orders', protect, getMyOrders);
-
-router.get('/first-order-discount', protect, async (req, res) => {
-  try {
-    const setting = await getFirstOrderDiscountSetting();
-    const eligible = setting.enabled && await isFirstOrderForUser(req.user._id);
-    res.json({
-      enabled: setting.enabled,
-      percentage: setting.percentage,
-      eligible,
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch first order discount' });
-  }
-});
 
 // User: cancel order
 router.patch('/:orderId/cancel', protect, cancelOrder); // NEW ROUTE

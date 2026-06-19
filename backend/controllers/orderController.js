@@ -3,7 +3,6 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
-const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
 const { sendOrderPlacedEmails } = require("../utils/orderEmails");
@@ -105,9 +104,7 @@ exports.createOrder = async (req, res) => {
     }
     // 🔥🔥🔥 MAIN FIX END
 
-    const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
-    const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
-    const payableAmount = totalAfterFirstOrderDiscount;
+    const payableAmount = totalAmount;
 
     // ✅ CREATE ORDER
     const order = new Order({
@@ -116,8 +113,6 @@ exports.createOrder = async (req, res) => {
       products: orderItems,
       totalAmount,
       payableAmount,
-      firstOrderDiscountRate: firstOrderDiscount.rate,
-      firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
       paymentStatus: "Pending",
       paymentMethod: "COD",
       orderStatus: "pending",

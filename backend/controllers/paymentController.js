@@ -4,7 +4,6 @@ const Payment = require("../models/Payment");
 const Order = require("../models/Order");
 const User = require("../models/User");
 const Product = require("../models/Product");
-const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
 const { sendOrderPlacedEmails } = require("../utils/orderEmails");
@@ -57,10 +56,7 @@ exports.createOrder = async (req, res) => {
       totalAmount += price * qty;
     }
 
-    const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
-    const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
-
-    const payableAmount = totalAfterFirstOrderDiscount;
+    const payableAmount = totalAmount;
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(payableAmount * 100),
@@ -190,9 +186,7 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    const firstOrderDiscount = await calculateFirstOrderDiscount(userId, totalAmount);
-    const totalAfterFirstOrderDiscount = Math.max(0, totalAmount - firstOrderDiscount.discountAmount);
-    const payableAmount = totalAfterFirstOrderDiscount;
+    const payableAmount = totalAmount;
 
     if (Math.abs(payableAmount - Number(payment.payableAmount)) > 0.01) {
       return res.status(400).json({
@@ -208,8 +202,6 @@ exports.verifyPayment = async (req, res) => {
       products,
       totalAmount,
       payableAmount,
-      firstOrderDiscountRate: firstOrderDiscount.rate,
-      firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
       paymentStatus: "Paid",
       paymentMethod: "Prepaid",
       orderStatus: "pending",

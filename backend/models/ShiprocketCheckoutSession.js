@@ -34,8 +34,6 @@ const shiprocketCheckoutSessionSchema = new mongoose.Schema(
     },
     totalAmount: { type: Number, required: true },
     payableAmount: { type: Number, required: true },
-    firstOrderDiscountRate: { type: Number, default: 0 },
-    firstOrderDiscountAmount: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ["initiated", "completed", "failed"],

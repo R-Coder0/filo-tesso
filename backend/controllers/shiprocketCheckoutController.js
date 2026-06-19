@@ -2,7 +2,6 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const User = require("../models/User");
 const ShiprocketCheckoutSession = require("../models/ShiprocketCheckoutSession");
-const { calculateFirstOrderDiscount } = require("../utils/firstOrderDiscount");
 const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
 const { sendOrderPlacedEmails } = require("../utils/orderEmails");
@@ -87,14 +86,7 @@ exports.createShiprocketCheckoutToken = async (req, res) => {
   try {
     const { checkoutItems, sessionItems, totalAmount } =
       await loadCheckoutCart(req.body.cartItems);
-    const firstOrderDiscount = await calculateFirstOrderDiscount(
-      req.user._id,
-      totalAmount
-    );
-    const payableAmount = Math.max(
-      0,
-      totalAmount - firstOrderDiscount.discountAmount
-    );
+    const payableAmount = totalAmount;
     const frontendOrigin = getFrontendOrigin(req);
 
     const cartData = {
@@ -104,13 +96,6 @@ exports.createShiprocketCheckoutToken = async (req, res) => {
       },
       mobile_app: false,
     };
-
-    if (firstOrderDiscount.discountAmount > 0) {
-      cartData.cart_discount = {
-        coupon_code: "FIRSTORDER",
-        amount: firstOrderDiscount.discountAmount,
-      };
-    }
 
     const checkoutPayload = {
       cart_data: cartData,
@@ -133,8 +118,6 @@ exports.createShiprocketCheckoutToken = async (req, res) => {
         cartItems: sessionItems,
         totalAmount,
         payableAmount,
-        firstOrderDiscountRate: firstOrderDiscount.rate,
-        firstOrderDiscountAmount: firstOrderDiscount.discountAmount,
         status: "initiated",
         shiprocketResponse: checkoutResponse,
       },
@@ -252,8 +235,6 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
       products,
       totalAmount: session.totalAmount,
       payableAmount,
-      firstOrderDiscountRate: session.firstOrderDiscountRate,
-      firstOrderDiscountAmount: session.firstOrderDiscountAmount,
       paymentStatus: isPrepaid ? "Paid" : "Pending",
       paymentMethod: isPrepaid ? "Prepaid" : "COD",
       orderStatus: "pending",

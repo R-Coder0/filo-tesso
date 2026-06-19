@@ -72,7 +72,6 @@ const getAddressHtml = (address = {}) => {
 const getEmailShell = ({ title, intro, order, admin = false }) => {
   const reference = getOrderReference(order);
   const address = order.address || {};
-  const discount = Number(order.firstOrderDiscountAmount || 0);
 
   return `
     <!doctype html>
@@ -109,7 +108,6 @@ const getEmailShell = ({ title, intro, order, admin = false }) => {
 
             <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:16px;">
               <tr><td style="padding:5px 0;color:#6b7280;">Subtotal</td><td style="padding:5px 0;text-align:right;">${formatCurrency(order.totalAmount)}</td></tr>
-              ${discount ? `<tr><td style="padding:5px 0;color:#6b7280;">First order discount</td><td style="padding:5px 0;text-align:right;color:#15803d;">-${formatCurrency(discount)}</td></tr>` : ""}
               <tr><td style="padding:10px 0 5px;font-size:16px;font-weight:700;">Total</td><td style="padding:10px 0 5px;text-align:right;font-size:18px;font-weight:700;">${formatCurrency(order.payableAmount)}</td></tr>
             </table>
 

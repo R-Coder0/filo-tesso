@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
-  AlertTriangle,
   Boxes,
   CheckCircle2,
   IndianRupee,
@@ -31,18 +30,11 @@ export default function AdminDashboard() {
   const [cancellations, setCancellations] = useState([]);
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [discountSetting, setDiscountSetting] = useState({
-    enabled: true,
-    percentage: 15,
-  });
-  const [discountSaving, setDiscountSaving] = useState(false);
-  const [discountMessage, setDiscountMessage] = useState("");
-  const [discountInput, setDiscountInput] = useState("15");
 
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const [productsRes, ordersRes, cancellationRes, returnRes, discountRes] =
+      const [productsRes, ordersRes, cancellationRes, returnRes] =
         await Promise.all([
           axios.get(`${apiUrl}/api/products`),
           axios.get(`${apiUrl}/api/orders/admin`, { headers: adminHeaders }),
@@ -52,7 +44,6 @@ export default function AdminDashboard() {
           axios.get(`${apiUrl}/api/orders/admin/return-requests`, {
             headers: adminHeaders,
           }),
-          axios.get(`${apiUrl}/api/admin/first-order-discount`),
         ]);
 
       setProducts(extractProducts(productsRes.data));
@@ -61,15 +52,8 @@ export default function AdminDashboard() {
         Array.isArray(cancellationRes.data) ? cancellationRes.data : []
       );
       setReturns(Array.isArray(returnRes.data) ? returnRes.data : []);
-
-      const percentage = Number(discountRes.data?.percentage ?? 15);
-      setDiscountSetting({
-        enabled: Boolean(discountRes.data?.enabled),
-        percentage,
-      });
-      setDiscountInput(String(percentage));
     } catch (error) {
-      setDiscountMessage("Could not load dashboard data");
+      console.error("Could not load dashboard data", error);
     } finally {
       setLoading(false);
     }
@@ -114,45 +98,6 @@ export default function AdminDashboard() {
       outOfStock,
     };
   }, [orders, products]);
-
-  const clampDiscount = (value) => {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 15;
-    return Math.min(100, Math.max(0, numericValue));
-  };
-
-  const updateDiscountSetting = async (nextSetting) => {
-    setDiscountSaving(true);
-    setDiscountMessage("");
-    try {
-      const { data } = await axios.put(
-        `${apiUrl}/api/admin/first-order-discount`,
-        nextSetting,
-        { headers: adminHeaders }
-      );
-      const percentage = Number(data.percentage ?? nextSetting.percentage);
-      setDiscountSetting({
-        enabled: Boolean(data.enabled),
-        percentage,
-      });
-      setDiscountInput(String(percentage));
-      setDiscountMessage("Discount settings updated");
-    } catch (err) {
-      setDiscountMessage(
-        err.response?.data?.message || "Failed to update discount"
-      );
-    } finally {
-      setDiscountSaving(false);
-    }
-  };
-
-  const saveDiscountPercentage = () => {
-    const percentage = clampDiscount(discountInput);
-    updateDiscountSetting({
-      ...discountSetting,
-      percentage,
-    });
-  };
 
   const cards = [
     {
@@ -327,70 +272,6 @@ export default function AdminDashboard() {
               </div>
             </section>
           </div>
-
-          <section className="border border-gray-200 bg-white p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h3 className="text-base font-bold text-gray-950">
-                  First Order Discount
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Applies only on a customer's first order.
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={discountSaving}
-                onClick={() =>
-                  updateDiscountSetting({
-                    ...discountSetting,
-                    enabled: !discountSetting.enabled,
-                  })
-                }
-                className={`min-w-20 border px-4 py-2 text-xs font-bold uppercase tracking-widest ${
-                  discountSetting.enabled
-                    ? "border-black bg-black text-white"
-                    : "border-gray-300 bg-gray-100 text-gray-600"
-                } disabled:opacity-50`}
-              >
-                {discountSetting.enabled ? "On" : "Off"}
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={discountInput}
-                  onChange={(event) => setDiscountInput(event.target.value)}
-                  onBlur={() => setDiscountInput(String(clampDiscount(discountInput)))}
-                  className="w-full border border-gray-300 px-3 py-3 pr-8 text-sm font-semibold outline-none focus:border-black"
-                  disabled={discountSaving}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400">
-                  %
-                </span>
-              </div>
-              <button
-                type="button"
-                disabled={discountSaving}
-                onClick={saveDiscountPercentage}
-                className="border border-black bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-white hover:text-black disabled:opacity-50"
-              >
-                Save Discount
-              </button>
-            </div>
-
-            {discountMessage && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <AlertTriangle size={16} />
-                {discountMessage}
-              </div>
-            )}
-          </section>
         </>
       )}
     </div>

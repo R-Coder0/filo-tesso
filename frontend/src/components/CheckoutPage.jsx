@@ -142,11 +142,6 @@ const CheckoutPage = () => {
 
   const [referralCode, setReferralCode] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
-  const [firstOrderDiscount, setFirstOrderDiscount] = useState({
-    enabled: false,
-    eligible: false,
-    percentage: 15,
-  });
   const [shiprocketOpening, setShiprocketOpening] = useState(false);
   const [shiprocketError, setShiprocketError] = useState("");
 
@@ -189,31 +184,6 @@ const CheckoutPage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (!token) return;
-
-    const fetchFirstOrderDiscount = async () => {
-      try {
-        const { data } = await axios.get(`${apiUrl}/api/orders/first-order-discount`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setFirstOrderDiscount({
-          enabled: Boolean(data.enabled),
-          eligible: Boolean(data.eligible),
-          percentage: Number(data.percentage || 15),
-        });
-      } catch {
-        setFirstOrderDiscount((setting) => ({
-          ...setting,
-          enabled: false,
-          eligible: false,
-        }));
-      }
-    };
-
-    fetchFirstOrderDiscount();
-  }, [apiUrl, token]);
-
   /* -----------------------------
      PRICING
   ------------------------------*/
@@ -244,16 +214,10 @@ const CheckoutPage = () => {
   }, [cartItems, initialSubtotal]);
 
   const saleDiscount = discountAmount;
-  const firstOrderDiscountRate =
-    firstOrderDiscount.enabled && firstOrderDiscount.eligible
-      ? firstOrderDiscount.percentage / 100
-      : 0;
-  const firstOrderDiscountAmount = Math.floor(discountedTotal * firstOrderDiscountRate);
-  const totalAfterFirstOrderDiscount = Math.max(0, discountedTotal - firstOrderDiscountAmount);
 
   // Referral discount calculations
-  const referralAmount = Math.floor(totalAfterFirstOrderDiscount * referralDiscount);
-  const finalAfterReferral = totalAfterFirstOrderDiscount - referralAmount;
+  const referralAmount = Math.floor(discountedTotal * referralDiscount);
+  const finalAfterReferral = discountedTotal - referralAmount;
   const payableAmount = Math.max(0, finalAfterReferral);
 
   /*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
@@ -430,8 +394,6 @@ const CheckoutPage = () => {
         discountRate,
         discountAmount,
         totalAmount: discountedTotal,
-        firstOrderDiscountRate: order.firstOrderDiscountRate ?? firstOrderDiscountRate,
-        firstOrderDiscountAmount: order.firstOrderDiscountAmount ?? firstOrderDiscountAmount,
         address,
         payableAmount: order.payableAmount ?? payableAmount,
       };
@@ -514,8 +476,6 @@ const CheckoutPage = () => {
               discountRate,
               discountAmount,
               totalAmount: discountedTotal,
-              firstOrderDiscountRate: finalOrder.firstOrderDiscountRate ?? firstOrderDiscountRate,
-              firstOrderDiscountAmount: finalOrder.firstOrderDiscountAmount ?? firstOrderDiscountAmount,
               address,
               payableAmount,
             };
@@ -781,14 +741,6 @@ const CheckoutPage = () => {
 
                   <span>{formatINR(discountedTotal)}</span>
                 </div>
-                {firstOrderDiscountAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>First Order Discount ({firstOrderDiscount.percentage}%)</span>
-                    <span className="text-green-700 font-medium">
-                      − {formatINR(firstOrderDiscountAmount)}
-                    </span>
-                  </div>
-                )}
                 <div className="flex justify-between text-sm">
                   <span>Referral Discount</span>
                   <span className="text-green-700 font-medium">
