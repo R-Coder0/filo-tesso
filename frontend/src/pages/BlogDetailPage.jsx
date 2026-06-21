@@ -11,7 +11,7 @@ import {
   Tag,
   UserRound,
 } from "lucide-react";
-import ClientHelmet from "../components/ClientHelmet";
+import SeoHead from "../components/SeoHead";
 import { useSsrData } from "../context/SsrDataContext";
 import {
   getRankMathApiBase,
@@ -286,19 +286,15 @@ export default function BlogDetailPage() {
 
   return (
     <main className="min-h-screen bg-white text-neutral-950">
-      <ClientHelmet helmetKey={`blog-${post.slug}`}>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
-        {post.seo?.robots && <meta name="robots" content={post.seo.robots} />}
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:image" content={metaImage} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        <meta name="twitter:image" content={metaImage} />
-      </ClientHelmet>
+      <SeoHead
+        title={metaTitle}
+        description={metaDescription}
+        keywords={metaKeywords}
+        image={metaImage}
+        robots={post.seo?.robots}
+        type="article"
+        routeKey={`blog-${post.slug}`}
+      />
 
       {articleSchema && (
         <script

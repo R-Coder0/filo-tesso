@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useUI } from "./context/UIContext"; // ✅ add this
-import ClientHelmet from "./components/ClientHelmet";
+import SeoHead from "./components/SeoHead";
 import {
   getCanonicalUrl,
   getClientRouteSeo,
@@ -90,22 +90,13 @@ function App() {
 
   return (
     <>
-      <ClientHelmet helmetKey={`${location.pathname}${location.search}`}>
-        <title>{pageSeo.title}</title>
-        <meta name="title" content={pageSeo.title} />
-        <meta name="description" content={pageSeo.description} />
-        <meta name="keywords" content={pageSeo.keywords} />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={pageSeo.title} />
-        <meta property="og:description" content={pageSeo.description} />
-        <meta property="og:image" content="https://filoteso.co.in/icon.png" />
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={pageSeo.title} />
-        <meta name="twitter:description" content={pageSeo.description} />
-        <meta name="twitter:image" content="https://filoteso.co.in/icon.png" />
-      </ClientHelmet>
+      <SeoHead
+        {...pageSeo}
+        canonical={canonicalUrl}
+        image="https://filoteso.co.in/icon.png"
+        robots="index, follow"
+        routeKey={`${location.pathname}${location.search}`}
+      />
       {/* <MarqueeOffers/> */}
       <Toaster
         position="top-right"

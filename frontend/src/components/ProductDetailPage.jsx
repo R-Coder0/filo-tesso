@@ -7,7 +7,7 @@ import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
 import { FaCheck, FaTimes, FaArrowLeft, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useWishlist } from "../context/WishlistContext";
-import ClientHelmet from "./ClientHelmet";
+import SeoHead from "./SeoHead";
 import { ChevronLeft, ChevronRight, Droplets, Heart, ShoppingBag, Star, User, Calendar, MessageCircle, Shield, RefreshCw, Truck, Tag } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useSsrData } from "../context/SsrDataContext";
@@ -287,20 +287,14 @@ const ProductDetailPage = () => {
 
   return (
     <>
-      <ClientHelmet helmetKey={`product-${product.slug || product._id || id}`}>
-        <title>{metaTitle}</title>
-        <meta name="title" content={metaTitle} />
-        <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
-        <meta property="og:type" content="product" />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:image" content={metaImage} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        <meta name="twitter:image" content={metaImage} />
-      </ClientHelmet>
+      <SeoHead
+        title={metaTitle}
+        description={metaDescription}
+        keywords={metaKeywords}
+        image={metaImage}
+        type="product"
+        routeKey={`product-${product.slug || product._id || id}`}
+      />
 
       {/* ── Toast ── */}
       {toast && (

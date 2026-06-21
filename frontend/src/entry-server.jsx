@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { renderToPipeableStream } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom/server';
-import { HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './context/CartContext'; // Import CartProvider
 import { AuthProvider } from './context/AuthContext'; // Import AuthProvider
 import { UIProvider } from './context/UIContext'; // Import UIProvider
@@ -13,21 +12,19 @@ import App from './App';
 export function render(url, options, ssrData = {}) {
   return renderToPipeableStream(
     <StrictMode>
-      <HelmetProvider>
-        <SsrDataProvider data={ssrData}>
-          <StaticRouter location={url}>
-            <AuthProvider>
-              <CartProvider>
-                <UIProvider>
-                  <WishlistProvider>
-                    <App />
-                  </WishlistProvider>
-                </UIProvider>
-              </CartProvider>
-            </AuthProvider>
-          </StaticRouter>
-        </SsrDataProvider>
-      </HelmetProvider>
+      <SsrDataProvider data={ssrData}>
+        <StaticRouter location={url}>
+          <AuthProvider>
+            <CartProvider>
+              <UIProvider>
+                <WishlistProvider>
+                  <App />
+                </WishlistProvider>
+              </UIProvider>
+            </CartProvider>
+          </AuthProvider>
+        </StaticRouter>
+      </SsrDataProvider>
     </StrictMode>,
     options
   );
