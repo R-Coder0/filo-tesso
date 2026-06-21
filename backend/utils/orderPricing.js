@@ -3,8 +3,19 @@ const PRODUCT_TAX_RATE = 5;
 const roundCurrency = (value) =>
   Number((Number.isFinite(Number(value)) ? Number(value) : 0).toFixed(2));
 
-const calculateTaxAmount = (amount, taxRate = PRODUCT_TAX_RATE) =>
-  roundCurrency((roundCurrency(amount) * Number(taxRate || 0)) / 100);
+const getInclusiveTaxBreakdown = (amount, taxRate = PRODUCT_TAX_RATE) => {
+  const inclusiveAmount = roundCurrency(amount);
+  const rate = Number(taxRate || 0);
+  const taxableAmount = rate > 0
+    ? roundCurrency(inclusiveAmount / (1 + rate / 100))
+    : inclusiveAmount;
+
+  return {
+    taxRate: rate,
+    taxableAmount,
+    taxAmount: roundCurrency(inclusiveAmount - taxableAmount),
+  };
+};
 
 const normalizeQuantity = (value) => {
   const quantity = Number(value ?? 1);
@@ -14,43 +25,45 @@ const normalizeQuantity = (value) => {
 const getProductUnitPrices = (product) => {
   const salePrice = roundCurrency(product?.price?.sale);
   const originalPrice = roundCurrency(product?.price?.original ?? salePrice);
-  const taxAmount = calculateTaxAmount(salePrice);
-  const normalizedOriginalPrice = Math.max(originalPrice, salePrice);
+  const tax = getInclusiveTaxBreakdown(salePrice);
 
   return {
-    originalPrice: normalizedOriginalPrice,
-    originalPriceWithTax: roundCurrency(
-      normalizedOriginalPrice + calculateTaxAmount(normalizedOriginalPrice)
-    ),
+    originalPrice: Math.max(originalPrice, salePrice),
     salePrice,
-    taxAmount,
-    taxRate: PRODUCT_TAX_RATE,
-    priceWithTax: roundCurrency(salePrice + taxAmount),
+    ...tax,
   };
 };
 
 const addProductPricing = (totals, product, quantity) => {
   const qty = normalizeQuantity(quantity);
   if (!qty) throw new Error("Quantity must be a positive integer");
-  const { originalPrice, priceWithTax, salePrice, taxAmount, taxRate } =
-    getProductUnitPrices(product);
+  const {
+    originalPrice,
+    salePrice,
+    taxAmount,
+    taxableAmount,
+    taxRate,
+  } = getProductUnitPrices(product);
 
   return {
     totalAmount: roundCurrency(totals.totalAmount + originalPrice * qty),
+    taxableAmount: roundCurrency(
+      (totals.taxableAmount || 0) + taxableAmount * qty
+    ),
     taxAmount: roundCurrency((totals.taxAmount || 0) + taxAmount * qty),
-    payableAmount: roundCurrency(totals.payableAmount + priceWithTax * qty),
-    priceWithTax,
+    payableAmount: roundCurrency(totals.payableAmount + salePrice * qty),
     salePrice,
     taxRate,
     unitTaxAmount: taxAmount,
+    unitTaxableAmount: taxableAmount,
   };
 };
 
 module.exports = {
   PRODUCT_TAX_RATE,
   addProductPricing,
-  calculateTaxAmount,
   getProductUnitPrices,
+  getInclusiveTaxBreakdown,
   normalizeQuantity,
   roundCurrency,
 };

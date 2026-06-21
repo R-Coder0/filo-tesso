@@ -45,7 +45,12 @@ const getCheckoutError = (error) =>
 const loadCheckoutCart = async (cartItems) => {
   const checkoutItems = [];
   const sessionItems = [];
-  let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
+  let pricing = {
+    totalAmount: 0,
+    taxableAmount: 0,
+    taxAmount: 0,
+    payableAmount: 0,
+  };
 
   for (const item of cartItems || []) {
     const product = await Product.findById(item._id);
@@ -70,8 +75,13 @@ const loadCheckoutCart = async (cartItems) => {
     }
 
     pricing = addProductPricing(pricing, product, quantity);
-    const { originalPrice, salePrice, taxAmount, taxRate } =
-      getProductUnitPrices(product);
+    const {
+      originalPrice,
+      salePrice,
+      taxRate,
+      taxableAmount,
+      taxAmount,
+    } = getProductUnitPrices(product);
 
     checkoutItems.push({
       variant_id: String(selected.variantId),
@@ -85,6 +95,7 @@ const loadCheckoutCart = async (cartItems) => {
       originalPrice,
       priceAtCheckout: salePrice,
       taxRate,
+      taxableAmount,
       taxAmount,
     });
   }
@@ -102,6 +113,7 @@ exports.createShiprocketCheckoutToken = async (req, res) => {
       checkoutItems,
       sessionItems,
       totalAmount,
+      taxableAmount,
       taxAmount,
       payableAmount,
     } =
@@ -136,6 +148,7 @@ exports.createShiprocketCheckoutToken = async (req, res) => {
         user: req.user._id,
         cartItems: sessionItems,
         totalAmount,
+        taxableAmount,
         taxAmount,
         payableAmount,
         status: "initiated",
@@ -244,6 +257,7 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
           ),
           {
             taxRate: item.taxRate,
+            taxableAmount: item.taxableAmount,
             taxAmount: item.taxAmount,
           }
         )
@@ -263,6 +277,7 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
       user: req.user._id,
       products,
       totalAmount: session.totalAmount,
+      taxableAmount: session.taxableAmount,
       taxAmount: session.taxAmount,
       payableAmount,
       paymentStatus: isPrepaid ? "Paid" : "Pending",

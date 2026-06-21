@@ -167,20 +167,17 @@ const buildShiprocketOrderPayload = (order) => {
     packageLength = Math.max(packageLength, shipping.length);
     packageBreadth = Math.max(packageBreadth, shipping.breadth);
     packageHeight += shipping.height * quantity;
-    const taxRate = Number(item.taxRate || 0);
-    const unitTaxAmount = roundCurrency(item.taxAmount || 0);
-    const sellingPriceWithTax = roundCurrency(
-      Number(item.priceAtPurchase ?? product.price?.sale ?? 0) + unitTaxAmount
-    );
-
     const orderItem = {
       name: item.name || product.name || "Product",
       sku: buildItemSku(item, product),
       units: quantity,
-      // Shiprocket requires selling_price to be inclusive of GST.
-      selling_price: sellingPriceWithTax,
+      // priceAtPurchase is the final unit price after the product discount.
+      selling_price: roundCurrency(
+        item.priceAtPurchase ?? product.price?.sale ?? 0
+      ),
       discount: 0,
-      tax: taxRate,
+      // Shiprocket expects a percentage; selling_price remains GST-inclusive.
+      tax: Number(item.taxRate || 0),
     };
 
     const hsn = item.hsn || product.hsn;

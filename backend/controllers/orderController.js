@@ -68,7 +68,12 @@ exports.createOrder = async (req, res) => {
     address.country = address.country || "India";
 
     // 🔥🔥🔥 MAIN FIX START (SECURE PRICING)
-    let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
+    let pricing = {
+      totalAmount: 0,
+      taxableAmount: 0,
+      taxAmount: 0,
+      payableAmount: 0,
+    };
     const orderItems = [];
 
     for (const it of products) {
@@ -119,7 +124,7 @@ exports.createOrder = async (req, res) => {
     }
     // 🔥🔥🔥 MAIN FIX END
 
-    const { totalAmount, taxAmount, payableAmount } = pricing;
+    const { totalAmount, taxableAmount, taxAmount, payableAmount } = pricing;
 
     // ✅ CREATE ORDER
     const order = new Order({
@@ -127,6 +132,7 @@ exports.createOrder = async (req, res) => {
       user: userId,
       products: orderItems,
       totalAmount,
+      taxableAmount,
       taxAmount,
       payableAmount,
       paymentStatus: "Pending",

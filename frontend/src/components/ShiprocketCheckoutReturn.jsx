@@ -131,6 +131,7 @@ const ShiprocketCheckoutReturn = () => {
               cartItems: order.products || [],
               subtotal: order.totalAmount,
               totalAmount: order.totalAmount,
+              taxableAmount: order.taxableAmount,
               taxAmount: order.taxAmount,
               payableAmount: order.payableAmount,
               address: order.address,

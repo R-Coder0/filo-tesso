@@ -13,6 +13,16 @@ import { toast } from "react-hot-toast";
 
 const PRODUCT_TAX_RATE = 5;
 const roundCurrency = (value) => Math.round(Number(value || 0) * 100) / 100;
+const getInclusiveTaxBreakdown = (amount) => {
+  const inclusiveAmount = roundCurrency(amount);
+  const taxableAmount = roundCurrency(
+    inclusiveAmount / (1 + PRODUCT_TAX_RATE / 100)
+  );
+  return {
+    taxableAmount,
+    taxAmount: roundCurrency(inclusiveAmount - taxableAmount),
+  };
+};
 
 const formatINR = (n) =>
   new Intl.NumberFormat("en-IN", {
@@ -186,6 +196,7 @@ const CheckoutPage = () => {
     discountRate,
     discountAmount,
     discountedTotal,
+    taxableAmount,
     taxAmount,
   } = useMemo(() => {
     const totals = (cartItems || []).reduce(
@@ -193,14 +204,15 @@ const CheckoutPage = () => {
         const quantity = Number(item.quantity || 0);
         const salePrice = Number(item.price?.sale ?? item.price ?? 0);
         const originalPrice = Number(item.price?.original ?? salePrice);
+        const tax = getInclusiveTaxBreakdown(salePrice);
 
         acc.saleTotal += salePrice * quantity;
         acc.originalTotal += Math.max(originalPrice, salePrice) * quantity;
-        acc.taxTotal +=
-          roundCurrency((salePrice * PRODUCT_TAX_RATE) / 100) * quantity;
+        acc.taxableTotal += tax.taxableAmount * quantity;
+        acc.taxTotal += tax.taxAmount * quantity;
         return acc;
       },
-      { originalTotal: 0, saleTotal: 0, taxTotal: 0 }
+      { originalTotal: 0, saleTotal: 0, taxableTotal: 0, taxTotal: 0 }
     );
 
     const saleTotal = totals.saleTotal || Number(initialSubtotal || 0);
@@ -212,13 +224,14 @@ const CheckoutPage = () => {
       discountRate: 0,
       discountAmount: productDiscount,
       discountedTotal: saleTotal,
+      taxableAmount: roundCurrency(totals.taxableTotal),
       taxAmount: roundCurrency(totals.taxTotal),
     };
   }, [cartItems, initialSubtotal]);
 
   const saleDiscount = discountAmount;
 
-  const payableAmount = roundCurrency(discountedTotal + taxAmount);
+  const payableAmount = discountedTotal;
 
   /*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
    */
@@ -378,6 +391,7 @@ const CheckoutPage = () => {
         subtotal,
         discountRate,
         discountAmount,
+        taxableAmount: order.taxableAmount ?? taxableAmount,
         taxAmount: order.taxAmount ?? taxAmount,
         totalAmount: order.totalAmount ?? subtotal,
         address,
@@ -460,6 +474,7 @@ const CheckoutPage = () => {
               subtotal,
               discountRate,
               discountAmount,
+              taxableAmount: finalOrder.taxableAmount ?? taxableAmount,
               taxAmount: finalOrder.taxAmount ?? taxAmount,
               totalAmount: finalOrder.totalAmount ?? subtotal,
               address,
@@ -530,7 +545,7 @@ const CheckoutPage = () => {
               Opening secure checkout...
             </p>
             <p className="mt-2 text-xs text-gray-500">
-              5% IGST is included in the final checkout amount.
+              Product prices are inclusive of all applicable taxes.
             </p>
           </div>
         )}
@@ -703,14 +718,21 @@ const CheckoutPage = () => {
 
                   <span>{formatINR(discountedTotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>IGST ({PRODUCT_TAX_RATE}%)</span>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Taxable value</span>
+                  <span>{formatINR(taxableAmount)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>IGST ({PRODUCT_TAX_RATE}%, included)</span>
                   <span>{formatINR(taxAmount)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Payable</span>
                   <span>{formatINR(payableAmount)}</span>
                 </div>
+                <p className="text-xs text-gray-500">
+                  Payable amount is inclusive of taxes.
+                </p>
 
                 {/* Payment Actions */}
                 <div className="space-y-3 mt-4">

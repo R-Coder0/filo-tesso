@@ -29,7 +29,12 @@ exports.createOrder = async (req, res) => {
     const { cartItems } = req.body;
     const userId = req.user._id;
 
-    let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
+    let pricing = {
+      totalAmount: 0,
+      taxableAmount: 0,
+      taxAmount: 0,
+      payableAmount: 0,
+    };
 
     for (const item of cartItems) {
       const product = await Product.findById(item._id);
@@ -70,7 +75,7 @@ exports.createOrder = async (req, res) => {
       pricing = addProductPricing(pricing, product, qty);
     }
 
-    const { totalAmount, taxAmount, payableAmount } = pricing;
+    const { totalAmount, taxableAmount, taxAmount, payableAmount } = pricing;
     if (payableAmount <= 0) {
       return res.status(400).json({
         success: false,
@@ -88,6 +93,7 @@ exports.createOrder = async (req, res) => {
       razorpay_order_id: razorpayOrder.id,
       user: userId,
       totalAmount,
+      taxableAmount,
       taxAmount,
       payableAmount,
       status: "created",
@@ -164,7 +170,12 @@ exports.verifyPayment = async (req, res) => {
       country: address?.country || "India",
     };
 
-    let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
+    let pricing = {
+      totalAmount: 0,
+      taxableAmount: 0,
+      taxAmount: 0,
+      payableAmount: 0,
+    };
     const products = [];
 
     // ✅ RECALCULATE (MOST IMPORTANT FIX)
@@ -222,7 +233,7 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    const { totalAmount, taxAmount, payableAmount } = pricing;
+    const { totalAmount, taxableAmount, taxAmount, payableAmount } = pricing;
 
     if (Math.abs(payableAmount - Number(payment.payableAmount)) > 0.01) {
       return res.status(400).json({
@@ -237,6 +248,7 @@ exports.verifyPayment = async (req, res) => {
       user: userId,
       products,
       totalAmount,
+      taxableAmount,
       taxAmount,
       payableAmount,
       paymentStatus: "Paid",

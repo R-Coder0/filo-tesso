@@ -25,11 +25,8 @@ const paymentSchema = new mongoose.Schema(
       required: true, // full cart amount
     },
 
-    taxAmount: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+    taxableAmount: { type: Number, required: true, default: 0 },
+    taxAmount: { type: Number, required: true, default: 0 },
 
     payableAmount: {
       type: Number,

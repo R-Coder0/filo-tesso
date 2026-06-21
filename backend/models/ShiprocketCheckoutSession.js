@@ -15,6 +15,7 @@ const checkoutItemSchema = new mongoose.Schema(
     originalPrice: { type: Number },
     priceAtCheckout: { type: Number },
     taxRate: { type: Number },
+    taxableAmount: { type: Number },
     taxAmount: { type: Number },
   },
   { _id: false }
@@ -39,6 +40,7 @@ const shiprocketCheckoutSessionSchema = new mongoose.Schema(
       required: true,
     },
     totalAmount: { type: Number, required: true },
+    taxableAmount: { type: Number, required: true, default: 0 },
     taxAmount: { type: Number, required: true, default: 0 },
     payableAmount: { type: Number, required: true },
     status: {

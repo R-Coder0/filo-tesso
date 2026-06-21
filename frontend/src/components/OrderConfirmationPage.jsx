@@ -39,6 +39,7 @@ const OrderConfirmationPage = () => {
     subtotal,
     discountRate,
     discountAmount,
+    taxableAmount,
     taxAmount,
     totalAmount,
     address,
@@ -104,7 +105,13 @@ const OrderConfirmationPage = () => {
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-gray-600">IGST (5%):</span>
+              <span className="text-gray-600">Taxable value:</span>
+              <span className="font-semibold text-gray-900">
+                {formatINR(taxableAmount)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">IGST (5%, included):</span>
               <span className="font-semibold text-gray-900">
                 {formatINR(taxAmount)}
               </span>

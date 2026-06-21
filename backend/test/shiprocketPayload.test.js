@@ -7,6 +7,7 @@ const {
 const {
   addProductPricing,
   getProductUnitPrices,
+  getInclusiveTaxBreakdown,
   normalizeQuantity,
 } = require("../utils/orderPricing");
 
@@ -75,7 +76,7 @@ test("calculates the subtotal from discounted snapshots and quantities", () => {
   assert.equal(payload.total_discount, 0);
 });
 
-test("keeps MRP, sale price, tax, and payable totals separate", () => {
+test("extracts 5% GST without increasing the payable sale total", () => {
   const product = { price: { original: 1449, sale: 1231.65 } };
   const unitPrices = getProductUnitPrices(product);
   const totals = addProductPricing(
@@ -86,15 +87,15 @@ test("keeps MRP, sale price, tax, and payable totals separate", () => {
 
   assert.deepEqual(unitPrices, {
     originalPrice: 1449,
-    originalPriceWithTax: 1521.45,
     salePrice: 1231.65,
-    taxAmount: 61.58,
     taxRate: 5,
-    priceWithTax: 1293.23,
+    taxableAmount: 1173,
+    taxAmount: 58.65,
   });
   assert.equal(totals.totalAmount, 1449);
-  assert.equal(totals.taxAmount, 61.58);
-  assert.equal(totals.payableAmount, 1293.23);
+  assert.equal(totals.taxableAmount, 1173);
+  assert.equal(totals.taxAmount, 58.65);
+  assert.equal(totals.payableAmount, 1231.65);
 });
 
 test("rejects fractional, zero, and negative cart quantities", () => {
@@ -105,28 +106,39 @@ test("rejects fractional, zero, and negative cart quantities", () => {
   assert.equal(normalizeQuantity(1.5), null);
 });
 
-test("sends GST-inclusive prices and a 5% tax rate to Shiprocket", () => {
+test("breaks ₹1499 into taxable value and inclusive 5% GST", () => {
+  assert.deepEqual(getInclusiveTaxBreakdown(1499), {
+    taxRate: 5,
+    taxableAmount: 1427.62,
+    taxAmount: 71.38,
+  });
+});
+
+test("sends ₹1499 unchanged with tax 5 for Shiprocket invoicing", () => {
   const payload = buildShiprocketOrderPayload(
     makeOrder({
       products: [
         {
           product: "product-id",
-          name: "Taxed product",
-          sku: "TAXED-PRODUCT-M",
+          name: "GST-inclusive product",
+          sku: "GST-INCLUSIVE-M",
           selectedSize: "M",
           quantity: 1,
-          priceAtPurchase: 1231.65,
+          priceAtPurchase: 1499,
           taxRate: 5,
-          taxAmount: 61.58,
+          taxableAmount: 1427.62,
+          taxAmount: 71.38,
         },
       ],
-      taxAmount: 61.58,
-      payableAmount: 1293.23,
+      totalAmount: 1499,
+      taxableAmount: 1427.62,
+      taxAmount: 71.38,
+      payableAmount: 1499,
     })
   );
 
-  assert.equal(payload.order_items[0].selling_price, 1293.23);
+  assert.equal(payload.order_items[0].selling_price, 1499);
   assert.equal(payload.order_items[0].tax, 5);
-  assert.equal(payload.sub_total, 1293.23);
+  assert.equal(payload.sub_total, 1499);
   assert.equal(payload.total_discount, 0);
 });
