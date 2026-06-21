@@ -5,6 +5,10 @@ import { Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useUI } from "./context/UIContext"; // ✅ add this
 import ClientHelmet from "./components/ClientHelmet";
+import {
+  getCanonicalUrl,
+  getClientRouteSeo,
+} from "./utils/siteSeo";
 // import MarqueeOffers from "./section/Marquee";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -58,7 +62,6 @@ const CartSidebar = lazy(() => import("./components/CartSidebar"));
 const RequireAuth = lazy(() => import("./components/RequireAuth"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoutes"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
-const SITE_ORIGIN = "https://filoteso.co.in";
 
 const LoadingSpinner = memo(() => (
   <div className="flex items-center justify-center min-h-screen">
@@ -78,20 +81,30 @@ const NotFoundPage = memo(() => (
 function App() {
   // ✅ read state from UI context
   const { showCartSidebar, setShowCartSidebar } = useUI();
-const location = useLocation();
+  const location = useLocation();
 
   // ✅ Check if route starts with /admin
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const canonicalPath =
-    location.pathname === "/" ? "/" : location.pathname.replace(/\/+$/g, "");
-  const canonicalUrl =
-    canonicalPath === "/" ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${canonicalPath}`;
+  const canonicalUrl = getCanonicalUrl(location.pathname);
+  const pageSeo = getClientRouteSeo(location.pathname);
 
   return (
     <>
       <ClientHelmet>
+        <title>{pageSeo.title}</title>
+        <meta name="title" content={pageSeo.title} />
+        <meta name="description" content={pageSeo.description} />
+        <meta name="keywords" content={pageSeo.keywords} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={pageSeo.title} />
+        <meta property="og:description" content={pageSeo.description} />
+        <meta property="og:image" content="https://filoteso.co.in/icon.png" />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:url" content={canonicalUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageSeo.title} />
+        <meta name="twitter:description" content={pageSeo.description} />
+        <meta name="twitter:image" content="https://filoteso.co.in/icon.png" />
       </ClientHelmet>
       {/* <MarqueeOffers/> */}
       <Toaster

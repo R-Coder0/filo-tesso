@@ -12,10 +12,16 @@ import {
   UserRound,
 } from "lucide-react";
 import ClientHelmet from "../components/ClientHelmet";
+import { useSsrData } from "../context/SsrDataContext";
+import {
+  getRankMathApiBase,
+  parseRankMathHead,
+} from "../utils/rankMathSeo";
 
 const WP_API_BASE =
   import.meta.env.VITE_WP_API_BASE ||
   "https://cms.filoteso.co.in/wp-json/wp/v2";
+const RANK_MATH_API_BASE = getRankMathApiBase(WP_API_BASE);
 
 function stripHtml(html = "") {
   return String(html)
@@ -75,7 +81,7 @@ function getReadTime(content = "") {
   return `${minutes} min read`;
 }
 
-function normalizePost(post) {
+function normalizePost(post, initialSeo = {}) {
   const category = getCategory(post);
 
   return {
@@ -93,11 +99,19 @@ function normalizePost(post) {
     imageAlt: getFeaturedImageAlt(post),
     category,
     author: getAuthor(post),
+    link: post.link,
+    seo: initialSeo,
   };
 }
 
 export default function BlogDetailPage() {
   const { slug } = useParams();
+  const ssrBlogDetail = useSsrData("blogDetail");
+  const ssrSeo = useMemo(
+    () =>
+      ssrBlogDetail?.slug === slug ? ssrBlogDetail?.post?.seo || {} : {},
+    [slug, ssrBlogDetail]
+  );
 
   const [post, setPost] = useState(null);
   const [relatedPosts, setRelatedPosts] = useState([]);
@@ -131,22 +145,49 @@ export default function BlogDetailPage() {
           return;
         }
 
-        const currentPost = normalizePost(postData[0]);
+        const currentPost = normalizePost(postData[0], ssrSeo);
         setPost(currentPost);
+        setIsLoading(false);
 
+        const rankMathRequest = currentPost.link
+          ? fetch(
+              `${RANK_MATH_API_BASE}/getHead?url=${encodeURIComponent(
+                currentPost.link
+              )}`
+            )
+              .then((response) => {
+                if (!response.ok) throw new Error("Rank Math head API failed");
+                return response.json();
+              })
+              .then((data) => {
+                if (!isMounted) return;
+
+                const seo = parseRankMathHead(data?.head);
+                if (!seo.title && !seo.description) return;
+
+                setPost((existingPost) =>
+                  existingPost?.id === currentPost.id
+                    ? { ...existingPost, seo }
+                    : existingPost
+                );
+              })
+              .catch((error) => {
+                console.warn("Rank Math SEO API Error:", error);
+              })
+          : Promise.resolve();
+
+        let relatedRequest = Promise.resolve();
         if (currentPost.category.id) {
-          const relatedRes = await fetch(
+          relatedRequest = fetch(
             `${WP_API_BASE}/posts?_embed&per_page=3&categories=${currentPost.category.id}&exclude=${currentPost.id}`
-          );
-
-          if (relatedRes.ok) {
-            const relatedData = await relatedRes.json();
-
-            if (isMounted) {
-              setRelatedPosts(relatedData.map(normalizePost));
-            }
-          }
+          )
+            .then((response) => (response.ok ? response.json() : []))
+            .then((relatedData) => {
+              if (isMounted) setRelatedPosts(relatedData.map(normalizePost));
+            });
         }
+
+        await Promise.allSettled([rankMathRequest, relatedRequest]);
       } catch (error) {
         if (!isMounted) return;
 
@@ -164,7 +205,7 @@ export default function BlogDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [slug, ssrSeo]);
 
   const articleSchema = useMemo(() => {
     if (!post) return null;
@@ -189,9 +230,13 @@ export default function BlogDetailPage() {
     };
   }, [post]);
 
-  const canonicalUrl = post
-    ? `https://filoteso.co.in/blog/${post.slug}`
-    : `https://filoteso.co.in/blog/${slug}`;
+  const metaTitle =
+    post?.seo?.title || `${post?.title || "Blog"} | Filo Teso Blog`;
+  const metaDescription = post?.seo?.description || post?.excerpt || "";
+  const metaKeywords =
+    post?.seo?.keywords ||
+    `${post?.title || "Filo Teso"}, filo teso blog, streetwear fashion, modern streetwear fashion, premium streetwear brand india`;
+  const metaImage = post?.seo?.image || post?.image || "";
 
   const handleCopyLink = async () => {
     try {
@@ -242,17 +287,17 @@ export default function BlogDetailPage() {
   return (
     <main className="min-h-screen bg-white text-neutral-950">
       <ClientHelmet>
-        <title>{post.title} | Filo Teso Blog</title>
-        <meta name="description" content={post.excerpt} />
-        <meta
-          name="keywords"
-          content={`${post.title}, filo teso blog, streetwear fashion, modern streetwear fashion, premium streetwear brand india`}
-        />
-        <meta property="og:title" content={`${post.title} | Filo Teso Blog`} />
-        <meta property="og:description" content={post.excerpt} />
-        <meta property="og:image" content={post.image} />
-        <meta property="og:url" content={canonicalUrl} />
-        <link rel="canonical" href={canonicalUrl} />
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
+        {post.seo?.robots && <meta name="robots" content={post.seo.robots} />}
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:image" content={metaImage} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={metaImage} />
       </ClientHelmet>
 
       {articleSchema && (

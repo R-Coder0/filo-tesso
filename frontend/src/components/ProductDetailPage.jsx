@@ -272,13 +272,34 @@ const ProductDetailPage = () => {
   const showNextImage = () => showImageAt(selectedImageIndex + 1);
   const avgRating = product?.ratings?.average || 0;
   const ratingCount = product?.ratings?.count || 0;
+  const metaTitle = product?.seo?.metaTitle || `${product?.name} | Filo Teso`;
+  const metaDescription =
+    product?.seo?.metaDescription ||
+    product?.description?.slice(0, 160) ||
+    `Shop ${product?.name} from Filo Teso.`;
+  const savedMetaKeywords = Array.isArray(product?.seo?.keywords)
+    ? product.seo.keywords.filter(Boolean).join(", ")
+    : String(product?.seo?.keywords || "");
+  const metaKeywords = savedMetaKeywords || `${product?.name}, buy online`;
+  const metaImage = /^https?:\/\//i.test(product?.image || "")
+    ? product.image
+    : `${String(apiUrl || "").replace(/\/+$/, "")}${product?.image || ""}`;
 
   return (
     <>
       <ClientHelmet>
-        <title>{product?.seo?.metaTitle || product?.name}</title>
-        <meta name="description" content={product?.seo?.metaDescription || product?.description?.slice(0, 150)} />
-        <meta name="keywords" content={product?.seo?.keywords?.join(", ") || `${product?.name}, buy online`} />
+        <title>{metaTitle}</title>
+        <meta name="title" content={metaTitle} />
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:image" content={metaImage} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={metaImage} />
       </ClientHelmet>
 
       {/* ── Toast ── */}

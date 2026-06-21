@@ -64,7 +64,6 @@ export default function AboutPage() {
           property="og:description"
           content="Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion."
         />
-        <meta property="og:url" content="https://filoteso.co.in/about" />
         <meta
           name="twitter:title"
           content="About Filo Teso | Premium Streetwear Clothing Brand in India"
@@ -73,7 +72,6 @@ export default function AboutPage() {
           name="twitter:description"
           content="Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion."
         />
-        <link rel="canonical" href="https://filoteso.co.in/about" />
       </ClientHelmet>
 
       <div className="bg-white text-gray-950">

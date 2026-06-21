@@ -83,7 +83,6 @@ export default function ContactPage() {
           property="og:description"
           content="Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs."
         />
-        <meta property="og:url" content="https://filoteso.co.in/contact" />
         <meta
           name="twitter:title"
           content="Contact Filo Teso | Customer Support & Store Information"
@@ -92,7 +91,6 @@ export default function ContactPage() {
           name="twitter:description"
           content="Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs."
         />
-        <link rel="canonical" href="https://filoteso.co.in/contact" />
       </ClientHelmet>
 
       <div className="bg-white text-gray-950">

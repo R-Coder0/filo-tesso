@@ -1,6 +1,18 @@
 import fs from 'node:fs/promises'
 import express from 'express'
 import { Transform } from 'node:stream'
+import {
+  getRankMathApiBase,
+  parseRankMathHead,
+} from './src/utils/rankMathSeo.js'
+import {
+  getCanonicalUrl,
+  getGenericRouteSeo,
+  getProductListSeo,
+  normalizeCanonicalPath,
+  routeSeo,
+  titleCase,
+} from './src/utils/siteSeo.js'
 
 // Constants
 const isProduction = process.env.NODE_ENV === 'production'
@@ -8,7 +20,8 @@ const port = process.env.PORT || 5173
 const base = process.env.BASE || '/'
 const ABORT_DELAY = 10000
 const API_TIMEOUT_MS = 3500
-const SITE_ORIGIN = 'https://filoteso.co.in'
+const RANK_MATH_CACHE_TTL_MS = 60 * 1000
+const rankMathSeoCache = new Map()
 
 // Cached production assets
 const templateHtml = isProduction
@@ -152,6 +165,27 @@ const loadProductDetailSsrData = async (pathname) => {
 const getBlogFeaturedImage = (post) =>
   post?._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''
 
+const loadRankMathSeo = async (postUrl) => {
+  if (!postUrl) return {}
+
+  const cached = rankMathSeoCache.get(postUrl)
+  if (cached?.expiresAt > Date.now()) return cached.seo
+
+  const rankMathResponse = await safeFetchExternalJson(
+    `${getRankMathApiBase(getWpApiBase())}/getHead?url=${encodeURIComponent(postUrl)}`,
+  )
+  const seo = parseRankMathHead(rankMathResponse?.head)
+
+  if (seo.title || seo.description) {
+    rankMathSeoCache.set(postUrl, {
+      seo,
+      expiresAt: Date.now() + RANK_MATH_CACHE_TTL_MS,
+    })
+  }
+
+  return seo
+}
+
 const loadBlogDetailSsrData = async (pathname) => {
   const [, slug] = pathname.replace(/^\/+/, '').split('/')
   if (!slug) return {}
@@ -161,6 +195,7 @@ const loadBlogDetailSsrData = async (pathname) => {
   )
   const post = Array.isArray(posts) ? posts[0] : null
   if (!post) return { blogDetail: { slug } }
+  const seo = await loadRankMathSeo(post.link)
 
   return {
     blogDetail: {
@@ -169,6 +204,7 @@ const loadBlogDetailSsrData = async (pathname) => {
         title: stripHtml(post?.title?.rendered),
         excerpt: truncateText(post?.excerpt?.rendered),
         image: getBlogFeaturedImage(post),
+        seo,
       },
     },
   }
@@ -196,191 +232,6 @@ const injectSsrData = (htmlEnd, data) => {
 }
 
 const removeHeadTag = (html, pattern) => html.replace(pattern, '')
-
-const homeSeo = {
-  title: 'Filo Teso | Premium Streetwear Clothing Brand in India',
-  description:
-    'Shop Filo Teso for premium streetwear, graphic tees, oversized fits, and everyday styles made for comfort, quality, and self-expression.',
-  keywords:
-    'streetwear clothing brand india, premium streetwear brand india, graphic streetwear clothing, streetwear fashion india, premium graphic t shirts india, urban streetwear brand india, modern streetwear clothing, graphic tees india, premium fashion brand india, filo teso',
-}
-
-const routeSeo = {
-  '/': homeSeo,
-  '/about': {
-    title: 'About Filo Teso | Premium Streetwear Clothing Brand in India',
-    description:
-      'Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion.',
-    keywords:
-      'about filo teso, filo teso streetwear, streetwear clothing brand india, premium streetwear brand india, indian streetwear brand, filo teso clothing, premium graphic tees india, oversized t shirts india, modern streetwear fashion',
-  },
-  '/contact': {
-    title: 'Contact Filo Teso | Customer Support & Store Information',
-    description:
-      "Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs.",
-    keywords:
-      'contact filo teso, filo teso customer support, contact streetwear brand india, filo teso contact information, customer service filo teso, streetwear clothing support, filo teso help',
-  },
-  '/blog': {
-    title: 'Filo Teso Blog | Streetwear Fashion Guides & Style Notes',
-    description:
-      'Read the Filo Teso blog for streetwear fashion guides, styling ideas, product stories, and modern clothing inspiration.',
-    keywords:
-      'filo teso blog, streetwear fashion guides, modern streetwear fashion, premium streetwear brand india, oversized t shirts india, premium graphic tees india',
-  },
-  '/collabration': {
-    title: 'Collaborate With Filo Teso | Streetwear Brand Partnerships',
-    description:
-      'Connect with Filo Teso for streetwear collaborations, creator partnerships, styling projects, and brand opportunities.',
-    keywords:
-      'filo teso collaboration, streetwear brand collaboration india, creator partnerships, fashion collaborations india',
-  },
-  '/help/cancellation-and-returns': {
-    title: 'Cancellation & Returns | Filo Teso Help',
-    description:
-      'Learn about Filo Teso cancellation, return, and exchange support for your streetwear clothing orders.',
-    keywords:
-      'filo teso returns, filo teso cancellation, streetwear clothing support, order return help',
-  },
-  '/help/faqs': {
-    title: 'Filo Teso FAQs | Streetwear Clothing Help',
-    description:
-      'Find answers to common questions about Filo Teso orders, sizing, shipping, returns, payments, and customer support.',
-    keywords:
-      'filo teso faq, filo teso help, streetwear clothing support, customer service filo teso',
-  },
-  '/help/payments': {
-    title: 'Payments Help | Filo Teso',
-    description:
-      'Get help with Filo Teso payment options, payment issues, checkout support, and order payment questions.',
-    keywords:
-      'filo teso payments, payment support, checkout help, streetwear clothing support',
-  },
-  '/help/shipping': {
-    title: 'Shipping Help | Filo Teso',
-    description:
-      'Learn about Filo Teso shipping information, delivery support, order tracking, and streetwear order updates.',
-    keywords:
-      'filo teso shipping, order tracking, delivery support, streetwear clothing support',
-  },
-  '/consumer-policies/privacy': {
-    title: 'Privacy Policy | Filo Teso',
-    description:
-      'Read the Filo Teso privacy policy to understand how customer information is collected, used, and protected.',
-    keywords:
-      'filo teso privacy policy, customer privacy, data protection, filo teso policies',
-  },
-  '/consumer-policies/return-and-refund': {
-    title: 'Return & Refund Policy | Filo Teso',
-    description:
-      'Read the Filo Teso return and refund policy for order returns, refunds, exchanges, and customer support.',
-    keywords:
-      'filo teso refund policy, filo teso return policy, exchange policy, streetwear clothing support',
-  },
-  '/consumer-policies/security': {
-    title: 'Security Policy | Filo Teso',
-    description:
-      'Read the Filo Teso security policy for information about safe shopping, payment protection, and customer account safety.',
-    keywords:
-      'filo teso security policy, secure shopping, payment security, customer account safety',
-  },
-  '/consumer-policies/terms-and-conditions': {
-    title: 'Terms & Conditions | Filo Teso',
-    description:
-      'Read the Filo Teso terms and conditions for using the website, placing orders, payments, returns, and customer responsibilities.',
-    keywords:
-      'filo teso terms and conditions, website terms, shopping terms, filo teso policies',
-  },
-  '/login': {
-    title: 'Login | Filo Teso',
-    description:
-      'Login to your Filo Teso account to manage orders, wishlist, checkout, and streetwear shopping details.',
-    keywords: 'filo teso login, customer account, streetwear shopping account',
-  },
-  '/register': {
-    title: 'Create Account | Filo Teso',
-    description:
-      'Create a Filo Teso account to shop streetwear, manage your orders, save wishlist items, and checkout faster.',
-    keywords:
-      'filo teso register, create account, streetwear shopping account',
-  },
-  '/profile': {
-    title: 'My Profile | Filo Teso',
-    description:
-      'Manage your Filo Teso profile, order details, saved information, and streetwear shopping account.',
-    keywords: 'filo teso profile, customer profile, account details',
-  },
-  '/wishlist': {
-    title: 'Wishlist | Filo Teso',
-    description:
-      'View your saved Filo Teso streetwear pieces, graphic tees, oversized T-shirts, and favorite products.',
-    keywords: 'filo teso wishlist, saved products, graphic tees, oversized t shirts',
-  },
-  '/checkout': {
-    title: 'Checkout | Filo Teso',
-    description:
-      'Complete your Filo Teso checkout for premium streetwear clothing, graphic tees, and oversized T-shirts.',
-    keywords: 'filo teso checkout, streetwear checkout, buy graphic tees india',
-  },
-  '/my-orders': {
-    title: 'My Orders | Filo Teso',
-    description:
-      'Track and manage your Filo Teso orders, shipping updates, and streetwear clothing purchase history.',
-    keywords: 'filo teso orders, order tracking, customer orders',
-  },
-  '/order-confirmation': {
-    title: 'Order Confirmation | Filo Teso',
-    description:
-      'Your Filo Teso order confirmation page for premium streetwear clothing purchases.',
-    keywords: 'filo teso order confirmation, streetwear order, order status',
-  },
-  '/reveiw': {
-    title: 'Review Filo Teso | Share Your Feedback',
-    description:
-      'Share your Filo Teso review and feedback to help us improve our streetwear clothing experience.',
-    keywords: 'filo teso review, customer feedback, streetwear clothing review',
-  },
-  '/shiprocket-checkout-return': {
-    title: 'Checkout Return | Filo Teso',
-    description:
-      'Return to Filo Teso after checkout and continue tracking your premium streetwear clothing order.',
-    keywords: 'filo teso checkout return, order status, streetwear order',
-  },
-}
-
-const subcategoryLabels = {
-  'oversize-tshirt': 'Oversized T-Shirts',
-  'polo-tshirt': 'Polo T-Shirts',
-  'regular-tshirt': 'T-Shirts',
-  'regular-shirt': 'Shirts',
-  'oversize-shirt': 'Oversized Shirts',
-  jeans: 'Jeans',
-  trousers: 'Trousers',
-}
-
-const categoryLabels = {
-  men: 'Men',
-  women: 'Women',
-  customize: 'Custom',
-}
-
-const normalizeCanonicalPath = (pathname) => {
-  const cleanPathname = String(pathname || '/').split('#')[0].split('?')[0]
-  if (!cleanPathname || cleanPathname === '/') return '/'
-  return cleanPathname.replace(/\/+$/, '')
-}
-
-const getCanonicalUrl = (pathname) => {
-  const cleanPath = normalizeCanonicalPath(pathname)
-  return cleanPath === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${cleanPath}`
-}
-
-const titleCase = (value) =>
-  String(value || '')
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
-    .join(' ')
 
 const stripHtml = (value = '') =>
   String(value)
@@ -418,45 +269,19 @@ const getBlogDetailSeo = (pathname, ssrData = {}) => {
   const fallbackTitle = titleCase(slug)
 
   return {
-    title: `${blog?.title || fallbackTitle || 'Filo Teso Blog'} | Filo Teso Blog`,
+    title:
+      blog?.seo?.title ||
+      `${blog?.title || fallbackTitle || 'Filo Teso Blog'} | Filo Teso Blog`,
     description:
+      blog?.seo?.description ||
       blog?.excerpt ||
       `Read ${fallbackTitle || 'this streetwear guide'} on the Filo Teso blog for modern streetwear fashion, styling ideas, and clothing inspiration.`,
     keywords: normalizeKeywords(
-      blog?.keywords,
+      blog?.seo?.keywords || blog?.keywords,
       `${fallbackTitle}, filo teso blog, streetwear fashion, modern streetwear fashion, premium streetwear brand india`,
     ),
-    image: blog?.image,
-  }
-}
-
-const getProductListSeo = (pathname) => {
-  const { category, subcategory } = getProductRouteParams(pathname)
-  const categoryLabel = categoryLabels[category] || titleCase(category)
-  const subcategoryLabel = subcategoryLabels[subcategory] || titleCase(subcategory)
-
-  if (!category || category === 'all') {
-    return {
-      title: 'Shop Premium Streetwear Clothing | Filo Teso',
-      description:
-        'Shop Filo Teso premium streetwear clothing, graphic tees, oversized T-shirts, modern fits, and everyday fashion essentials.',
-      keywords:
-        'filo teso clothing, premium streetwear brand india, streetwear clothing brand india, premium graphic tees india, oversized t shirts india',
-    }
-  }
-
-  if (!subcategory || subcategory === 'all') {
-    return {
-      title: `${categoryLabel} Streetwear Clothing | Filo Teso`,
-      description: `Shop ${categoryLabel.toLowerCase()} streetwear clothing from Filo Teso, including premium graphic tees, oversized fits, and modern everyday essentials.`,
-      keywords: `${categoryLabel.toLowerCase()} streetwear clothing, filo teso clothing, premium streetwear brand india, modern streetwear fashion`,
-    }
-  }
-
-  return {
-    title: `${subcategoryLabel} for ${categoryLabel} | Filo Teso`,
-    description: `Shop ${subcategoryLabel.toLowerCase()} for ${categoryLabel.toLowerCase()} from Filo Teso, a premium streetwear clothing brand in India focused on quality, comfort, and modern style.`,
-    keywords: `${subcategoryLabel.toLowerCase()}, ${categoryLabel.toLowerCase()} streetwear clothing, filo teso clothing, premium streetwear brand india, oversized t shirts india, premium graphic tees india`,
+    image: blog?.seo?.image || blog?.image,
+    robots: blog?.seo?.robots,
   }
 }
 
@@ -476,18 +301,6 @@ const getProductDetailSeo = (pathname, ssrData = {}) => {
       `${productName}, filo teso clothing, premium streetwear brand india, streetwear clothing brand india`,
     ),
     image: product?.image,
-  }
-}
-
-const getGenericRouteSeo = (pathname) => {
-  const label = titleCase(pathname.split('/').filter(Boolean).join(' '))
-
-  return {
-    title: `${label || 'Filo Teso'} | Filo Teso`,
-    description:
-      'Explore Filo Teso for premium streetwear clothing, graphic tees, oversized fits, and modern fashion essentials.',
-    keywords:
-      'filo teso, filo teso clothing, premium streetwear brand india, streetwear clothing brand india, modern streetwear fashion',
   }
 }
 
@@ -534,30 +347,40 @@ const buildRouteSeoTags = (seo) => {
   const tags = []
 
   if (seo.title) {
-    tags.push(`<title>${escapeHtml(seo.title)}</title>`)
-    tags.push(`<meta name="title" content="${escapeHtml(seo.title)}" />`)
-    tags.push(`<meta property="og:title" content="${escapeHtml(seo.title)}" />`)
-    tags.push(`<meta name="twitter:title" content="${escapeHtml(seo.title)}" />`)
+    tags.push(`<title data-rh="true">${escapeHtml(seo.title)}</title>`)
+    tags.push(`<meta data-rh="true" name="title" content="${escapeHtml(seo.title)}" />`)
+    tags.push(`<meta data-rh="true" property="og:title" content="${escapeHtml(seo.title)}" />`)
+    tags.push(`<meta data-rh="true" name="twitter:title" content="${escapeHtml(seo.title)}" />`)
   }
 
   if (seo.description) {
     tags.push(
-      `<meta name="description" content="${escapeHtml(seo.description)}" />`,
+      `<meta data-rh="true" name="description" content="${escapeHtml(seo.description)}" />`,
     )
     tags.push(
-      `<meta property="og:description" content="${escapeHtml(seo.description)}" />`,
+      `<meta data-rh="true" property="og:description" content="${escapeHtml(seo.description)}" />`,
     )
     tags.push(
-      `<meta name="twitter:description" content="${escapeHtml(seo.description)}" />`,
+      `<meta data-rh="true" name="twitter:description" content="${escapeHtml(seo.description)}" />`,
     )
   }
 
   if (seo.keywords) {
-    tags.push(`<meta name="keywords" content="${escapeHtml(seo.keywords)}" />`)
+    tags.push(`<meta data-rh="true" name="keywords" content="${escapeHtml(seo.keywords)}" />`)
   }
 
-  tags.push(`<meta property="og:url" content="${escapeHtml(seo.canonical)}" />`)
-  tags.push(`<link rel="canonical" href="${escapeHtml(seo.canonical)}" />`)
+  if (seo.robots) {
+    tags.push(`<meta data-rh="true" name="robots" content="${escapeHtml(seo.robots)}" />`)
+  }
+
+  if (seo.image) {
+    tags.push(`<meta data-rh="true" property="og:image" content="${escapeHtml(seo.image)}" />`)
+    tags.push(`<meta data-rh="true" name="twitter:image" content="${escapeHtml(seo.image)}" />`)
+    tags.push('<meta data-rh="true" name="twitter:card" content="summary_large_image" />')
+  }
+
+  tags.push(`<meta data-rh="true" property="og:url" content="${escapeHtml(seo.canonical)}" />`)
+  tags.push(`<link data-rh="true" rel="canonical" href="${escapeHtml(seo.canonical)}" />`)
 
   return tags.map((tag) => `    ${tag}`).join('\n')
 }
@@ -588,6 +411,16 @@ const injectRouteSeoHead = (htmlStart, seo) => {
 
   if (seo.keywords) {
     next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']keywords["'])[^>]*>/i)
+  }
+
+  if (seo.robots) {
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']robots["'])[^>]*>/i)
+  }
+
+  if (seo.image) {
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bproperty=["']og:image["'])[^>]*>/i)
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']twitter:image["'])[^>]*>/i)
+    next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bname=["']twitter:card["'])[^>]*>/i)
   }
 
   next = removeHeadTag(next, /\s*<meta\b(?=[^>]*\bproperty=["']og:url["'])[^>]*>/i)
