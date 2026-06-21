@@ -4,30 +4,40 @@ import { useLocation } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useUI } from "./context/UIContext"; // ✅ add this
-import Profile from "./pages/Profile";
-import Footer from "./components/Footer";
-import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import ClientHelmet from "./components/ClientHelmet";
-import ReviewSubmissionPage from "./pages/Reveiwpage";
-import WishlistPage from "./pages/WishlistPage";
 // import MarqueeOffers from "./section/Marquee";
 import ScrollToTop from "./components/ScrollToTop";
-import Collaborate from "./pages/Collaborate";
-import CancellationAndReturnsPage from "./pages/help/cancellation-return";
-import FAQPage from "./pages/help/Faqs";
-import PaymentsHelpPage from "./pages/help/payments";
-import ShippingHelpPage from "./pages/help/shipping";
-import PrivacyPolicyPage from "./pages/consumer-policies/privacy";
-import ReturnsAndRefundsPage from "./pages/consumer-policies/return&refund";
-import SecurityPolicyPage from "./pages/consumer-policies/security";
-import TermsAndServicesPage from "./pages/consumer-policies/t&c";
-import ContactPage from "./pages/Contact";
-import BlogDetailPage from "./pages/BlogDetailPage";
-import AboutPage from "./pages/About";
 
 // Lazy components
 const Navbar = lazy(() => import("./components/navBar"));
+const Footer = lazy(() => import("./components/Footer"));
+const FloatingWhatsApp = lazy(() => import("./components/FloatingWhatsApp"));
 const Home = lazy(() => import("./pages/Home"));
+const Profile = lazy(() => import("./pages/Profile"));
+const ReviewSubmissionPage = lazy(() => import("./pages/Reveiwpage"));
+const WishlistPage = lazy(() => import("./pages/WishlistPage"));
+const Collaborate = lazy(() => import("./pages/Collaborate"));
+const CancellationAndReturnsPage = lazy(
+  () => import("./pages/help/cancellation-return")
+);
+const FAQPage = lazy(() => import("./pages/help/Faqs"));
+const PaymentsHelpPage = lazy(() => import("./pages/help/payments"));
+const ShippingHelpPage = lazy(() => import("./pages/help/shipping"));
+const PrivacyPolicyPage = lazy(
+  () => import("./pages/consumer-policies/privacy")
+);
+const ReturnsAndRefundsPage = lazy(
+  () => import("./pages/consumer-policies/return&refund")
+);
+const SecurityPolicyPage = lazy(
+  () => import("./pages/consumer-policies/security")
+);
+const TermsAndServicesPage = lazy(
+  () => import("./pages/consumer-policies/t&c")
+);
+const ContactPage = lazy(() => import("./pages/Contact"));
+const BlogDetailPage = lazy(() => import("./pages/BlogDetailPage"));
+const AboutPage = lazy(() => import("./pages/About"));
 const ProductList = lazy(() => import("./components/ProductList"));
 const ProductDetail = lazy(() => import("./components/ProductDetailPage"));
 const CheckoutPage = lazy(() => import("./components/CheckoutPage"));
@@ -72,7 +82,6 @@ const location = useLocation();
 
   // ✅ Check if route starts with /admin
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const isHomeRoute = location.pathname === "/";
   const canonicalPath =
     location.pathname === "/" ? "/" : location.pathname.replace(/\/+$/g, "");
   const canonicalUrl =
@@ -106,15 +115,20 @@ const location = useLocation();
           },
         }}
       />
-      <Suspense fallback={<LoadingSpinner />}>
-         {/* ✅ Hide Navbar on admin routes */}
-          {!isAdminRoute && <Navbar />}
+      <Suspense fallback={null}>
+        {!isAdminRoute && <Navbar />}
+      </Suspense>
+
+      <Suspense fallback={null}>
         {/* ✅ Render the sidebar when flag is true */}
         {showCartSidebar && (
           <CartSidebar onClose={() => setShowCartSidebar(false)} />
         )}
-        <ScrollToTop/>
-        <main>
+      </Suspense>
+
+      <ScrollToTop/>
+      <main>
+        <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<ProductList />} />
@@ -243,10 +257,12 @@ const location = useLocation();
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </main>
+        </Suspense>
+      </main>
 
-          {!isAdminRoute && <Footer />}
-          {!isAdminRoute && <FloatingWhatsApp />}
+      <Suspense fallback={null}>
+        {!isAdminRoute && <Footer />}
+        {!isAdminRoute && <FloatingWhatsApp />}
       </Suspense>
     </>
   );

@@ -11,6 +11,7 @@ import { toast } from "react-hot-toast";
 import { Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { useSsrData } from "../context/SsrDataContext";
 import { useWishlist } from "../context/WishlistContext";
 import {
   extractProducts,
@@ -52,17 +53,29 @@ export default function HomeNewPopular() {
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  const [gender, setGender] = useState(() => getStoredShopGender());
+  const ssrPopular = useSsrData("homeNewPopular");
+  // Prefer SSR gender for the first render to keep hydration stable. The
+  // browser preference is applied immediately after hydration.
+  const initialGender = ssrPopular?.gender || getStoredShopGender();
+  const hasMatchingSsrProducts =
+    ssrPopular?.gender === initialGender &&
+    Array.isArray(ssrPopular?.products);
+  const [gender, setGender] = useState(initialGender);
   const [category, setCategory] = useState("all");
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState(
+    hasMatchingSsrProducts ? ssrPopular.products : []
+  );
+  const [loading, setLoading] = useState(!hasMatchingSsrProducts);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(
+    hasMatchingSsrProducts ? Number(ssrPopular.totalPages || 1) > 1 : true
+  );
   const [wishlistLoadingId, setWishlistLoadingId] = useState(null);
   const loadMoreRef = useRef(null);
   const isLoadingMoreRef = useRef(false);
   const requestGenerationRef = useRef(0);
+  const ssrProductsConsumedRef = useRef(false);
 
   const categories = useMemo(
     () => [
@@ -74,6 +87,11 @@ export default function HomeNewPopular() {
     ],
     [gender]
   );
+
+  useEffect(() => {
+    const storedGender = getStoredShopGender();
+    if (storedGender !== gender) setGender(storedGender);
+  }, []);
 
   useEffect(() => {
     setCategory("all");
@@ -89,6 +107,18 @@ export default function HomeNewPopular() {
   }, []);
 
   useEffect(() => {
+    if (!ssrProductsConsumedRef.current) {
+      ssrProductsConsumedRef.current = true;
+      if (
+        hasMatchingSsrProducts &&
+        gender === ssrPopular.gender &&
+        category === ssrPopular.category
+      ) {
+        setLoading(false);
+        return undefined;
+      }
+    }
+
     let isMounted = true;
     const controller = new AbortController();
     const requestGeneration = requestGenerationRef.current + 1;
@@ -141,7 +171,14 @@ export default function HomeNewPopular() {
       isMounted = false;
       controller.abort();
     };
-  }, [apiUrl, gender, category]);
+  }, [
+    apiUrl,
+    category,
+    gender,
+    hasMatchingSsrProducts,
+    ssrPopular?.category,
+    ssrPopular?.gender,
+  ]);
 
   const loadMoreProducts = useCallback(async () => {
     if (loading || isLoadingMoreRef.current || !hasMore) return;
@@ -338,6 +375,9 @@ export default function HomeNewPopular() {
                         </span>
                       ) : null}
                     </div>
+                    <p className="mt-1 text-[10px] text-gray-400">
+                      Inclusive of all taxes
+                    </p>
                   </Link>
                 </article>
                 );

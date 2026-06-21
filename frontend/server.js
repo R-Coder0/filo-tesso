@@ -8,7 +8,6 @@ const port = process.env.PORT || 5173
 const base = process.env.BASE || '/'
 const ABORT_DELAY = 10000
 const API_TIMEOUT_MS = 3500
-const PRODUCT_CATEGORIES = ['men', 'women', 'customize']
 const SITE_ORIGIN = 'https://filoteso.co.in'
 
 // Cached production assets
@@ -99,54 +98,24 @@ const safeFetchExternalJson = async (url) => {
   }
 }
 
-const dedupeProducts = (products) => {
-  const seen = new Set()
-  return products.filter((product) => {
-    const key = product?._id || product?.id || `${product?.name}-${product?.image}`
-    if (!key || seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-}
-
-const interleave = (arrays) => {
-  const max = Math.max(0, ...arrays.map((items) => items.length))
-  const result = []
-
-  for (let index = 0; index < max; index += 1) {
-    arrays.forEach((items) => {
-      if (items[index]) result.push(items[index])
-    })
-  }
-
-  return result
-}
-
 const getProductRouteParams = (pathname) => {
   const [, , category = 'all', subcategory = 'all'] = pathname.split('/')
   return { category, subcategory }
 }
 
 const loadHomeSsrData = async () => {
-  const [latest, allProducts, oversize, instagramFeed, ...categoryLists] =
-    await Promise.all([
-      safeFetchJson('/api/products/latest?limit=20'),
-      safeFetchJson('/api/products'),
-      safeFetchJson('/api/products?subcategory=oversize-tshirt'),
-      safeFetchJson('/api/instagram/posts'),
-      ...PRODUCT_CATEGORIES.map((category) =>
-        safeFetchJson(buildApiPath('/api/products', { category })),
-      ),
-    ])
-
-  const categoryWise = categoryLists.map((data) => toProductList(data))
-  const bestsellers = interleave(categoryWise)
+  const [popularProducts, instagramFeed] = await Promise.all([
+    safeFetchJson('/api/products?category=men&page=1&limit=20'),
+    safeFetchJson('/api/instagram/posts'),
+  ])
 
   return {
-    homeLatestProducts: toProductList(latest).slice(0, 20),
-    homeProducts: toProductList(allProducts).slice(0, 8),
-    homeOversizeProducts: toProductList(oversize).slice(0, 8),
-    homeBestsellerProducts: dedupeProducts(bestsellers),
+    homeNewPopular: {
+      gender: 'men',
+      category: 'all',
+      products: toProductList(popularProducts),
+      totalPages: Number(popularProducts?.data?.total_pages || 1),
+    },
     homeInstagramFeed: instagramFeed,
   }
 }

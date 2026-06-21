@@ -158,6 +158,7 @@ const ProductCard = ({ product }) => {
             {stockStatus.text}
           </span>
         </div>
+        <p className="text-[10px] text-gray-400">Inclusive of all taxes</p>
       </div>
 
       {/* ── BUTTONS ── */}

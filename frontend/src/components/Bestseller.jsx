@@ -332,6 +332,7 @@ function BestCard({ product, apiUrl }) {
             {stockStatus.text}
           </span>
         </div>
+        <p className="text-[10px] text-gray-400">Inclusive of all taxes</p>
       </Link>
 
       {/* Cart button */}
