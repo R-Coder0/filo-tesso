@@ -22,6 +22,8 @@ const orderItemSchema = new mongoose.Schema(
 
     // Freeze values needed for invoices and shipping retries.
     priceAtPurchase: { type: Number, required: true },
+    taxRate: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
   },
   { _id: false }
 );
@@ -46,6 +48,7 @@ const orderSchema = new mongoose.Schema(
     products: [orderItemSchema],
 
     totalAmount: { type: Number, required: true },
+    taxAmount: { type: Number, required: true, default: 0 },
     payableAmount: { type: Number, required: true },
 
     paymentStatus: {

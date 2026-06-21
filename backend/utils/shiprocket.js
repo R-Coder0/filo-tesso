@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { roundCurrency } = require("./orderPricing");
 
 const SHIPROCKET_API_BASE = "https://apiv2.shiprocket.in/v1/external";
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -166,16 +167,20 @@ const buildShiprocketOrderPayload = (order) => {
     packageLength = Math.max(packageLength, shipping.length);
     packageBreadth = Math.max(packageBreadth, shipping.breadth);
     packageHeight += shipping.height * quantity;
+    const taxRate = Number(item.taxRate || 0);
+    const unitTaxAmount = roundCurrency(item.taxAmount || 0);
+    const sellingPriceWithTax = roundCurrency(
+      Number(item.priceAtPurchase ?? product.price?.sale ?? 0) + unitTaxAmount
+    );
 
     const orderItem = {
       name: item.name || product.name || "Product",
       sku: buildItemSku(item, product),
       units: quantity,
-      selling_price: Number(
-        item.priceAtPurchase ?? product.price?.sale ?? 0
-      ),
+      // Shiprocket requires selling_price to be inclusive of GST.
+      selling_price: sellingPriceWithTax,
       discount: 0,
-      tax: 0,
+      tax: taxRate,
     };
 
     const hsn = item.hsn || product.hsn;
@@ -183,8 +188,28 @@ const buildShiprocketOrderPayload = (order) => {
     return orderItem;
   });
 
-  const totalAmount = Number(order.totalAmount || 0);
-  const subTotal = Number(order.payableAmount ?? totalAmount);
+  // Item snapshots already contain discounted selling prices. Keep every
+  // Shiprocket amount based on those prices so an MRP/payable difference is
+  // never sent as another order-level discount.
+  const itemSubTotal = roundCurrency(
+    orderItems.reduce(
+      (sum, item) => sum + item.selling_price * item.units,
+      0
+    )
+  );
+  const storedPayableAmount = roundCurrency(order.payableAmount);
+
+  if (
+    storedPayableAmount > 0 &&
+    Math.abs(storedPayableAmount - itemSubTotal) > 0.01
+  ) {
+    console.warn(
+      `[Shiprocket Logistics] Amount mismatch for order ${
+        order.orderNumber || order._id
+      }: item snapshots=${itemSubTotal}, payableAmount=${storedPayableAmount}. ` +
+        "Using item snapshots for the Logistics payload."
+    );
+  }
 
   const payload = {
     order_id: order.orderNumber || String(order._id),
@@ -208,8 +233,8 @@ const buildShiprocketOrderPayload = (order) => {
     shipping_charges: 0,
     giftwrap_charges: 0,
     transaction_charges: 0,
-    total_discount: Math.max(0, totalAmount - subTotal),
-    sub_total: subTotal,
+    total_discount: 0,
+    sub_total: itemSubTotal,
     length: Number(packageLength.toFixed(2)),
     breadth: Number(packageBreadth.toFixed(2)),
     height: Number(Math.max(packageHeight, defaults.height).toFixed(2)),
@@ -241,6 +266,13 @@ const getShiprocketError = (error) => {
 
 const createShiprocketOrder = async (order) => {
   const payload = buildShiprocketOrderPayload(order);
+  console.info(
+    `[Shiprocket Logistics] Final create-order payload for ${payload.order_id}:\n${JSON.stringify(
+      payload,
+      null,
+      2
+    )}`
+  );
   const { data } = await shiprocketRequest({
     method: "post",
     url: "/orders/create/adhoc",

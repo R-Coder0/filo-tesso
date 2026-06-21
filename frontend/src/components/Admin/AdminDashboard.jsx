@@ -16,7 +16,7 @@ const formatINR = (value) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value || 0);
 
 const getSalePrice = (product) => Number(product?.price?.sale || 0);

@@ -1,6 +1,17 @@
-const buildOrderItemSnapshot = (product, item, price) => {
+const {
+  PRODUCT_TAX_RATE,
+  calculateTaxAmount,
+  roundCurrency,
+} = require("./orderPricing");
+
+const buildOrderItemSnapshot = (product, item, price, tax = {}) => {
   const selectedSize = String(item.selectedSize || "").trim().toUpperCase();
   const baseSku = product.sku || `FT-${product.productId || product._id}`;
+  const priceAtPurchase = roundCurrency(price);
+  const taxRate = Number(tax.taxRate ?? PRODUCT_TAX_RATE);
+  const taxAmount = roundCurrency(
+    tax.taxAmount ?? calculateTaxAmount(priceAtPurchase, taxRate)
+  );
 
   return {
     product: product._id,
@@ -14,7 +25,9 @@ const buildOrderItemSnapshot = (product, item, price) => {
     length: product.shipping?.length,
     breadth: product.shipping?.breadth,
     height: product.shipping?.height,
-    priceAtPurchase: price,
+    priceAtPurchase,
+    taxRate,
+    taxAmount,
   };
 };
 

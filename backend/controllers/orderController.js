@@ -10,6 +10,10 @@ const {
   assignShiprocketAwb,
   syncOrderToShiprocket,
 } = require("../utils/shiprocket");
+const {
+  addProductPricing,
+  normalizeQuantity,
+} = require("../utils/orderPricing");
 
 const getVariantForSize = (product, selectedSize) => {
   const variants = product.sizeVariants || [];
@@ -64,15 +68,22 @@ exports.createOrder = async (req, res) => {
     address.country = address.country || "India";
 
     // 🔥🔥🔥 MAIN FIX START (SECURE PRICING)
-    let totalAmount = 0;
+    let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
     const orderItems = [];
 
     for (const it of products) {
       const product = await Product.findById(it.product);
 
-      if (!product) continue;
+      if (!product) {
+        return res.status(400).json({
+          message: "A product in your cart is no longer available",
+        });
+      }
 
-      const qty = Number(it.quantity || 1);
+      const qty = normalizeQuantity(it.quantity);
+      if (!qty) {
+        return res.status(400).json({ message: "Invalid product quantity" });
+      }
       const selectedSize = String(it.selectedSize || "").trim().toUpperCase();
 
       const allowedSizes = (product.sizes || []).map(size => String(size).trim().toUpperCase());
@@ -92,19 +103,23 @@ exports.createOrder = async (req, res) => {
         });
       }
 
-      const price = product.price?.sale || 0;
+      pricing = addProductPricing(pricing, product, qty);
 
-      totalAmount += price * qty;
-
-      orderItems.push(buildOrderItemSnapshot(product, { ...it, quantity: qty }, price));
+      orderItems.push(
+        buildOrderItemSnapshot(
+          product,
+          { ...it, quantity: qty },
+          pricing.salePrice
+        )
+      );
     }
 
-    if (!orderItems.length || totalAmount <= 0) {
+    if (!orderItems.length || pricing.payableAmount <= 0) {
       return res.status(400).json({ message: "Invalid order" });
     }
     // 🔥🔥🔥 MAIN FIX END
 
-    const payableAmount = totalAmount;
+    const { totalAmount, taxAmount, payableAmount } = pricing;
 
     // ✅ CREATE ORDER
     const order = new Order({
@@ -112,6 +127,7 @@ exports.createOrder = async (req, res) => {
       user: userId,
       products: orderItems,
       totalAmount,
+      taxAmount,
       payableAmount,
       paymentStatus: "Pending",
       paymentMethod: "COD",

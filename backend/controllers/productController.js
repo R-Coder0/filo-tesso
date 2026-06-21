@@ -6,6 +6,7 @@ const {
   getProductNumericId,
   getVariantNumericId,
 } = require("../utils/shiprocketCatalog");
+const { getProductUnitPrices } = require("../utils/orderPricing");
 const {
   syncCheckoutCollection,
   syncCheckoutProduct,
@@ -156,17 +157,20 @@ const toShiprocketVariant = (req, product, variant, index) => {
   const numericId = getProductNumericId(product);
   const customSku = String(product?.sku || "").trim();
   const baseSku = customSku ? `${customSku}-${numericId}` : `FT-${numericId}`;
+  const { originalPriceWithTax, priceWithTax } = getProductUnitPrices(product);
 
   return {
     id: getVariantNumericId(product, index),
     title: size || "Default",
-    price: formatMoney(product?.price?.sale),
-    compare_at_price: formatMoney(product?.price?.original),
+    // Shiprocket Checkout catalog price is GST-inclusive.
+    price: formatMoney(priceWithTax),
+    compare_at_price: formatMoney(originalPriceWithTax),
     sku: `${baseSku}-${size || "DEFAULT"}`,
     quantity: Math.max(0, Number(variant?.stock ?? product?.stock ?? 0)),
     created_at: toIsoDate(product?.createdAt),
     updated_at: toIsoDate(product?.updatedAt || product?.createdAt),
-    taxable: true,
+    // The catalog price already includes the application's 5% product tax.
+    taxable: false,
     option_values: optionValues,
     grams: Math.round(weight * 1000),
     image: {

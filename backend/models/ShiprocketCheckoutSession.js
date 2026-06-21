@@ -10,6 +10,12 @@ const checkoutItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true },
     selectedSize: { type: String, default: "" },
     selectedColor: { type: String, default: "" },
+    // Optional for compatibility with checkout sessions created before price
+    // snapshots were introduced.
+    originalPrice: { type: Number },
+    priceAtCheckout: { type: Number },
+    taxRate: { type: Number },
+    taxAmount: { type: Number },
   },
   { _id: false }
 );
@@ -33,6 +39,7 @@ const shiprocketCheckoutSessionSchema = new mongoose.Schema(
       required: true,
     },
     totalAmount: { type: Number, required: true },
+    taxAmount: { type: Number, required: true, default: 0 },
     payableAmount: { type: Number, required: true },
     status: {
       type: String,

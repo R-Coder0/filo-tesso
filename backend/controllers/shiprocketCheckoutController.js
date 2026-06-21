@@ -11,6 +11,12 @@ const {
   getCheckoutOrderDetails,
 } = require("../utils/shiprocketCheckout");
 const { getSelectedVariant } = require("../utils/shiprocketCatalog");
+const {
+  addProductPricing,
+  getProductUnitPrices,
+  normalizeQuantity,
+  roundCurrency,
+} = require("../utils/orderPricing");
 
 const ALLOWED_FRONTEND_ORIGINS = new Set([
   "http://localhost:5173",
@@ -39,13 +45,16 @@ const getCheckoutError = (error) =>
 const loadCheckoutCart = async (cartItems) => {
   const checkoutItems = [];
   const sessionItems = [];
-  let totalAmount = 0;
+  let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
 
   for (const item of cartItems || []) {
     const product = await Product.findById(item._id);
-    if (!product) continue;
+    if (!product) {
+      throw new Error("A product in your cart is no longer available");
+    }
 
-    const quantity = Math.max(1, Number(item.quantity || 1));
+    const quantity = normalizeQuantity(item.quantity);
+    if (!quantity) throw new Error("Invalid product quantity");
     const selectedSize = String(item.selectedSize || "").trim().toUpperCase();
     const selected = getSelectedVariant(product, selectedSize);
 
@@ -60,8 +69,9 @@ const loadCheckoutCart = async (cartItems) => {
       throw new Error(`${product.name} is out of stock`);
     }
 
-    const price = Number(product.price?.sale || 0);
-    totalAmount += price * quantity;
+    pricing = addProductPricing(pricing, product, quantity);
+    const { originalPrice, salePrice, taxAmount, taxRate } =
+      getProductUnitPrices(product);
 
     checkoutItems.push({
       variant_id: String(selected.variantId),
@@ -72,6 +82,10 @@ const loadCheckoutCart = async (cartItems) => {
       quantity,
       selectedSize,
       selectedColor: String(item.selectedColor || ""),
+      originalPrice,
+      priceAtCheckout: salePrice,
+      taxRate,
+      taxAmount,
     });
   }
 
@@ -79,14 +93,19 @@ const loadCheckoutCart = async (cartItems) => {
     throw new Error("No valid products in cart");
   }
 
-  return { checkoutItems, sessionItems, totalAmount };
+  return { checkoutItems, sessionItems, ...pricing };
 };
 
 exports.createShiprocketCheckoutToken = async (req, res) => {
   try {
-    const { checkoutItems, sessionItems, totalAmount } =
+    const {
+      checkoutItems,
+      sessionItems,
+      totalAmount,
+      taxAmount,
+      payableAmount,
+    } =
       await loadCheckoutCart(req.body.cartItems);
-    const payableAmount = totalAmount;
     const frontendOrigin = getFrontendOrigin(req);
 
     const cartData = {
@@ -117,6 +136,7 @@ exports.createShiprocketCheckoutToken = async (req, res) => {
         user: req.user._id,
         cartItems: sessionItems,
         totalAmount,
+        taxAmount,
         payableAmount,
         status: "initiated",
         shiprocketResponse: checkoutResponse,
@@ -200,11 +220,14 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
         throw new Error("A checkout product is no longer available");
       }
 
+      const quantity = normalizeQuantity(item.quantity);
+      if (!quantity) throw new Error("Invalid checkout product quantity");
+
       const selected = getSelectedVariant(product, item.selectedSize);
       const availableStock = Number(
         selected?.variant?.stock ?? product.stock ?? 0
       );
-      if (!selected || availableStock < item.quantity) {
+      if (!selected || availableStock < quantity) {
         throw new Error(`${product.name} is out of stock`);
       }
 
@@ -212,11 +235,17 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
         buildOrderItemSnapshot(
           product,
           {
-            quantity: item.quantity,
+            quantity,
             selectedSize: item.selectedSize,
             selectedColor: item.selectedColor,
           },
-          Number(product.price?.sale || 0)
+          roundCurrency(
+            item.priceAtCheckout ?? getProductUnitPrices(product).salePrice
+          ),
+          {
+            taxRate: item.taxRate,
+            taxAmount: item.taxAmount,
+          }
         )
       );
     }
@@ -224,8 +253,8 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
     const user = await User.findById(req.user._id);
     const isPrepaid =
       String(details.payment_type || "").toUpperCase() !== "CASH_ON_DELIVERY";
-    const paidAmount = Number(details.total_amount_payable);
-    const payableAmount = Number.isFinite(paidAmount)
+    const paidAmount = roundCurrency(details.total_amount_payable);
+    const payableAmount = paidAmount > 0
       ? paidAmount
       : session.payableAmount;
 
@@ -234,6 +263,7 @@ exports.finalizeShiprocketCheckout = async (req, res) => {
       user: req.user._id,
       products,
       totalAmount: session.totalAmount,
+      taxAmount: session.taxAmount,
       payableAmount,
       paymentStatus: isPrepaid ? "Paid" : "Pending",
       paymentMethod: isPrepaid ? "Prepaid" : "COD",

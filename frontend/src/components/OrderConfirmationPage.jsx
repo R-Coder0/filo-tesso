@@ -6,7 +6,7 @@ const formatINR = (n) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(n || 0);
 
 const getLineItemTotal = (item) => {
@@ -39,6 +39,7 @@ const OrderConfirmationPage = () => {
     subtotal,
     discountRate,
     discountAmount,
+    taxAmount,
     totalAmount,
     address,
     payableAmount,
@@ -102,6 +103,12 @@ const OrderConfirmationPage = () => {
                 <span>- {formatINR(discountAmount)}</span>
               </div>
             )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">IGST (5%):</span>
+              <span className="font-semibold text-gray-900">
+                {formatINR(taxAmount)}
+              </span>
+            </div>
             <div className="flex justify-between border-t border-gray-200 pt-3 mt-2">
               <span className="text-lg font-semibold text-gray-900">
                 Total Payable:

@@ -8,6 +8,10 @@ const { buildOrderItemSnapshot } = require("../utils/orderItemSnapshot");
 const { getNextOrderNumber } = require("../utils/orderNumber");
 const { sendOrderPlacedEmails } = require("../utils/orderEmails");
 const { syncOrderToShiprocket } = require("../utils/shiprocket");
+const {
+  addProductPricing,
+  normalizeQuantity,
+} = require("../utils/orderPricing");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -25,14 +29,25 @@ exports.createOrder = async (req, res) => {
     const { cartItems } = req.body;
     const userId = req.user._id;
 
-    let totalAmount = 0;
+    let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
 
     for (const item of cartItems) {
       const product = await Product.findById(item._id);
 
-      if (!product) continue;
+      if (!product) {
+        return res.status(400).json({
+          success: false,
+          message: "A product in your cart is no longer available",
+        });
+      }
 
-      const qty = item.quantity || 1;
+      const qty = normalizeQuantity(item.quantity);
+      if (!qty) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid product quantity",
+        });
+      }
       const selectedSize = String(item.selectedSize || "").trim().toUpperCase();
       const selectedVariant = getVariantForSize(product, selectedSize);
       const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
@@ -52,11 +67,16 @@ exports.createOrder = async (req, res) => {
         });
       }
 
-      const price = product.price?.sale || 0;
-      totalAmount += price * qty;
+      pricing = addProductPricing(pricing, product, qty);
     }
 
-    const payableAmount = totalAmount;
+    const { totalAmount, taxAmount, payableAmount } = pricing;
+    if (payableAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid products in cart",
+      });
+    }
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(payableAmount * 100),
@@ -68,6 +88,7 @@ exports.createOrder = async (req, res) => {
       razorpay_order_id: razorpayOrder.id,
       user: userId,
       totalAmount,
+      taxAmount,
       payableAmount,
       status: "created",
     });
@@ -143,16 +164,27 @@ exports.verifyPayment = async (req, res) => {
       country: address?.country || "India",
     };
 
-    let totalAmount = 0;
+    let pricing = { totalAmount: 0, taxAmount: 0, payableAmount: 0 };
     const products = [];
 
     // ✅ RECALCULATE (MOST IMPORTANT FIX)
     for (const item of cartItems) {
       const product = await Product.findById(item._id);
 
-      if (!product) continue;
+      if (!product) {
+        return res.status(400).json({
+          success: false,
+          message: "A product in your cart is no longer available",
+        });
+      }
 
-      const qty = item.quantity || 1;
+      const qty = normalizeQuantity(item.quantity);
+      if (!qty) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid product quantity",
+        });
+      }
       const selectedSize = String(item.selectedSize || "").trim().toUpperCase();
       const selectedVariant = getVariantForSize(product, selectedSize);
       const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
@@ -172,11 +204,15 @@ exports.verifyPayment = async (req, res) => {
         });
       }
 
-      const price = product.price?.sale || 0;
+      pricing = addProductPricing(pricing, product, qty);
 
-      totalAmount += price * qty;
-
-      products.push(buildOrderItemSnapshot(product, { ...item, quantity: qty }, price));
+      products.push(
+        buildOrderItemSnapshot(
+          product,
+          { ...item, quantity: qty },
+          pricing.salePrice
+        )
+      );
     }
 
     if (!products.length) {
@@ -186,7 +222,7 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    const payableAmount = totalAmount;
+    const { totalAmount, taxAmount, payableAmount } = pricing;
 
     if (Math.abs(payableAmount - Number(payment.payableAmount)) > 0.01) {
       return res.status(400).json({
@@ -201,6 +237,7 @@ exports.verifyPayment = async (req, res) => {
       user: userId,
       products,
       totalAmount,
+      taxAmount,
       payableAmount,
       paymentStatus: "Paid",
       paymentMethod: "Prepaid",

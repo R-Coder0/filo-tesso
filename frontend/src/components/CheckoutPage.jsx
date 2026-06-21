@@ -11,18 +11,14 @@ import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
 
-// Static referral codes
-const REFERRAL_CODES = {
-  RISHABH10: 0.1, // 10% off
-  FRIEND5: 0.05,  // 5% off
-};
-
+const PRODUCT_TAX_RATE = 5;
+const roundCurrency = (value) => Math.round(Number(value || 0) * 100) / 100;
 
 const formatINR = (n) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(n || 0);
 
 const isAuthError = (error) => error?.response?.status === 401;
@@ -140,8 +136,6 @@ const CheckoutPage = () => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
 
-  const [referralCode, setReferralCode] = useState("");
-  const [referralDiscount, setReferralDiscount] = useState(0);
   const [shiprocketOpening, setShiprocketOpening] = useState(false);
   const [shiprocketError, setShiprocketError] = useState("");
 
@@ -187,7 +181,13 @@ const CheckoutPage = () => {
   /* -----------------------------
      PRICING
   ------------------------------*/
-  const { subtotal, discountRate, discountAmount, discountedTotal } = useMemo(() => {
+  const {
+    subtotal,
+    discountRate,
+    discountAmount,
+    discountedTotal,
+    taxAmount,
+  } = useMemo(() => {
     const totals = (cartItems || []).reduce(
       (acc, item) => {
         const quantity = Number(item.quantity || 0);
@@ -196,9 +196,11 @@ const CheckoutPage = () => {
 
         acc.saleTotal += salePrice * quantity;
         acc.originalTotal += Math.max(originalPrice, salePrice) * quantity;
+        acc.taxTotal +=
+          roundCurrency((salePrice * PRODUCT_TAX_RATE) / 100) * quantity;
         return acc;
       },
-      { originalTotal: 0, saleTotal: 0 }
+      { originalTotal: 0, saleTotal: 0, taxTotal: 0 }
     );
 
     const saleTotal = totals.saleTotal || Number(initialSubtotal || 0);
@@ -210,15 +212,13 @@ const CheckoutPage = () => {
       discountRate: 0,
       discountAmount: productDiscount,
       discountedTotal: saleTotal,
+      taxAmount: roundCurrency(totals.taxTotal),
     };
   }, [cartItems, initialSubtotal]);
 
   const saleDiscount = discountAmount;
 
-  // Referral discount calculations
-  const referralAmount = Math.floor(discountedTotal * referralDiscount);
-  const finalAfterReferral = discountedTotal - referralAmount;
-  const payableAmount = Math.max(0, finalAfterReferral);
+  const payableAmount = roundCurrency(discountedTotal + taxAmount);
 
   /*   const payableAmount = Math.max(0, (discountedTotal || 0) - effectiveRedeem);
    */
@@ -243,18 +243,6 @@ const CheckoutPage = () => {
       postalCode: addr.pincode || "",
     });
   };
-  const applyReferral = () => {
-    const code = referralCode.trim().toUpperCase();
-    if (REFERRAL_CODES[code]) {
-      setReferralDiscount(REFERRAL_CODES[code]);
-      toast.success(`Referral code applied! You got ${REFERRAL_CODES[code] * 100}% off.`);
-    } else {
-      setReferralDiscount(0);
-      toast.error("Invalid referral code.");
-    }
-  };
-
-
   const updateQuantity = (productId, delta) => {
     setCartItems((prev) =>
       prev.map((item) =>
@@ -364,9 +352,6 @@ const CheckoutPage = () => {
       }));
 
       form.append("products", JSON.stringify(products));
-      form.append("discountRate", String(discountRate));
-      form.append("discountedTotal", String(discountedTotal));
-      form.append("payableAmount", String(payableAmount));
       form.append("address", JSON.stringify(address));
 
       // ✅ YEH SECTION ADD KARO - Side information
@@ -393,7 +378,8 @@ const CheckoutPage = () => {
         subtotal,
         discountRate,
         discountAmount,
-        totalAmount: discountedTotal,
+        taxAmount: order.taxAmount ?? taxAmount,
+        totalAmount: order.totalAmount ?? subtotal,
         address,
         payableAmount: order.payableAmount ?? payableAmount,
       };
@@ -426,7 +412,6 @@ const CheckoutPage = () => {
         {
           cartItems,
           address,
-          totalAmount: discountedTotal,
           // ✅ YEH LINE ADD KARO
           selectedSide: customUploads?.isCustomize ? customUploads.selectedSide : "",
 
@@ -475,9 +460,10 @@ const CheckoutPage = () => {
               subtotal,
               discountRate,
               discountAmount,
-              totalAmount: discountedTotal,
+              taxAmount: finalOrder.taxAmount ?? taxAmount,
+              totalAmount: finalOrder.totalAmount ?? subtotal,
               address,
-              payableAmount,
+              payableAmount: finalOrder.payableAmount ?? payableAmount,
             };
 
             navigate("/order-confirmation", { state: orderDetails });
@@ -543,6 +529,9 @@ const CheckoutPage = () => {
             <p className="mt-4 text-sm font-medium text-gray-600">
               Opening secure checkout...
             </p>
+            <p className="mt-2 text-xs text-gray-500">
+              5% IGST is included in the final checkout amount.
+            </p>
           </div>
         )}
       </div>
@@ -552,7 +541,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid lg:grid-cols-3 gap-8">
-        {/* LEFT: Address + Upload + Referral */}
+        {/* LEFT: Address + Upload */}
         <div className="lg:col-span-2 space-y-8">
           {/* Saved Address Selection */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -662,33 +651,6 @@ const CheckoutPage = () => {
 
 
 
-          {/* Referral */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">Referral Code</h2>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Referral Code"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 w-40 focus:ring-2 focus:ring-black outline-none"
-                />
-                <button
-                  onClick={applyReferral}
-                  className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-black transition"
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-            {referralDiscount > 0 && (
-              <p className="text-sm text-green-700 mt-2">
-                Referral applied ({referralDiscount * 100}% off)
-              </p>
-            )}
-          </div>
-
         </div>
 
         {/* RIGHT: Order Summary + Payments */}
@@ -742,12 +704,9 @@ const CheckoutPage = () => {
                   <span>{formatINR(discountedTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Referral Discount</span>
-                  <span className="text-green-700 font-medium">
-                    − {formatINR(referralAmount)}
-                  </span>
+                  <span>IGST ({PRODUCT_TAX_RATE}%)</span>
+                  <span>{formatINR(taxAmount)}</span>
                 </div>
-
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Payable</span>
                   <span>{formatINR(payableAmount)}</span>
