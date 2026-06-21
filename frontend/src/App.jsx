@@ -90,7 +90,7 @@ function App() {
 
   return (
     <>
-      <ClientHelmet>
+      <ClientHelmet helmetKey={`${location.pathname}${location.search}`}>
         <title>{pageSeo.title}</title>
         <meta name="title" content={pageSeo.title} />
         <meta name="description" content={pageSeo.description} />

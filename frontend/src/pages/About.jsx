@@ -1,22 +1,9 @@
 import React from "react";
-import ClientHelmet from "../components/ClientHelmet";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "../assets/1hero.webp";
 import storyImage from "../assets/storyimage/5.jpg";
 import detailImage from "../assets/2hero.webp";
-
-const keywords = [
-  "about filo teso",
-  "filo teso streetwear",
-  "streetwear clothing brand india",
-  "premium streetwear brand india",
-  "indian streetwear brand",
-  "filo teso clothing",
-  "premium graphic tees india",
-  "oversized t shirts india",
-  "modern streetwear fashion",
-];
 
 const qualityPoints = [
   "Premium fabrics selected for everyday comfort",
@@ -43,37 +30,6 @@ const brandValues = [
 export default function AboutPage() {
   return (
     <>
-      <ClientHelmet>
-        <title>
-          About Filo Teso | Premium Streetwear Clothing Brand in India
-        </title>
-        <meta
-          name="title"
-          content="About Filo Teso | Premium Streetwear Clothing Brand in India"
-        />
-        <meta
-          name="description"
-          content="Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion."
-        />
-        <meta name="keywords" content={keywords.join(", ")} />
-        <meta
-          property="og:title"
-          content="About Filo Teso | Premium Streetwear Clothing Brand in India"
-        />
-        <meta
-          property="og:description"
-          content="Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion."
-        />
-        <meta
-          name="twitter:title"
-          content="About Filo Teso | Premium Streetwear Clothing Brand in India"
-        />
-        <meta
-          name="twitter:description"
-          content="Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion."
-        />
-      </ClientHelmet>
-
       <div className="bg-white text-gray-950">
         <section className="relative min-h-[58vh] overflow-hidden bg-black text-white">
           <img

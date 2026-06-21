@@ -1,5 +1,4 @@
 import React from "react";
-import ClientHelmet from "../components/ClientHelmet";
 import {
   Clock,
   HelpCircle,
@@ -7,16 +6,6 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
-
-const keywords = [
-  "contact filo teso",
-  "filo teso customer support",
-  "contact streetwear brand india",
-  "filo teso contact information",
-  "customer service filo teso",
-  "streetwear clothing support",
-  "filo teso help",
-];
 
 const supportItems = [
   "Order updates",
@@ -64,35 +53,6 @@ export default function ContactPage() {
 
   return (
     <>
-      <ClientHelmet>
-        <title>Contact Filo Teso | Customer Support & Store Information</title>
-        <meta
-          name="title"
-          content="Contact Filo Teso | Customer Support & Store Information"
-        />
-        <meta
-          name="description"
-          content="Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs."
-        />
-        <meta name="keywords" content={keywords.join(", ")} />
-        <meta
-          property="og:title"
-          content="Contact Filo Teso | Customer Support & Store Information"
-        />
-        <meta
-          property="og:description"
-          content="Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs."
-        />
-        <meta
-          name="twitter:title"
-          content="Contact Filo Teso | Customer Support & Store Information"
-        />
-        <meta
-          name="twitter:description"
-          content="Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs."
-        />
-      </ClientHelmet>
-
       <div className="bg-white text-gray-950">
         <section className="bg-black text-white">
           <div className="mx-auto max-w-[1700px] px-4 py-16 sm:px-6 lg:px-8 lg:py-24">

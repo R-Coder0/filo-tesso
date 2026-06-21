@@ -7,7 +7,6 @@ import {
   Sparkles,
   Tag,
 } from "lucide-react";
-import ClientHelmet from "../components/ClientHelmet";
 
 const WP_API_BASE =
   import.meta.env.VITE_WP_API_BASE ||
@@ -159,18 +158,6 @@ export default function BlogPage() {
 
   return (
     <main className="min-h-screen w-full bg-white text-neutral-950">
-      <ClientHelmet>
-        <title>Filo Teso Blog | Streetwear Fashion Guides & Style Notes</title>
-        <meta
-          name="description"
-          content="Read the Filo Teso blog for streetwear fashion guides, styling ideas, product stories, and modern clothing inspiration."
-        />
-        <meta
-          name="keywords"
-          content="filo teso blog, streetwear fashion guides, modern streetwear fashion, premium streetwear brand india, oversized t shirts india, premium graphic tees india"
-        />
-      </ClientHelmet>
-
       <section className="relative overflow-hidden bg-neutral-950">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_36%),linear-gradient(135deg,#050505_0%,#121212_48%,#2a2a2a_100%)]" />
 

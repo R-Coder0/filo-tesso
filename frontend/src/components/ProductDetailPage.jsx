@@ -287,7 +287,7 @@ const ProductDetailPage = () => {
 
   return (
     <>
-      <ClientHelmet>
+      <ClientHelmet helmetKey={`product-${product.slug || product._id || id}`}>
         <title>{metaTitle}</title>
         <meta name="title" content={metaTitle} />
         <meta name="description" content={metaDescription} />

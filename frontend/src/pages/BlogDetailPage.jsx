@@ -286,7 +286,7 @@ export default function BlogDetailPage() {
 
   return (
     <main className="min-h-screen bg-white text-neutral-950">
-      <ClientHelmet>
+      <ClientHelmet helmetKey={`blog-${post.slug}`}>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={metaKeywords} />
