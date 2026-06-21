@@ -968,7 +968,12 @@ function ProductTile({ product, apiUrl }) {
   return (
     <article className="group min-w-0">
       <div className="relative overflow-hidden bg-gray-100">
-        <Link to={getProductPath(product)} className="block">
+        <Link
+          to={getProductPath(product)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
           <div className="relative aspect-[3/4]">
             <img
               src={mainSrc}
@@ -1007,7 +1012,12 @@ function ProductTile({ product, apiUrl }) {
         </button>
       </div>
 
-      <Link to={getProductPath(product)} className="mt-3 block min-w-0">
+      <Link
+        to={getProductPath(product)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 block min-w-0"
+      >
         <h3 className="truncate text-sm font-semibold leading-5 text-gray-900 md:text-base">
           {product.name || "Unnamed Product"}
         </h3>

@@ -11,16 +11,16 @@ export const homeSeo = {
 export const routeSeo = {
   "/": homeSeo,
   "/about": {
-    title: "About Filo Teso | Premium Streetwear Clothing Brand in India",
+    title: "About Filo Teso | Our Story & Vision for Modern Streetwear",
     description:
-      "Learn about Filo Teso, a premium streetwear clothing brand in India focused on oversized T-shirts, graphic tees, quality craftsmanship, and modern streetwear fashion.",
+      "Learn how Filo Teso started, what inspires our designs, and why we're building a modern Indian streetwear brand focused on quality, comfort, and self-expression.",
     keywords:
       "about filo teso, filo teso streetwear, streetwear clothing brand india, premium streetwear brand india, indian streetwear brand, filo teso clothing, premium graphic tees india, oversized t shirts india, modern streetwear fashion",
   },
   "/contact": {
-    title: "Contact Filo Teso | Customer Support & Store Information",
+    title: "Contact Filo Teso | We're Here to Help",
     description:
-      "Get in touch with Filo Teso for product inquiries, order support, collaborations, or general questions. We're here to help with all your streetwear needs.",
+      "Have a question about an order, product, sizing, or collaboration? Get in touch with the Filo Teso team. We'd love to hear from you.",
     keywords:
       "contact filo teso, filo teso customer support, contact streetwear brand india, filo teso contact information, customer service filo teso, streetwear clothing support, filo teso help",
   },

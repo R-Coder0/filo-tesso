@@ -323,7 +323,12 @@ export default function HomeNewPopular() {
                 return (
                 <article key={product._id || product.id} className="group">
                   <div className="relative overflow-hidden bg-gray-100">
-                    <Link to={getProductPath(product)} className="block">
+                    <Link
+                      to={getProductPath(product)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
                       <div className="relative aspect-[4/5]">
                         <img
                           src={mainSrc}
@@ -361,7 +366,12 @@ export default function HomeNewPopular() {
                     </button>
                   </div>
 
-                  <Link to={getProductPath(product)} className="mt-3 block">
+                  <Link
+                    to={getProductPath(product)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 block"
+                  >
                     <h3 className="line-clamp-1 text-sm font-semibold text-gray-900 md:text-base">
                       {product.name || "Product"}
                     </h3>

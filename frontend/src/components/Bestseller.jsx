@@ -266,7 +266,12 @@ function BestCard({ product, apiUrl }) {
     <div className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 flex flex-col">
 
       {/* Image */}
-      <Link to={getProductPath(product)} className="block relative overflow-hidden bg-gray-50">
+      <Link
+        to={getProductPath(product)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block relative overflow-hidden bg-gray-50"
+      >
         <div className="relative aspect-[3/4] w-full">
           <img
             src={mainSrc}
@@ -305,7 +310,12 @@ function BestCard({ product, apiUrl }) {
       </Link>
 
       {/* Info */}
-      <Link to={getProductPath(product)} className="px-3 pt-2.5 pb-1 flex flex-col gap-1 flex-1">
+      <Link
+        to={getProductPath(product)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-3 pt-2.5 pb-1 flex flex-col gap-1 flex-1"
+      >
         {category && (
           <p className="text-[10px] uppercase tracking-widest text-gray-400 truncate">
             {category}

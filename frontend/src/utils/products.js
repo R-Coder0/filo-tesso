@@ -37,3 +37,14 @@ export const getProductIdentifier = (product) =>
 
 export const getProductPath = (product) =>
   `/product/${encodeURIComponent(getProductIdentifier(product) || "")}`;
+
+export const openProductInNewTab = (product) => {
+  if (typeof window === "undefined") return;
+
+  const productTab = window.open(
+    getProductPath(product),
+    "_blank",
+    "noopener,noreferrer"
+  );
+  if (productTab) productTab.opener = null;
+};

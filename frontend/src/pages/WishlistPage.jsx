@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
-  getProductPath,
+  openProductInNewTab,
   resolveImageSrc,
 } from "../utils/products";
 
@@ -63,7 +63,7 @@ const WishlistPage = () => {
             <img
               src={resolveImageSrc(apiUrl, item.image)}
               alt={item.name || "Wishlist product"}
-              onClick={() => navigate(getProductPath(item))}
+              onClick={() => openProductInNewTab(item)}
               className="aspect-[4/5] w-full cursor-pointer object-cover transition duration-500 group-hover:scale-105"
               loading="lazy"
             />

@@ -8,7 +8,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
 import { useWishlist } from "../context/WishlistContext";
 import logoImg from "../assets/logo.png";
-import { extractProducts, getProductPath } from "../utils/products";
+import { extractProducts, openProductInNewTab } from "../utils/products";
 import {
   CATEGORY_LINKS_BY_GENDER,
   GENDER_TABS,
@@ -193,7 +193,7 @@ const isCategoryActive = (item) => {
 
     const handleSuggestionClick = (product) => {
       clearSearch();
-      navigate(getProductPath(product));
+      openProductInNewTab(product);
 
       if (isMobile) setShowSearch(false);
     };

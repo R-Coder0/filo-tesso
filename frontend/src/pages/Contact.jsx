@@ -9,38 +9,38 @@ import {
 
 const supportItems = [
   "Order updates",
-  "Shipping information",
-  "Exchanges or returns",
-  "Product details",
+  "Shipping and delivery questions",
+  "Exchange and return requests",
+  "Product information",
   "Sizing guidance",
-  "Payment issues",
+  "Payment-related concerns",
 ];
 
 const faqs = [
   {
-    question: "How long does it usually take to get a reply?",
+    question: "How long does it take to receive a response?",
     answer:
-      "We try to respond as quickly as possible. In most cases, you'll hear back from us within 24–48 business hours.",
+      "We usually reply within 24–48 business hours, and often much sooner during working days.",
   },
   {
     question: "Can I contact you before placing an order?",
     answer:
-      "Of course. If you have questions about sizing, products, or anything else, feel free to reach out before making a purchase.",
+      "Absolutely. If you have questions about sizing, products, shipping, or anything else, feel free to reach out before making a purchase.",
   },
   {
     question: "What if I need help after receiving my order?",
     answer:
-      "No problem. If you have any concerns regarding your order, simply contact us and we'll do our best to help.",
+      "No problem. If there's an issue with your order or you need assistance after delivery, we'll do our best to help.",
   },
   {
     question: "Do you accept collaboration requests?",
     answer:
-      "Yes. We're always interested in connecting with creators, photographers, influencers, and people who genuinely love streetwear culture.",
+      "Yes. We're always interested in hearing from creators, photographers, influencers, and people who genuinely connect with our brand.",
   },
   {
-    question: "What's the best way to contact Filo Teso?",
+    question: "What's the fastest way to contact Filo Teso?",
     answer:
-      "Email is usually the fastest and easiest way to get in touch. We'll get back to you as soon as possible.",
+      "Email is usually the best option for detailed queries, while WhatsApp is great for quick assistance during business hours.",
   },
 ];
 
@@ -68,23 +68,17 @@ export default function ContactPage() {
                   Let's Talk
                 </h2>
                 <div className="mt-6 max-w-3xl space-y-5 text-base leading-8 text-white/78">
+                  <p className="text-lg font-semibold text-white">Got a question?</p>
                   <p>
-                    Whether you've got a question about a product, need help
-                    with an order, or simply want to know more about Filo Teso,
-                    we'd love to hear from you.
+                    Whether you're checking on an order, need help choosing the
+                    right size, or simply want to know more about Filo Teso,
+                    we're happy to help.
                   </p>
                   <p>
-                    We're real people behind the brand, and we genuinely enjoy
-                    connecting with our customers. So don't be afraid to get in
-                    touch if you have any thoughts.
+                    We're a growing brand, but one thing hasn't changed since day
+                    one—we genuinely enjoy hearing from the people who support us.
                   </p>
-                  <p>Maybe you're unsure about sizing.</p>
-                  <p>Maybe you're waiting for an order update.</p>
-                  <p>
-                    Maybe you just discovered Filo Teso and want to know what
-                    we're all about.
-                  </p>
-                  <p>Whatever the reason, we're here to help.</p>
+                  <p>So if something's on your mind, don't hesitate to reach out.</p>
                 </div>
               </div>
 
@@ -98,20 +92,27 @@ export default function ContactPage() {
                     className="flex items-start gap-3 transition hover:text-white"
                   >
                     <Mail className="mt-1 h-5 w-5 shrink-0 text-[#ef6a4d]" />
-                    <span>Email: {email}</span>
+                    <span>
+                      <strong className="block text-white">Email</strong>
+                      {email}
+                    </span>
                   </a>
                   <a
                     href={`tel:${phoneDial}`}
                     className="flex items-start gap-3 transition hover:text-white"
                   >
                     <Phone className="mt-1 h-5 w-5 shrink-0 text-[#ef6a4d]" />
-                    <span>Phone: {phoneDisplay}</span>
+                    <span>
+                      <strong className="block text-white">Phone</strong>
+                      {phoneDisplay}
+                    </span>
                   </a>
                   <div className="flex items-start gap-3">
                     <Clock className="mt-1 h-5 w-5 shrink-0 text-[#ef6a4d]" />
                     <span>
-                      Business Hours: Monday to Saturday (working days) •
-                      10:00 AM – 6:00 PM
+                      <strong className="block text-white">Business Hours</strong>
+                      Monday to Saturday
+                      <span className="block">10:00 AM – 6:00 PM</span>
                     </span>
                   </div>
                   <a
@@ -121,7 +122,11 @@ export default function ContactPage() {
                     className="flex items-start gap-3 transition hover:text-white"
                   >
                     <MessageCircle className="mt-1 h-5 w-5 shrink-0 text-[#ef6a4d]" />
-                    <span>WhatsApp : Chat on WhatsApp</span>
+                    <span>
+                      <strong className="block text-white">WhatsApp</strong>
+                      Feel free to message us on WhatsApp for quick assistance
+                      during business hours.
+                    </span>
                   </a>
                 </div>
               </div>
@@ -136,15 +141,12 @@ export default function ContactPage() {
                 Need Help With an Order?
               </h2>
               <p className="mt-5 text-base leading-8 text-gray-700">
-                Online shopping should be simple, but we know questions can come
-                up from time to time.
+                If you're contacting us about an existing order, we're happy to
+                assist with:
               </p>
             </div>
 
             <div>
-              <p className="text-base leading-8 text-gray-700">
-                If you need help with:
-              </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 {supportItems.map((item) => (
                   <div
@@ -158,12 +160,13 @@ export default function ContactPage() {
               </div>
 
               <div className="mt-7 space-y-5 text-base leading-8 text-gray-700">
-                <p>Simply message us, and we'll try our best to direct you.</p>
                 <p>
-                  No complicated support tickets. No automated responses that
-                  make you even more perplexed.
+                  Just send us a message and we'll get back to you as soon as
+                  possible.
                 </p>
-                <p>Just straightforward help when you need it.</p>
+                <p>No complicated forms.</p>
+                <p>No endless back-and-forth.</p>
+                <p>Just straightforward support from real people.</p>
               </div>
             </div>
           </div>
@@ -174,49 +177,40 @@ export default function ContactPage() {
             <div className="grid gap-10 lg:grid-cols-[1fr_1fr]">
               <div>
                 <h2 className="mt-3 text-3xl font-bold text-gray-950 sm:text-4xl">
-                  A Small Brand That Actually Listens
+                  Collaborations & Partnerships
                 </h2>
                 <div className="mt-6 space-y-5 text-base leading-8 text-gray-700">
                   <p>
-                    One of the reasons we started Filo Teso was because we
-                    wanted to build more than just a clothing brand.
+                    Are you a creator, photographer, stylist, influencer, or
+                    someone who shares our love for streetwear culture?
                   </p>
                   <p>
-                    We wanted to create something people could genuinely connect
-                    with.
+                    We're always open to meaningful collaborations and creative
+                    partnerships that align with the Filo Teso brand.
                   </p>
                   <p>
-                    Every message, suggestion, review, and piece of feedback
-                    helps us improve. Whether it's a compliment, a concern, or
-                    an idea you'd like to share, we appreciate hearing from the
-                    people who support our journey.
-                  </p>
-                  <p>
-                    As an expanding streetwear apparel company in India, we're
-                    always learning, developing, and attempting to give our
-                    clients better experiences.
+                    If you have an idea you'd like to discuss, we'd love to hear
+                    from you.
                   </p>
                 </div>
               </div>
 
               <div>
                 <h2 className="mt-3 text-3xl font-bold text-gray-950 sm:text-4xl">
-                  Collaborations & Partnerships
+                  A Quick Thank You
                 </h2>
                 <div className="mt-6 space-y-5 text-base leading-8 text-gray-700">
                   <p>
-                    If you're a creator, photographer, stylist, influencer, or
-                    someone who shares our love for streetwear fashion, we'd love
-                    to hear from you.
+                    Every order, message, review, and recommendation helps us grow.
                   </p>
                   <p>
-                    We're always open to exploring meaningful collaborations and
-                    creative partnerships that align with the Filo Teso vision.
+                    We're grateful for everyone who chooses to support Filo Teso
+                    and be part of this journey.
                   </p>
                   <p>
-                    Feel free to get in touch and tell us a little about
-                    yourself and your idea.
+                    Thank you for being here.
                   </p>
+                  <p>We look forward to hearing from you.</p>
                 </div>
               </div>
             </div>
@@ -226,19 +220,13 @@ export default function ContactPage() {
         <section className="border-y border-gray-200">
           <div className="mx-auto max-w-[1180px] px-4 py-14 text-center sm:px-6 lg:py-20">
             <h2 className="mt-3 text-3xl font-bold text-gray-950 sm:text-4xl">
-              Thank You for Being Here
+              Contact Filo Teso
             </h2>
             <div className="mx-auto mt-6 max-w-4xl space-y-5 text-base leading-8 text-gray-700">
               <p>
-                Every order placed, every message sent, and every person who
-                chooses to support Filo Teso means a lot to us.
+                Have a question about an order, product, sizing, or collaboration?
+                Get in touch with the Filo Teso team. We'd love to hear from you.
               </p>
-              <p>
-                We're still growing, still learning, and still building the
-                brand we dreamed of creating.
-              </p>
-              <p>Thank you for being part of that journey.</p>
-              <p>We look forward to hearing from you.</p>
             </div>
           </div>
         </section>
