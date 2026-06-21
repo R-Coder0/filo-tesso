@@ -265,7 +265,7 @@ function App() {
       </main>
 
       <Suspense fallback={null}>
-        {!isAdminRoute && <Footer />}
+        {!isAdminRoute && <Footer showSeoContent={location.pathname === "/"} />}
         {!isAdminRoute && <FloatingWhatsApp />}
       </Suspense>
     </>

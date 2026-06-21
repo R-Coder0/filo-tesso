@@ -3,9 +3,9 @@ export const SITE_ORIGIN = "https://filoteso.co.in";
 export const homeSeo = {
   title: "Filo Teso | Premium Streetwear Clothing Brand in India",
   description:
-    "Shop Filo Teso for premium streetwear, graphic tees, oversized fits, and everyday styles made for comfort, quality, and self-expression.",
+    "Discover premium streetwear clothing by Filo Teso. Shop oversized T-shirts, graphic tees, and modern essentials designed for comfort, quality, and self-expression.",
   keywords:
-    "streetwear clothing brand india, premium streetwear brand india, graphic streetwear clothing, streetwear fashion india, premium graphic t shirts india, urban streetwear brand india, modern streetwear clothing, graphic tees india, premium fashion brand india, filo teso",
+    "streetwear clothing brand india, premium streetwear brand india, graphic streetwear clothing, streetwear fashion india, premium graphic t shirts india, urban streetwear brand india, modern streetwear clothing, graphic tees india, premium fashion brand india, filo teso, Filo Teso T-Shirts, Filo Teso Oversized T-Shirts, Filo Teso Graphic Tees, Filo Teso Streetwear",
 };
 
 export const routeSeo = {

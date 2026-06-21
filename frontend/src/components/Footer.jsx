@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import logoImg from "../assets/logowhite.png";
 import { CATEGORY_LINKS_BY_GENDER } from "../utils/navigationCategories";
 
-export default function Footer() {
+export default function Footer({ showSeoContent = false }) {
   const quickLinks = [
     { label: "Contact Us", to: "/contact" },
     {
@@ -28,34 +28,29 @@ export default function Footer() {
 
   const faqs = [
     {
-      question: "What distinguishes Filo Teso from other streetwear companies?",
+      question: "What makes Filo Teso different from other streetwear brands in India?",
       answer:
-        "Filo Teso combines premium quality, modern design, and comfortable fits to create apparel that stands out while remaining practical for everyday wear.",
+        "Filo Teso focuses on premium-quality fabrics, original graphic designs, comfortable oversized fits, and clothing designed for everyday wear rather than short-term trends.",
     },
     {
       question: "Do you offer oversized T-shirts?",
       answer:
-        "Yes, our collection includes oversized styles designed for comfort, versatility, and modern streetwear fashion.",
+        "Yes. Oversized T-shirts are a key part of our collection and are designed to deliver both comfort and a modern streetwear aesthetic.",
     },
     {
       question: "Are your graphic tees made with quality materials?",
       answer:
-        "We focus on premium fabrics and quality craftsmanship to ensure comfort, durability, and long-lasting value.",
+        "Yes. We use carefully selected fabrics and focus on quality craftsmanship to ensure comfort, durability, and long-lasting wear.",
+    },
+    {
+      question: "Can I style Filo Teso clothing for everyday outfits?",
+      answer:
+        "Absolutely. Our oversized T-shirts and graphic tees pair well with cargos, denim, joggers, shorts, and other casual wardrobe essentials.",
     },
     {
       question: "Do you deliver across India?",
       answer:
-        "Yes, we provide delivery services across India so customers can enjoy our products wherever they are.",
-    },
-    {
-      question: "Will more products be added in the future?",
-      answer:
-        "Absolutely. We plan to expand our collections with new categories, styles, and fashion essentials.",
-    },
-    {
-      question: "Why choose a premium streetwear brand?",
-      answer:
-        "Premium streetwear offers better quality, unique designs, enhanced comfort, and greater value compared to standard fashion products.",
+        "Yes. We offer delivery across India so customers can enjoy Filo Teso products wherever they are.",
     },
   ];
 
@@ -230,260 +225,228 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* SEO Content Section */}
-      <div className="max-w-[1700px] mx-auto border-b border-gray-800 px-4 sm:px-6 lg:px-8 py-10">
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-              Premium Streetwear Brand in India for Bold Everyday Style
-            </h1>
-
-            <div className="mt-4 space-y-4 leading-7 text-gray-400">
-              <p>
-                Welcome to Filo Teso.
-              </p>
-
-              <p>
-                We're not here to tell you that we're changing fashion or
-                reinventing streetwear. The truth is much simpler than that.
-              </p>
-
-              <p>
-                We started Filo Teso because we wanted clothes that felt good to
-                wear, looked different from everything else in the market, and
-                actually reflected the people wearing them.
-              </p>
-
-              <p>
-                As a growing streetwear clothing brand India shoppers are
-                discovering, our focus has always been on creating pieces that
-                combine comfort, quality, and individuality. Whether it's bold
-                graphics, oversized fits, or everyday essentials, we believe
-                clothing should feel like an extension of your personality—not
-                just something hanging in your wardrobe.
-              </p>
-
-              <p>
-                Fashion trends come and go, but confidence never goes out of
-                style. That's why every collection at Filo Teso is designed with
-                real people in mind. The people heading to college, grabbing
-                coffee with friends, travelling on weekends, working on creative
-                projects, or simply looking for something that feels authentic.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-white">
-              Explore Our Streetwear Collection
-            </h3>
-
-            <div className="mt-3 space-y-4 leading-7 text-gray-400">
-              <p>
-                When people think about streetwear, they often imagine loud
-                designs and short-lived trends.
-              </p>
-
-              <p>For us, streetwear is different.</p>
-
-              <p>
-                It's about wearing what feels right. It's about comfort,
-                confidence, and having the freedom to express yourself however
-                you want.
-              </p>
-
-              <p>
-                As a premium streetwear brand India customers can connect with,
-                we focus on creating clothing that's easy to wear and hard to
-                forget. Some people love minimal looks. Others prefer bold
-                statement pieces. Most of us switch between both depending on
-                the day.
-              </p>
-
-              <p>
-                That's why our collections are designed to offer a mix of
-                versatility and individuality.
-              </p>
-
-              <p>
-                Whether you're looking for graphic streetwear clothing,
-                oversized silhouettes, or modern everyday essentials, you'll
-                find pieces designed to fit naturally into your lifestyle.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-white">
-              Why Choose Filo Teso
-            </h3>
-
-            <div className="mt-4 grid gap-5 md:grid-cols-2">
-              <div className="rounded-2xl border border-gray-800 p-5">
-                <h4 className="font-semibold text-white">
-                  Premium Quality You Can Feel
-                </h4>
-                <p className="mt-2 leading-7 text-gray-400">
-                  Let's be honest. Most of us have bought clothes that looked
-                  amazing online but didn't feel the same after a few washes.
-                  We've been there too. That's one of the reasons quality sits
-                  at the centre of everything we create. From fabric selection
-                  to final production, every detail matters. We want every piece
-                  to feel just as good months later as it did on the first day.
-                  As a streetwear clothing brand India customers can trust,
-                  we're committed to creating products that aren't just stylish
-                  but built to last.
+      {/* Long-form homepage content intentionally stays off inner pages. */}
+      {showSeoContent && (
+        <section className="mx-auto max-w-[1700px] border-b border-gray-800 px-4 py-10 sm:px-6 lg:px-8">
+          <div className="space-y-9 leading-7 text-gray-400">
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+                Premium Streetwear Clothing Brand in India
+              </h1>
+              <div className="mt-4 space-y-4">
+                <p>Welcome to Filo Teso.</p>
+                <p>
+                  We didn't start Filo Teso to chase fashion trends. We started
+                  it because we wanted clothing that felt good, looked different,
+                  and stayed relevant long after the hype faded.
                 </p>
-              </div>
-
-              <div className="rounded-2xl border border-gray-800 p-5">
-                <h4 className="font-semibold text-white">
-                  Unique Graphic Designs
-                </h4>
-                <p className="mt-2 leading-7 text-gray-400">
-                  Some designs are forgotten the moment you see them. Others
-                  stay with you. Our goal has always been to create designs that
-                  people remember. That's why our collections of graphic tees
-                  India shoppers love are built around originality rather than
-                  simply following trends. Every graphic is created with the
-                  idea that fashion should feel personal. Whether it's bold
-                  artwork, symbolic designs, or clean modern graphics, each
-                  piece is designed to help you express yourself.
+                <p>
+                  Like most people, we've bought T-shirts that looked amazing
+                  online but felt disappointing once they arrived. Sometimes the
+                  quality wasn't there. Sometimes the fit felt off. And sometimes
+                  the design looked exactly like everything else already
+                  available.
                 </p>
-              </div>
-
-              <div className="rounded-2xl border border-gray-800 p-5">
-                <h4 className="font-semibold text-white">
-                  Comfort Meets Contemporary Fashion
-                </h4>
-                <p className="mt-2 leading-7 text-gray-400">
-                  Comfort shouldn't be something you have to sacrifice for
-                  style. That's why oversized fits have become such an important
-                  part of modern streetwear clothing. Our collections are
-                  designed to give you room to move, relax, and live comfortably
-                  while still looking put together. Whether you're styling your
-                  outfit with cargos, denim, joggers, or shorts, the goal is
-                  always the same—effortless confidence.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-gray-800 p-5">
-                <h4 className="font-semibold text-white">
-                  Fashion Built Around Individuality
-                </h4>
-                <p className="mt-2 leading-7 text-gray-400">
-                  One thing we've learned is that no two people wear streetwear
-                  the same way. Some prefer subtle looks. Others want to stand
-                  out. Both approaches are valid. Streetwear has always been
-                  about self-expression, and that's something we never want to
-                  lose. Every collection is designed to give people the freedom
-                  to create their own style without feeling limited by trends or
-                  expectations.
+                <p>That experience pushed us to create something different.</p>
+                <p>
+                  Today, Filo Teso is a growing streetwear clothing brand in India
+                  focused on premium quality, original design, and everyday
+                  comfort. From oversized T-shirts and graphic tees to modern
+                  wardrobe essentials, every piece is created with the belief that
+                  fashion should feel personal.
                 </p>
               </div>
             </div>
-          </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-white">
-              Premium Graphic Tees Designed for Everyday Wear
-            </h3>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Why Choose Filo Teso?
+              </h2>
+              <div className="mt-4 grid gap-5 lg:grid-cols-3">
+                <article className="rounded-2xl border border-gray-800 p-5">
+                  <h3 className="font-semibold text-white">
+                    Premium Quality That Lasts
+                  </h3>
+                  <div className="mt-2 space-y-3">
+                    <p>Good clothing shouldn't stop feeling good after a few washes.</p>
+                    <p>
+                      That's why quality remains one of the most important parts
+                      of everything we create. From fabric selection to final
+                      production, we focus on the details that make a difference
+                      over time.
+                    </p>
+                    <p>
+                      Our goal is simple: create clothing that you'll still enjoy
+                      wearing months from now, not just on the day it arrives.
+                    </p>
+                  </div>
+                </article>
 
-            <div className="mt-3 space-y-4 leading-7 text-gray-400">
-              <p>
-                Graphic tees have become a huge part of streetwear fashion India
-                continues to embrace.
-              </p>
+                <article className="rounded-2xl border border-gray-800 p-5">
+                  <h3 className="font-semibold text-white">
+                    Original Graphic Designs
+                  </h3>
+                  <div className="mt-2 space-y-3">
+                    <p>Streetwear has always been about self-expression.</p>
+                    <p>
+                      Some graphics catch your attention for a moment. Others stay
+                      with you.
+                    </p>
+                    <p>
+                      At Filo Teso, we focus on creating original designs that feel
+                      authentic, wearable, and meaningful. Instead of following
+                      every trend, we prefer creating graphics that people
+                      genuinely connect with.
+                    </p>
+                  </div>
+                </article>
 
-              <p>The reason is simple.</p>
+                <article className="rounded-2xl border border-gray-800 p-5">
+                  <h3 className="font-semibold text-white">
+                    Comfortable Oversized Fits
+                  </h3>
+                  <div className="mt-2 space-y-3">
+                    <p>
+                      A great oversized T-shirt is about more than just a larger
+                      size.
+                    </p>
+                    <p>The fit, proportions, fabric, and overall feel all matter.</p>
+                    <p>
+                      Our oversized styles are designed to offer comfort without
+                      compromising on appearance. Whether paired with cargos,
+                      denim, joggers, or shorts, they are built to fit naturally
+                      into everyday life.
+                    </p>
+                  </div>
+                </article>
+              </div>
+            </div>
 
-              <p>
-                They're easy to wear, versatile, and they tell a story.
-              </p>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Modern Streetwear Designed for Everyday Life
+              </h2>
+              <div className="mt-3 space-y-4">
+                <p>Streetwear has evolved far beyond a fashion trend.</p>
+                <p>
+                  Today, it's a reflection of creativity, confidence, and
+                  individuality.
+                </p>
+                <p>
+                  For some people, that means clean and minimal outfits. For
+                  others, it's bold graphics and statement pieces. Most of us move
+                  between both depending on the day.
+                </p>
+                <p>
+                  That's why our collections are designed to be versatile. Whether
+                  you're heading to college, meeting friends, travelling, working
+                  on creative projects, or simply enjoying a relaxed weekend, our
+                  pieces are made to fit seamlessly into your lifestyle.
+                </p>
+                <p>
+                  As a premium streetwear brand India customers continue to
+                  discover, our focus remains on creating clothing that feels
+                  effortless to wear while maintaining a distinct identity.
+                </p>
+              </div>
+            </div>
 
-              <p>
-                A great graphic tee can completely change an outfit without
-                requiring much effort. That's why our collection of premium
-                graphic t shirts India customers can wear every day focuses on
-                balancing creativity with comfort.
-              </p>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Graphic Tees Made for Everyday Wear
+              </h2>
+              <div className="mt-3 space-y-4">
+                <p>
+                  Graphic T-shirts have become one of the defining elements of
+                  modern streetwear fashion.
+                </p>
+                <p>The reason is simple.</p>
+                <p>
+                  They're versatile, comfortable, and allow people to express
+                  themselves without overcomplicating their style.
+                </p>
+                <p>
+                  Our collection of graphic tees combines creative design with
+                  everyday wearability. Each piece is created to work effortlessly
+                  with the rest of your wardrobe while still bringing its own
+                  personality.
+                </p>
+                <p>
+                  Whether styled with denim, cargos, joggers, or layered under
+                  jackets, Filo Teso graphic tees are designed to become the pieces
+                  you reach for again and again.
+                </p>
+              </div>
+            </div>
 
-              <p>
-                Whether you're pairing them with cargos, denim, shorts, or
-                layering them under jackets, our designs are made to fit
-                naturally into your everyday wardrobe.
-              </p>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Streetwear That Feels Personal
+              </h2>
+              <div className="mt-3 space-y-4">
+                <p>
+                  One thing we've learned is that no two people wear streetwear the
+                  same way.
+                </p>
+                <p>Some people prefer subtle styles.</p>
+                <p>Others enjoy standing out.</p>
+                <p>Neither approach is right or wrong.</p>
+                <p>That's what makes streetwear culture so interesting.</p>
+                <p>
+                  At its core, it's about freedom of expression and creating your
+                  own identity rather than following someone else's.
+                </p>
+                <p>That's the philosophy behind every Filo Teso collection.</p>
+                <p>We're not here to tell people how they should dress.</p>
+                <p>
+                  We're here to create clothing that helps them feel comfortable,
+                  confident, and authentic in their own way.
+                </p>
+              </div>
+            </div>
 
-              <p>
-                Our collections of Filo Teso T-Shirts, Filo Teso Oversized
-                T-Shirts, and Filo Teso Graphic Tees are all built around the
-                same idea: create clothing that people genuinely enjoy wearing.
-              </p>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Built for the Long Run
+              </h2>
+              <div className="mt-3 space-y-4">
+                <p>Fashion trends will continue to change.</p>
+                <p>New styles will appear. Others will disappear.</p>
+                <p>
+                  What won't change is our commitment to quality, creativity, and
+                  comfort.
+                </p>
+                <p>
+                  As Filo Teso continues to grow, we'll keep focusing on what
+                  matters most—creating premium streetwear that people genuinely
+                  enjoy wearing.
+                </p>
+                <p>
+                  Explore our latest collection and discover oversized T-shirts,
+                  graphic tees, and modern streetwear designed for everyday life.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Frequently Asked Questions
+              </h2>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {faqs.map((faq) => (
+                  <article
+                    key={faq.question}
+                    className="rounded-2xl border border-gray-800 p-5"
+                  >
+                    <h3 className="font-semibold text-white">{faq.question}</h3>
+                    <p className="mt-2">{faq.answer}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-white">
-              Streetwear Fashion That Reflects Your Individuality
-            </h3>
-
-            <div className="mt-3 space-y-4 leading-7 text-gray-400">
-              <p>
-                Streetwear has come a long way over the years.
-              </p>
-
-              <p>
-                What started as a niche culture has become a global movement
-                built around creativity, confidence, and individuality.
-              </p>
-
-              <p>
-                At Filo Teso Streetwear, we're proud to be part of that
-                movement.
-              </p>
-
-              <p>
-                As an urban streetwear brand India shoppers can connect with,
-                our goal isn't to chase every trend that comes along. We'd
-                rather focus on creating pieces that remain relevant long after
-                trends fade away.
-              </p>
-
-              <p>
-                As we continue to grow as a premium fashion brand India
-                customers trust, our commitment remains the same—quality
-                products, original designs, and clothing that helps people feel
-                confident being themselves.
-              </p>
-
-              <p>
-                Because at the end of the day, great fashion isn't really about
-                clothing.
-              </p>
-
-              <p>It's about how you feel when you wear it.</p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-white">
-              Frequently Asked Questions
-            </h3>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {faqs.map((faq) => (
-                <div
-                  key={faq.question}
-                  className="rounded-2xl border border-gray-800 p-5"
-                >
-                  <h4 className="font-semibold text-white">{faq.question}</h4>
-                  <p className="mt-2 leading-7 text-gray-400">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+        </section>
+      )}
 
       <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex flex-col items-center justify-between gap-3 text-[13px] text-gray-400 md:flex-row">
