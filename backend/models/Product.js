@@ -53,6 +53,16 @@ price: {
   details: { type: [String], default: [] },
   washCare: { type: [String], default: [] },
   features: { type: [String], default: [] },
+  faqs: {
+    type: [
+      {
+        _id: false,
+        question: { type: String, required: true, trim: true, maxlength: 300 },
+        answer: { type: String, required: true, trim: true, maxlength: 2000 },
+      },
+    ],
+    default: [],
+  },
   sizes: {
     type: [String],
     default: [],

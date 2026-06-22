@@ -255,6 +255,9 @@ const ProductDetailPage = () => {
     ? product.details
     : Array.isArray(product.features) ? product.features : [];
   const productWashCare = Array.isArray(product.washCare) ? product.washCare : [];
+  const productFaqs = Array.isArray(product.faqs)
+    ? product.faqs.filter((faq) => faq?.question?.trim() && faq?.answer?.trim())
+    : [];
   const productSubcategories = Array.isArray(product.subcategories) && product.subcategories.length
     ? product.subcategories
     : product.subcategory ? [product.subcategory] : [];
@@ -695,6 +698,61 @@ const ProductDetailPage = () => {
             )}
           </div>
         </div>
+        {/* ── Product FAQs ── */}
+        {productFaqs.length > 0 && (
+          <section
+            id="product-faqs"
+            className="max-w-[1700px] mx-auto px-4 md:px-6 mb-10"
+            aria-labelledby="product-faqs-title"
+          >
+            <div className="border border-gray-200 bg-white p-5 md:p-6">
+              <div className="mb-5 border-b border-gray-100 pb-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                  Need to know
+                </p>
+                <h2 id="product-faqs-title" className="mt-1 text-lg font-bold text-gray-900">
+                  Frequently Asked Questions
+                </h2>
+              </div>
+
+              <div className="divide-y divide-gray-100">
+                {productFaqs.map((faq, index) => {
+                  const faqId = `product-faq-${index}`;
+                  const isOpen = openFaq === faqId;
+
+                  return (
+                    <div key={`${faq.question}-${index}`}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFaq(isOpen ? "" : faqId)}
+                        aria-expanded={isOpen}
+                        aria-controls={`${faqId}-answer`}
+                        className="flex w-full items-center justify-between gap-5 py-5 text-left"
+                      >
+                        <span className="text-sm font-semibold leading-6 text-gray-900 md:text-base">
+                          {faq.question}
+                        </span>
+                        {isOpen ? (
+                          <FaChevronUp className="shrink-0 text-xs text-gray-400" />
+                        ) : (
+                          <FaChevronDown className="shrink-0 text-xs text-gray-400" />
+                        )}
+                      </button>
+                      {isOpen && (
+                        <div
+                          id={`${faqId}-answer`}
+                          className="whitespace-pre-line pb-5 pr-8 text-sm leading-7 text-gray-600"
+                        >
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
         {/* ── Related Products ── */}
         {relatedProducts.length > 0 && (
           <div className="max-w-[1700px] mx-auto px-4 md:px-6 mt-8 mb-6">

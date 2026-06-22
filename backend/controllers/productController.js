@@ -474,6 +474,29 @@ const normalizeSizes = (sizes) => {
     .filter(Boolean);
 };
 
+const normalizeFaqs = (raw) => {
+  if (typeof raw === "undefined" || raw === null || raw === "") return [];
+
+  let parsed = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .slice(0, 20)
+    .map((faq) => ({
+      question: String(faq?.question || "").trim().slice(0, 300),
+      answer: String(faq?.answer || "").trim().slice(0, 2000),
+    }))
+    .filter((faq) => faq.question && faq.answer);
+};
+
 const parseSubcategoryInput = (raw) => {
   if (typeof raw === "undefined" || raw === null) return [];
   if (Array.isArray(raw)) return raw;
@@ -672,6 +695,7 @@ const addProduct = async (req, res) => {
       typeof req.body.details !== "undefined" ? req.body.details : req.body.features
     );
     const washCare = normalizeDetails(req.body.washCare);
+    const faqs = normalizeFaqs(req.body.faqs);
 const sizeVariants = normalizeSizeVariants(req.body.sizeVariants, req.body.sizes, stock);
 const sizes = sizeVariants.length ? sizeVariants.map((variant) => variant.size) : normalizeSizes(req.body.sizes);
 const totalStock = sizeVariants.length ? getTotalVariantStock(sizeVariants) : stock;
@@ -737,6 +761,7 @@ const keywords = req.body.keywords
       description,
       details,
       washCare,
+      faqs,
         tags,
   seo: {
     metaTitle,
@@ -818,6 +843,10 @@ const updateProduct = async (req, res) => {
 
     if (typeof body.washCare !== "undefined") {
       product.washCare = normalizeDetails(body.washCare);
+    }
+
+    if (typeof body.faqs !== "undefined") {
+      product.faqs = normalizeFaqs(body.faqs);
     }
 
     if (typeof body.category !== "undefined") {

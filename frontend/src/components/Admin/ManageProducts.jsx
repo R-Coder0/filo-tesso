@@ -31,6 +31,7 @@ const CATEGORY_MAP = {
 };
 
 const MAX_GALLERY_IMAGES = 10;
+const MAX_PRODUCT_FAQS = 20;
 
 const emptyProduct = {
   name: "",
@@ -53,6 +54,7 @@ const emptyProduct = {
   detailsArray: [],
   washCare: "",
   washCareArray: [],
+  faqs: [],
   category: "",
   subcategory: "",
   subcategories: [],
@@ -225,6 +227,34 @@ const getWashCareForSubmit = () => {
   return washCare.map((item) => String(item).trim()).filter(Boolean);
 };
 
+const addFaq = () => {
+  setNewProduct((product) => {
+    const currentFaqs = product.faqs || [];
+    if (currentFaqs.length >= MAX_PRODUCT_FAQS) return product;
+
+    return {
+      ...product,
+      faqs: [...currentFaqs, { question: "", answer: "" }],
+    };
+  });
+};
+
+const updateFaq = (index, field, value) => {
+  setNewProduct((product) => ({
+    ...product,
+    faqs: (product.faqs || []).map((faq, faqIndex) =>
+      faqIndex === index ? { ...faq, [field]: value } : faq
+    ),
+  }));
+};
+
+const removeFaq = (indexToRemove) => {
+  setNewProduct((product) => ({
+    ...product,
+    faqs: (product.faqs || []).filter((_, index) => index !== indexToRemove),
+  }));
+};
+
 const addSizeVariant = () => {
   const size = sizeDraft.size.trim().toUpperCase();
   const stock = Math.max(0, Number(sizeDraft.stock || 0));
@@ -355,6 +385,12 @@ const removeSizeVariant = (size) => {
       detailsArray: existingDetails,
       washCare: existingWashCare.join(", "),
       washCareArray: existingWashCare,
+      faqs: Array.isArray(product.faqs)
+        ? product.faqs.map((faq) => ({
+            question: faq.question || "",
+            answer: faq.answer || "",
+          }))
+        : [],
       image: null,
       images: [],
       existingGallery: product.gallery || [],
@@ -420,6 +456,12 @@ const removeSizeVariant = (size) => {
       detailsArray: existingDetails,
       washCare: existingWashCare.join(", "),
       washCareArray: existingWashCare,
+      faqs: Array.isArray(product.faqs)
+        ? product.faqs.map((faq) => ({
+            question: faq.question || "",
+            answer: faq.answer || "",
+          }))
+        : [],
       image: null,
       images: [],
       existingGallery: product.gallery || [],
@@ -566,6 +608,7 @@ const removeSizeVariant = (size) => {
     formData.append("category", newProduct.category);
     formData.append("subcategory", primarySubcategory);
     formData.append("subcategories", JSON.stringify(subcategoriesForSubmit));
+    formData.append("faqs", JSON.stringify(newProduct.faqs || []));
 
     detailsForSubmit.forEach((detail) => formData.append("details", detail));
     washCareForSubmit.forEach((item) => formData.append("washCare", item));
@@ -1434,6 +1477,71 @@ const removeSizeVariant = (size) => {
                   Add
                 </button>
               </div>
+            </div>
+
+            {/* Product FAQs */}
+            <div className="md:col-span-2 border border-gray-200 bg-gray-50 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900">
+                    Product FAQs
+                  </h4>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Add questions and answers shown below customer reviews.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addFaq}
+                  disabled={(newProduct.faqs || []).length >= MAX_PRODUCT_FAQS}
+                  className="shrink-0 border border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
+                >
+                  + Add FAQ
+                </button>
+              </div>
+
+              {(newProduct.faqs || []).length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  {newProduct.faqs.map((faq, index) => (
+                    <div key={index} className="border border-gray-200 bg-white p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                          FAQ {index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeFaq(index)}
+                          className="text-xs font-bold uppercase tracking-widest text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={faq.question}
+                        onChange={(event) => updateFaq(index, "question", event.target.value)}
+                        maxLength={300}
+                        required
+                        className="w-full border border-gray-300 p-3 text-sm outline-none focus:border-black"
+                        placeholder="Question e.g. What material is this product made from?"
+                      />
+                      <textarea
+                        value={faq.answer}
+                        onChange={(event) => updateFaq(index, "answer", event.target.value)}
+                        maxLength={2000}
+                        required
+                        rows="3"
+                        className="mt-3 w-full resize-y border border-gray-300 p-3 text-sm outline-none focus:border-black"
+                        placeholder="Write the answer..."
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-400">
+                  No FAQs added yet.
+                </p>
+              )}
             </div>
           </div>
         </div>
