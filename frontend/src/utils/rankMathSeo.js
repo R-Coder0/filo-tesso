@@ -31,6 +31,20 @@ export const getRankMathApiBase = (wpApiBase = "") => {
   return `${base}/rankmath/v1`;
 };
 
+export const getRankMathHeadUrl = (
+  rankMathApiBase = "",
+  postUrl = "",
+  modifiedAt = ""
+) => {
+  const search = new URLSearchParams({ url: String(postUrl) });
+
+  // Rank Math/edge caches can otherwise keep serving the previous metadata
+  // immediately after an editor updates a post.
+  if (modifiedAt) search.set("modified", String(modifiedAt));
+
+  return `${String(rankMathApiBase).replace(/\/+$/, "")}/getHead?${search}`;
+};
+
 export const parseRankMathHead = (head = "") => {
   const meta = new Map();
   const articleTags = [];

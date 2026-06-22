@@ -3,6 +3,7 @@ import express from 'express'
 import { Transform } from 'node:stream'
 import {
   getRankMathApiBase,
+  getRankMathHeadUrl,
   parseRankMathHead,
 } from './src/utils/rankMathSeo.js'
 import {
@@ -165,19 +166,20 @@ const loadProductDetailSsrData = async (pathname) => {
 const getBlogFeaturedImage = (post) =>
   post?._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''
 
-const loadRankMathSeo = async (postUrl) => {
+const loadRankMathSeo = async (postUrl, modifiedAt) => {
   if (!postUrl) return {}
 
-  const cached = rankMathSeoCache.get(postUrl)
+  const cacheKey = `${postUrl}:${modifiedAt || 'unversioned'}`
+  const cached = rankMathSeoCache.get(cacheKey)
   if (cached?.expiresAt > Date.now()) return cached.seo
 
   const rankMathResponse = await safeFetchExternalJson(
-    `${getRankMathApiBase(getWpApiBase())}/getHead?url=${encodeURIComponent(postUrl)}`,
+    getRankMathHeadUrl(getRankMathApiBase(getWpApiBase()), postUrl, modifiedAt),
   )
   const seo = parseRankMathHead(rankMathResponse?.head)
 
   if (seo.title || seo.description) {
-    rankMathSeoCache.set(postUrl, {
+    rankMathSeoCache.set(cacheKey, {
       seo,
       expiresAt: Date.now() + RANK_MATH_CACHE_TTL_MS,
     })
@@ -195,7 +197,10 @@ const loadBlogDetailSsrData = async (pathname) => {
   )
   const post = Array.isArray(posts) ? posts[0] : null
   if (!post) return { blogDetail: { slug } }
-  const seo = await loadRankMathSeo(post.link)
+  const seo = await loadRankMathSeo(
+    post.link,
+    post.modified_gmt || post.modified,
+  )
 
   return {
     blogDetail: {

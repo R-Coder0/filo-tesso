@@ -15,6 +15,7 @@ import SeoHead from "../components/SeoHead";
 import { useSsrData } from "../context/SsrDataContext";
 import {
   getRankMathApiBase,
+  getRankMathHeadUrl,
   parseRankMathHead,
 } from "../utils/rankMathSeo";
 
@@ -94,6 +95,7 @@ function normalizePost(post, initialSeo = {}) {
     modifiedDate: formatDate(post.modified),
     rawDate: post.date,
     rawModifiedDate: post.modified,
+    rankMathModifiedAt: post.modified_gmt || post.modified,
     readTime: getReadTime(post?.content?.rendered),
     image: getFeaturedImage(post),
     imageAlt: getFeaturedImageAlt(post),
@@ -151,9 +153,12 @@ export default function BlogDetailPage() {
 
         const rankMathRequest = currentPost.link
           ? fetch(
-              `${RANK_MATH_API_BASE}/getHead?url=${encodeURIComponent(
-                currentPost.link
-              )}`
+              getRankMathHeadUrl(
+                RANK_MATH_API_BASE,
+                currentPost.link,
+                currentPost.rankMathModifiedAt
+              ),
+              { cache: "no-store" }
             )
               .then((response) => {
                 if (!response.ok) throw new Error("Rank Math head API failed");
