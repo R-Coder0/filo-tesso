@@ -10,7 +10,7 @@ const SLIDE_DELAY = 4800;
 const heroBanners = [
   {
     id: "summer-collection",
-    to: "/products/men/jeans",
+    to: "/products/men/oversize-tshirt",
     image: jeansImage,
     alt: "Filo Teso jeans collection",
     position: "object-center",
@@ -31,7 +31,7 @@ const heroBanners = [
   },
   {
     id: "shirts",
-    to: "/products/men/regular-shirt",
+    to: "https://filoteso.co.in/product/butterfly-bloom-tee-mens",
     image: heroOne,
     alt: "Filo Teso shirt collection",
     position: "object-center",
