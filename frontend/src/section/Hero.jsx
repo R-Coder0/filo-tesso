@@ -24,7 +24,7 @@ const heroBanners = [
   },
   {
     id: "oversize-tshirts",
-    to: "/products/men/oversize-tshirt",
+    to: "https://filoteso.co.in/product/elite-manor-polo-tee",
     image: heroThree,
     alt: "Filo Teso oversize t-shirt collection",
     position: "object-center",
