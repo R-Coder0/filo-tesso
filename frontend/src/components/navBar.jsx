@@ -116,6 +116,11 @@ const shouldShowCategoryNav = !isProductListRoute;
     closeMenu();
   };
 
+  const handleMenuSearchClick = () => {
+    closeMenu();
+    setShowSearch(true);
+  };
+
 const isCategoryActive = (item) => {
   const cleanPath = item.path.split("?")[0];
   return location.pathname === cleanPath;
@@ -314,7 +319,7 @@ const isCategoryActive = (item) => {
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-white shadow-[0_2px_14px_rgba(0,0,0,0.08)]">
-        <div className="relative flex h-[72px] items-center justify-between border-b border-gray-200 px-4 sm:px-6 lg:px-8">
+        <div className="relative grid h-[72px] grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-2 border-b border-gray-200 px-3 sm:px-6 md:flex md:justify-between lg:px-8">
           <button
             type="button"
             onClick={() => setIsMenuOpen(true)}
@@ -330,24 +335,24 @@ const isCategoryActive = (item) => {
 
           <Link
             to="/"
-            className="absolute left-1/2 top-1/2 inline-flex -translate-x-1/2 -translate-y-1/2 items-center"
+            className="inline-flex w-full max-w-[170px] items-center justify-center justify-self-center sm:max-w-[220px] md:absolute md:left-1/2 md:top-1/2 md:w-auto md:max-w-none md:-translate-x-1/2 md:-translate-y-1/2"
             aria-label="Filo Teso home"
           >
             <img
               src={logoImg}
               alt="Filo Teso"
-              className="h-11 w-auto object-contain md:h-12"
+              className="h-10 w-auto max-w-full object-contain sm:h-11 md:h-12 md:max-w-none"
             />
           </Link>
 
-          <div className="flex items-center justify-end gap-1.5 md:gap-2">
-            <div className="hidden w-[280px] md:block lg:w-[330px]">
+          <div className="flex min-w-0 items-center justify-end gap-1 md:ml-auto md:gap-2">
+            <div className="hidden w-[330px] xl:block">
               <SearchBox />
             </div>
 
             <button
               type="button"
-              className="flex h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600 md:hidden"
+              className="hidden h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600 min-[430px]:flex xl:hidden"
               onClick={() => setShowSearch(true)}
               aria-label="Search"
             >
@@ -357,7 +362,7 @@ const isCategoryActive = (item) => {
             <button
               type="button"
               onClick={handleProfileClick}
-              className="hidden h-9 min-w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600 md:flex"
+              className="flex h-9 min-w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600"
               aria-label={user ? "Profile" : "Login"}
             >
               {user && displayName ? (
@@ -372,7 +377,7 @@ const isCategoryActive = (item) => {
             <button
               type="button"
               onClick={handleWishlistClick}
-              className="relative flex h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600"
+              className="relative hidden h-9 w-9 cursor-pointer items-center justify-center text-black transition hover:text-gray-600 md:flex"
               aria-label="Wishlist"
             >
               <Heart className="h-5 w-5" strokeWidth={1.7} />
@@ -479,6 +484,35 @@ const isCategoryActive = (item) => {
           </div>
 
           <div className="px-6 py-6">
+            <div className="mb-5 grid gap-3">
+              <button
+                type="button"
+                onClick={handleWishlistClick}
+                className="flex w-full items-center justify-between border border-black px-4 py-3 text-sm font-bold uppercase text-black transition hover:bg-black hover:text-white"
+                tabIndex={isMenuOpen ? 0 : -1}
+              >
+                <span className="flex items-center gap-3">
+                  <Heart className="h-5 w-5" strokeWidth={1.7} />
+                  Wishlist
+                </span>
+                {wishlistCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ef6a4d] px-1.5 text-xs font-semibold text-white">
+                    {wishlistCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleMenuSearchClick}
+                className="flex w-full items-center gap-3 border border-gray-200 px-4 py-3 text-sm font-bold uppercase text-black transition hover:border-black"
+                tabIndex={isMenuOpen ? 0 : -1}
+              >
+                <SearchIcon className="h-5 w-5" strokeWidth={1.8} />
+                Search
+              </button>
+            </div>
+
             <nav className="space-y-1">
               {SIDE_MENU_LINKS.map((item) => (
                 <Link

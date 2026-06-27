@@ -41,6 +41,7 @@ const ProductDetailPage = () => {
   const [reviewError, setReviewError] = useState("");
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL;
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -76,6 +77,24 @@ const ProductDetailPage = () => {
   useEffect(() => {
     setQuantity(1);
   }, [selectedSize]);
+
+  useEffect(() => {
+    if (!showSizeGuide) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setShowSizeGuide(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showSizeGuide]);
 
   const fetchReviews = async () => {
     try {
@@ -307,6 +326,42 @@ const ProductDetailPage = () => {
         </div>
       )}
 
+      {showSizeGuide && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Size guide"
+          onClick={() => setShowSizeGuide(false)}
+        >
+          <div
+            className="relative max-h-full w-full max-w-4xl overflow-hidden bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-gray-900">
+                Size Guide
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowSizeGuide(false)}
+                className="flex h-9 w-9 items-center justify-center text-gray-500 transition hover:text-black"
+                aria-label="Close size guide"
+              >
+                <FaTimes className="text-base" />
+              </button>
+            </div>
+            <div className="max-h-[calc(100vh-9rem)] overflow-auto bg-white p-3">
+              <img
+                src="/size_chart.png"
+                alt="Filo Teso size guide chart"
+                className="mx-auto h-auto w-full max-w-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-screen bg-gray-50">
 
         {/* ── Breadcrumb Bar ── */}
@@ -478,7 +533,13 @@ const ProductDetailPage = () => {
                 <div className="bg-white border-x border-b border-gray-200 px-5 py-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-gray-700">Select Size</h3>
-                    <button className="text-xs text-gray-400 hover:text-black underline underline-offset-2 transition-colors">Size Guide</button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSizeGuide(true)}
+                      className="text-xs text-gray-400 hover:text-black underline underline-offset-2 transition-colors"
+                    >
+                      Size Guide
+                    </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {availableSizes.map((size, idx) => (
