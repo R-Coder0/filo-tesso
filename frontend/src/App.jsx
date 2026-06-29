@@ -85,18 +85,21 @@ function App() {
 
   // ✅ Check if route starts with /admin
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isBlogDetailRoute = /^\/blog\/[^/]+\/?$/.test(location.pathname);
   const canonicalUrl = getCanonicalUrl(location.pathname);
   const pageSeo = getClientRouteSeo(location.pathname);
 
   return (
     <>
-      <SeoHead
-        {...pageSeo}
-        canonical={canonicalUrl}
-        image="https://filoteso.co.in/icon.png"
-        robots="index, follow"
-        routeKey={`${location.pathname}${location.search}`}
-      />
+      {!isBlogDetailRoute && (
+        <SeoHead
+          {...pageSeo}
+          canonical={canonicalUrl}
+          image="https://filoteso.co.in/icon.png"
+          robots="index, follow"
+          routeKey={`${location.pathname}${location.search}`}
+        />
+      )}
       {/* <MarqueeOffers/> */}
       <Toaster
         position="top-right"

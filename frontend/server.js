@@ -7,6 +7,10 @@ import {
   parseRankMathHead,
 } from './src/utils/rankMathSeo.js'
 import {
+  normalizeBlogPost,
+  normalizeBlogSlug,
+} from './src/utils/blogPost.js'
+import {
   getCanonicalUrl,
   getGenericRouteSeo,
   getProductListSeo,
@@ -163,9 +167,6 @@ const loadProductDetailSsrData = async (pathname) => {
   }
 }
 
-const getBlogFeaturedImage = (post) =>
-  post?._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''
-
 const loadRankMathSeo = async (postUrl, modifiedAt) => {
   if (!postUrl) return {}
 
@@ -189,7 +190,8 @@ const loadRankMathSeo = async (postUrl, modifiedAt) => {
 }
 
 const loadBlogDetailSsrData = async (pathname) => {
-  const [, slug] = pathname.replace(/^\/+/, '').split('/')
+  const [, rawSlug] = pathname.replace(/^\/+/, '').split('/')
+  const slug = normalizeBlogSlug(rawSlug)
   if (!slug) return {}
 
   const posts = await safeFetchExternalJson(
@@ -205,12 +207,7 @@ const loadBlogDetailSsrData = async (pathname) => {
   return {
     blogDetail: {
       slug,
-      post: {
-        title: stripHtml(post?.title?.rendered),
-        excerpt: truncateText(post?.excerpt?.rendered),
-        image: getBlogFeaturedImage(post),
-        seo,
-      },
+      post: normalizeBlogPost(post, seo),
     },
   }
 }
@@ -287,6 +284,7 @@ const getBlogDetailSeo = (pathname, ssrData = {}) => {
     ),
     image: blog?.seo?.image || blog?.image,
     robots: blog?.seo?.robots,
+    canonical: blog?.seo?.canonical,
   }
 }
 
@@ -336,9 +334,11 @@ const getRouteSeo = (requestUrl, ssrData = {}) => {
   }
 
   if (normalizedPath.startsWith('/blog/')) {
+    const blogSeo = getBlogDetailSeo(normalizedPath, ssrData)
+
     return {
-      ...getBlogDetailSeo(normalizedPath, ssrData),
-      canonical,
+      ...blogSeo,
+      canonical: blogSeo.canonical || canonical,
     }
   }
 

@@ -45,7 +45,7 @@ const shiprocketCheckoutSessionSchema = new mongoose.Schema(
     payableAmount: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["initiated", "completed", "failed"],
+      enum: ["initiated", "processing", "completed", "failed"],
       default: "initiated",
     },
     localOrder: {
@@ -53,6 +53,8 @@ const shiprocketCheckoutSessionSchema = new mongoose.Schema(
       ref: "Order",
     },
     shiprocketResponse: mongoose.Schema.Types.Mixed,
+    lastError: { type: String, default: "" },
+    lastCheckedAt: Date,
   },
   { timestamps: true }
 );

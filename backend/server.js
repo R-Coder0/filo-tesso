@@ -14,6 +14,9 @@ const userRoutes = require("./routes/userRoutes");
 const shiprocketRoutes = require("./routes/shiprocketRoutes");
 const { handleTrackingWebhook } = require("./controllers/shiprocketController");
 const {
+  reconcilePendingShiprocketCheckouts,
+} = require("./controllers/shiprocketCheckoutController");
+const {
   verifyShiprocketApiKey,
 } = require("./middleware/shiprocketApiKey");
 const Order = require("./models/Order");
@@ -75,6 +78,10 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const CHECKOUT_RECONCILE_INTERVAL_MS = Number(
+  process.env.SHIPROCKET_CHECKOUT_RECONCILE_INTERVAL_MS || 5 * 60 * 1000
+);
+let checkoutReconcileRunning = false;
 
 const repairOrdersMissingShipment = async () => {
   const result = await Order.updateMany(
@@ -90,6 +97,37 @@ const repairOrdersMissingShipment = async () => {
   );
 
   return result.modifiedCount || 0;
+};
+
+const runShiprocketCheckoutReconcile = async () => {
+  if (checkoutReconcileRunning) return;
+
+  checkoutReconcileRunning = true;
+  try {
+    const summary = await reconcilePendingShiprocketCheckouts();
+    if (summary.completed || summary.failed) {
+      console.log("Shiprocket Checkout reconcile:", summary);
+    }
+  } catch (error) {
+    console.error("Shiprocket Checkout reconcile crashed:", error.message);
+  } finally {
+    checkoutReconcileRunning = false;
+  }
+};
+
+const startShiprocketCheckoutReconciler = () => {
+  if (!CHECKOUT_RECONCILE_INTERVAL_MS || CHECKOUT_RECONCILE_INTERVAL_MS < 1000) {
+    return;
+  }
+
+  const startupTimer = setTimeout(runShiprocketCheckoutReconcile, 30 * 1000);
+  startupTimer.unref?.();
+
+  const interval = setInterval(
+    runShiprocketCheckoutReconcile,
+    CHECKOUT_RECONCILE_INTERVAL_MS
+  );
+  interval.unref?.();
 };
 
 const startServer = async () => {
@@ -116,7 +154,10 @@ const startServer = async () => {
     );
   }
 
-  app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    startShiprocketCheckoutReconciler();
+  });
 };
 
 startServer().catch((error) => {

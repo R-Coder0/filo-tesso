@@ -14,124 +14,56 @@ import {
 import SeoHead from "../components/SeoHead";
 import { useSsrData } from "../context/SsrDataContext";
 import {
+  normalizeBlogPost,
+  normalizeBlogSlug,
+} from "../utils/blogPost";
+import {
   getRankMathApiBase,
   getRankMathHeadUrl,
   parseRankMathHead,
 } from "../utils/rankMathSeo";
+import { getCanonicalUrl } from "../utils/siteSeo";
 
 const WP_API_BASE =
   import.meta.env.VITE_WP_API_BASE ||
   "https://cms.filoteso.co.in/wp-json/wp/v2";
 const RANK_MATH_API_BASE = getRankMathApiBase(WP_API_BASE);
 
-function stripHtml(html = "") {
-  return String(html)
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#8217;/g, "'")
-    .replace(/&#8220;/g, '"')
-    .replace(/&#8221;/g, '"')
-    .replace(/&amp;/g, "&")
-    .trim();
-}
-
-function formatDate(dateString) {
-  if (!dateString) return "";
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(dateString));
-}
-
-function getFeaturedImage(post) {
-  return (
-    post?._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
-    "/placeholder-blog.jpg"
-  );
-}
-
-function getFeaturedImageAlt(post) {
-  return (
-    post?._embedded?.["wp:featuredmedia"]?.[0]?.alt_text ||
-    stripHtml(post?.title?.rendered) ||
-    "Filo Teso blog image"
-  );
-}
-
-function getCategory(post) {
-  const category = post?._embedded?.["wp:term"]?.[0]?.[0];
-
-  return {
-    id: category?.id || "",
-    name: category?.name || "Fashion",
-    slug: category?.slug || "fashion",
-  };
-}
-
-function getAuthor(post) {
-  return post?._embedded?.author?.[0]?.name || "Filo Teso";
-}
-
-function getReadTime(content = "") {
-  const text = stripHtml(content);
-  const words = text.split(/\s+/).filter(Boolean).length;
-  const minutes = Math.max(1, Math.ceil(words / 200));
-
-  return `${minutes} min read`;
-}
-
-function normalizePost(post, initialSeo = {}) {
-  const category = getCategory(post);
-
-  return {
-    id: post.id,
-    title: stripHtml(post?.title?.rendered),
-    slug: post.slug,
-    excerpt: stripHtml(post?.excerpt?.rendered),
-    content: post?.content?.rendered || "",
-    date: formatDate(post.date),
-    modifiedDate: formatDate(post.modified),
-    rawDate: post.date,
-    rawModifiedDate: post.modified,
-    rankMathModifiedAt: post.modified_gmt || post.modified,
-    readTime: getReadTime(post?.content?.rendered),
-    image: getFeaturedImage(post),
-    imageAlt: getFeaturedImageAlt(post),
-    category,
-    author: getAuthor(post),
-    link: post.link,
-    seo: initialSeo,
-  };
-}
-
 export default function BlogDetailPage() {
   const { slug } = useParams();
+  const requestedSlug = normalizeBlogSlug(slug);
   const ssrBlogDetail = useSsrData("blogDetail");
+  const ssrPost = useMemo(() => {
+    if (normalizeBlogSlug(ssrBlogDetail?.slug) !== requestedSlug) return null;
+    return ssrBlogDetail?.post || null;
+  }, [requestedSlug, ssrBlogDetail]);
   const ssrSeo = useMemo(
     () =>
-      ssrBlogDetail?.slug === slug ? ssrBlogDetail?.post?.seo || {} : {},
-    [slug, ssrBlogDetail]
+      normalizeBlogSlug(ssrBlogDetail?.slug) === requestedSlug
+        ? ssrBlogDetail?.post?.seo || {}
+        : {},
+    [requestedSlug, ssrBlogDetail]
   );
 
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState(ssrPost);
   const [relatedPosts, setRelatedPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!ssrPost);
   const [errorText, setErrorText] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     async function fetchBlogDetail() {
+      const fallbackPost = ssrPost;
+
       try {
-        setIsLoading(true);
+        setIsLoading(!fallbackPost);
         setErrorText("");
-        setPost(null);
+        setPost(fallbackPost || null);
         setRelatedPosts([]);
 
         const postRes = await fetch(
-          `${WP_API_BASE}/posts?slug=${encodeURIComponent(slug)}&_embed`
+          `${WP_API_BASE}/posts?slug=${encodeURIComponent(requestedSlug)}&_embed`
         );
 
         if (!postRes.ok) {
@@ -143,11 +75,11 @@ export default function BlogDetailPage() {
         if (!isMounted) return;
 
         if (!postData || postData.length === 0) {
-          setErrorText("Blog not found.");
+          if (!fallbackPost) setErrorText("Blog not found.");
           return;
         }
 
-        const currentPost = normalizePost(postData[0], ssrSeo);
+        const currentPost = normalizeBlogPost(postData[0], ssrSeo);
         setPost(currentPost);
         setIsLoading(false);
 
@@ -188,7 +120,11 @@ export default function BlogDetailPage() {
           )
             .then((response) => (response.ok ? response.json() : []))
             .then((relatedData) => {
-              if (isMounted) setRelatedPosts(relatedData.map(normalizePost));
+              if (isMounted) {
+                setRelatedPosts(
+                  relatedData.map((item) => normalizeBlogPost(item))
+                );
+              }
             });
         }
 
@@ -197,7 +133,12 @@ export default function BlogDetailPage() {
         if (!isMounted) return;
 
         console.error("Blog Detail API Error:", error);
-        setErrorText("Unable to load this blog from WordPress CMS.");
+        if (fallbackPost) {
+          setPost((existingPost) => existingPost || fallbackPost);
+          setErrorText("");
+        } else {
+          setErrorText("Unable to load this blog from WordPress CMS.");
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -210,7 +151,12 @@ export default function BlogDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [slug, ssrSeo]);
+  }, [requestedSlug, ssrPost, ssrSeo]);
+
+  const articleUrl =
+    post?.seo?.canonical ||
+    getCanonicalUrl(`/blog/${post?.slug || requestedSlug}`);
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`;
 
   const articleSchema = useMemo(() => {
     if (!post) return null;
@@ -231,9 +177,9 @@ export default function BlogDetailPage() {
       },
       datePublished: post.rawDate,
       dateModified: post.rawModifiedDate,
-      mainEntityOfPage: `https://filoteso.co.in/blog/${post.slug}`,
+      mainEntityOfPage: articleUrl,
     };
-  }, [post]);
+  }, [articleUrl, post]);
 
   const metaTitle =
     post?.seo?.title || `${post?.title || "Blog"} | Filo Teso Blog`;
@@ -245,7 +191,9 @@ export default function BlogDetailPage() {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const currentUrl =
+        typeof window !== "undefined" ? window.location.href : articleUrl;
+      await navigator.clipboard.writeText(currentUrl);
     } catch (error) {
       console.error("Copy link failed:", error);
     }
@@ -295,6 +243,7 @@ export default function BlogDetailPage() {
         title={metaTitle}
         description={metaDescription}
         keywords={metaKeywords}
+        canonical={articleUrl}
         image={metaImage}
         robots={post.seo?.robots}
         type="article"
@@ -459,9 +408,7 @@ export default function BlogDetailPage() {
                 </button>
 
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                    window.location.href
-                  )}`}
+                  href={facebookShareUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex min-h-12 items-center justify-between rounded-full border border-neutral-200 bg-neutral-50 px-4 text-sm font-bold text-neutral-950 transition hover:border-neutral-950 hover:bg-neutral-950 hover:text-white"
