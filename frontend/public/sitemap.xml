@@ -1,264 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/css" href="https://www.xml-sitemaps.com/css/sitemap.css"?>
-<urlset
-      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:fo="http://www.w3.org/1999/XSL/Format"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
-
-<url>
-  <loc>https://filoteso.co.in/</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>1.00</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/oversize-tshirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/polo-tshirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/regular-tshirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/regular-shirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/oversize-shirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/jeans</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men/trousers</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/about</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/blog</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/contact</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products?sort=newest</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products?sort=bestseller</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/regular-tshirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/oversize-tshirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/polo-tshirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/men</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/top</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/co-ord-set</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/joggers</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/trousers</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/jeans</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products/women/sports</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/consumer-policies/terms-and-conditions</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/consumer-policies/security</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/consumer-policies/privacy</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/consumer-policies/return-and-refund</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/help/cancellation-and-returns</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/collabration</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/help/payments</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/help/shipping</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/help/faqs</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/elite-manor-polo-tee</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/ivory-waffle-quarter-zip</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/midnight-waffle-quarter-zip</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/butterfly-bloom-tee-mens</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/eternal-wings-orange-t-shirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/dragon-s-gaze-tee-black-edition</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/dragon-s-gaze-t-shirt-white-edition</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/blaze-phantom-t-shirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/eternal-wings-sage-green-t-shirt</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/products</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/butterfly-bloom-tee-women</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/eternal-wings-orange-t-shirt-2</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/dragon-s-gaze-t-shirt-white-edition-2</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/dragon-s-gaze-tee-black-edition-2</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/product/blaze-phantom-t-shirt-women</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/help/return-refund</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://filoteso.co.in/user/orders</loc>
-  <lastmod>2026-06-21T09:07:36+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://filoteso.co.in/</loc><lastmod>2026-06-30</lastmod><priority>1.0</priority></url>
+  <url><loc>https://filoteso.co.in/products/men/oversize-tshirt</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/men/polo-tshirt</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/men/regular-tshirt</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/men/regular-shirt</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/men/trousers</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/men/jeans</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/oversize-tshirt</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/polo-tshirt</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/top</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/co-ord-set</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/joggers</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/trouser</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/women/jeans</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/new</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/best-seller</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/products/spotlight</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/about</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/blog</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/blog/premium-oversized-t-shirts-india</loc><lastmod>2026-06-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://filoteso.co.in/contact</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/elite-manor-polo-tee</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/ivory-waffle-quarter-zip</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/midnight-waffle-quarter-zip</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/butterfly-bloom-tee-mens</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/eternal-wings-orange-t-shirt</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/dragon-s-gaze-tee-black-edition</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/dragon-s-gaze-t-shirt-white-edition</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/blaze-phantom-t-shirt</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/eternal-wings-sage-green-t-shirt</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/butterfly-bloom-tee-women</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/eternal-wings-orange-t-shirt-2</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/dragon-s-gaze-t-shirt-white-edition-2</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/dragon-s-gaze-tee-black-edition-2</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/product/blaze-phantom-t-shirt-women</loc><lastmod>2026-06-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://filoteso.co.in/consumer-policies/privacy</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/consumer-policies/security</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/consumer-policies/terms-and-conditions</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/consumer-policies/return-and-refund</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/help/cancellation-and-returns</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/help/payments</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/help/shipping</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
+  <url><loc>https://filoteso.co.in/help/faqs</loc><lastmod>2026-06-30</lastmod><priority>0.4</priority></url>
 </urlset>
