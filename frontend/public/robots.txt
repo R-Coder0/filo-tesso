@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Private & Transactional Pages
+Disallow: /cart
+Disallow: /checkout
+Disallow: /account
+Disallow: /login
+Disallow: /register
+Disallow: /wishlist
+
+# Internal Search
+Disallow: /search
+Disallow: /*?search=
+
+# Sitemap
+Sitemap: https://filoteso.co.in/sitemap.xml

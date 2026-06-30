@@ -72,6 +72,34 @@ const orderSchema = new mongoose.Schema(
       default: "pending",
     },
 
+    createdBy: {
+      type: String,
+      enum: ["customer", "admin"],
+      default: "customer",
+    },
+    manualEntry: { type: Boolean, default: false },
+    adminNote: { type: String, default: "" },
+
+    cancelled: { type: Boolean, default: false },
+    cancellationReason: { type: String, default: "" },
+    cancelledAt: Date,
+    cancelledBy: { type: String, enum: ["user", "admin", ""], default: "" },
+    cancellationStatus: {
+      type: String,
+      enum: ["none", "requested", "approved", "rejected"],
+      default: "none",
+    },
+
+    returnRequested: { type: Boolean, default: false },
+    returnReason: { type: String, default: "" },
+    returnRequestedAt: Date,
+    returnBy: { type: String, enum: ["user", "admin", ""], default: "" },
+    returnStatus: {
+      type: String,
+      enum: ["none", "requested", "approved", "rejected"],
+      default: "none",
+    },
+
     address: {
       name: String,
       phone: String,

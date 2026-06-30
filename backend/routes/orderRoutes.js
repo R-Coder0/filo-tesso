@@ -4,6 +4,7 @@ const router  = express.Router();
 const Order   = require('../models/Order');
 const {
   createOrder,
+  createManualOrder,
   getMyOrders,
   updateOrderStatus,
   deleteOrder,
@@ -36,6 +37,9 @@ router.get('/admin', isAdmin, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch orders' });
   }
 });
+
+// Admin: create a manual order when checkout/payment integrations miss one
+router.post('/admin/manual', isAdmin, createManualOrder);
 
 // Admin: get cancellation requests
 router.get('/admin/cancellation-requests', isAdmin, getCancellationRequests); // NEW ROUTE

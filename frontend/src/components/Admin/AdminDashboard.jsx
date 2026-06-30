@@ -21,6 +21,16 @@ const formatINR = (value) =>
 
 const getSalePrice = (product) => Number(product?.price?.sale || 0);
 
+const isBillableOrder = (order) => {
+  const orderStatus = String(order?.orderStatus || "").toLowerCase();
+  const paymentStatus = String(order?.paymentStatus || "").toLowerCase();
+
+  return (
+    !["cancelled", "returned"].includes(orderStatus) &&
+    !["failed", "refunded"].includes(paymentStatus)
+  );
+};
+
 export default function AdminDashboard() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const adminHeaders = { authorization: import.meta.env.VITE_ADMIN_TOKEN };
@@ -73,7 +83,8 @@ export default function AdminDashboard() {
       (sum, product) => sum + Number(product.stock || 0) * getSalePrice(product),
       0
     );
-    const revenue = orders.reduce(
+    const billableOrders = orders.filter(isBillableOrder);
+    const revenue = billableOrders.reduce(
       (sum, order) => sum + Number(order.payableAmount || order.totalAmount || 0),
       0
     );
@@ -92,6 +103,7 @@ export default function AdminDashboard() {
       totalStock,
       stockValue,
       revenue,
+      billableOrders,
       delivered,
       pending,
       lowStock,
@@ -103,7 +115,7 @@ export default function AdminDashboard() {
     {
       label: "Total Revenue",
       value: formatINR(stats.revenue),
-      sub: `${orders.length} total orders`,
+      sub: `${stats.billableOrders.length} active orders`,
       Icon: IndianRupee,
     },
     {

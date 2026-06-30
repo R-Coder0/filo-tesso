@@ -29,6 +29,178 @@ const parseProducts = (raw) => {
 
 const getOrderReference = (order) => order.orderNumber || String(order._id);
 
+const ORDER_STATUSES = [
+  "pending",
+  "confirmed",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "returned",
+];
+const PAYMENT_STATUSES = ["Pending", "Paid", "Failed", "Refunded"];
+const PAYMENT_METHODS = ["COD", "Prepaid"];
+
+const normalizeText = (value) => String(value || "").trim();
+
+const getAddressFromBody = (body = {}) => {
+  if (body.address && typeof body.address === "object") {
+    return body.address;
+  }
+
+  if (body.address && typeof body.address === "string") {
+    try {
+      return JSON.parse(body.address);
+    } catch {
+      return {};
+    }
+  }
+
+  return {
+    name: body["address[name]"] || body.customerName || body.name,
+    phone: body["address[phone]"] || body.phone,
+    email: body["address[email]"] || body.email,
+    street: body["address[street]"] || body.street,
+    city: body["address[city]"] || body.city,
+    state: body["address[state]"] || body.state,
+    postalCode: body["address[postalCode]"] || body.postalCode,
+    country: body["address[country]"] || body.country,
+  };
+};
+
+const normalizeAddress = (rawAddress = {}) => ({
+  name: normalizeText(rawAddress.name),
+  phone: normalizeText(rawAddress.phone),
+  email: normalizeText(rawAddress.email).toLowerCase(),
+  street: normalizeText(rawAddress.street),
+  city: normalizeText(rawAddress.city),
+  state: normalizeText(rawAddress.state),
+  postalCode: normalizeText(rawAddress.postalCode),
+  country: normalizeText(rawAddress.country) || "India",
+});
+
+const getOrCreateManualUser = async (address) => {
+  const lookup = [];
+  if (address.email) lookup.push({ email: address.email });
+  if (address.phone) lookup.push({ phone: address.phone });
+
+  const existingUser = lookup.length
+    ? await User.findOne({ $or: lookup })
+    : null;
+
+  if (existingUser) return existingUser;
+
+  const fallbackEmail = `manual-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}@filoteso.local`;
+  const userPayload = {
+    name: address.name,
+    email: address.email || fallbackEmail,
+    isVerified: true,
+  };
+
+  if (address.phone) userPayload.phone = address.phone;
+
+  try {
+    return await User.create(userPayload);
+  } catch (error) {
+    if (error.code === 11000 && lookup.length) {
+      const user = await User.findOne({ $or: lookup });
+      if (user) return user;
+    }
+    throw error;
+  }
+};
+
+const buildValidatedOrderItems = async (products) => {
+  let pricing = {
+    totalAmount: 0,
+    taxableAmount: 0,
+    taxAmount: 0,
+    payableAmount: 0,
+  };
+  const orderItems = [];
+
+  for (const it of products) {
+    const product = await Product.findById(it.product);
+
+    if (!product) {
+      const error = new Error("A product in the order is no longer available");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const qty = normalizeQuantity(it.quantity);
+    if (!qty) {
+      const error = new Error("Invalid product quantity");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const selectedSize = String(it.selectedSize || "").trim().toUpperCase();
+    const variantSizes = (product.sizeVariants || []).map((variant) =>
+      String(variant.size || "").trim().toUpperCase()
+    );
+    const allowedSizes = (product.sizes?.length ? product.sizes : variantSizes).map((size) =>
+      String(size).trim().toUpperCase()
+    );
+    const selectedVariant = getVariantForSize(product, selectedSize);
+    const availableStock = selectedVariant
+      ? selectedVariant.stock
+      : variantSizes.length
+        ? 0
+        : product.stock;
+
+    if (allowedSizes.length && !allowedSizes.includes(selectedSize)) {
+      const error = new Error(`Please select a valid size for ${product.name}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (Number(availableStock || 0) < qty) {
+      const error = new Error(`${product.name} is out of stock`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    pricing = addProductPricing(pricing, product, qty);
+
+    orderItems.push(
+      buildOrderItemSnapshot(
+        product,
+        { ...it, quantity: qty },
+        pricing.salePrice
+      )
+    );
+  }
+
+  if (!orderItems.length || pricing.payableAmount <= 0) {
+    const error = new Error("Invalid order");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return { orderItems, pricing };
+};
+
+const reduceStockForOrderItems = async (orderItems) => {
+  for (const item of orderItems) {
+    if (item.selectedSize) {
+      await Product.updateOne(
+        { _id: item.product, "sizeVariants.size": item.selectedSize },
+        { $inc: { stock: -item.quantity, "sizeVariants.$.stock": -item.quantity } }
+      );
+    } else {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: -item.quantity },
+      });
+    }
+  }
+};
+
+const shouldReserveManualStock = (orderStatus, paymentStatus) =>
+  !["cancelled", "returned"].includes(orderStatus) &&
+  !["Failed", "Refunded"].includes(paymentStatus);
+
 exports.createOrder = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -68,60 +240,7 @@ exports.createOrder = async (req, res) => {
     address.country = address.country || "India";
 
     // 🔥🔥🔥 MAIN FIX START (SECURE PRICING)
-    let pricing = {
-      totalAmount: 0,
-      taxableAmount: 0,
-      taxAmount: 0,
-      payableAmount: 0,
-    };
-    const orderItems = [];
-
-    for (const it of products) {
-      const product = await Product.findById(it.product);
-
-      if (!product) {
-        return res.status(400).json({
-          message: "A product in your cart is no longer available",
-        });
-      }
-
-      const qty = normalizeQuantity(it.quantity);
-      if (!qty) {
-        return res.status(400).json({ message: "Invalid product quantity" });
-      }
-      const selectedSize = String(it.selectedSize || "").trim().toUpperCase();
-
-      const allowedSizes = (product.sizes || []).map(size => String(size).trim().toUpperCase());
-      const selectedVariant = getVariantForSize(product, selectedSize);
-      const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
-
-      // ✅ STOCK CHECK
-      if (availableStock < qty) {
-        return res.status(400).json({
-          message: `${product.name} is out of stock`,
-        });
-      }
-
-      if (allowedSizes.length && !allowedSizes.includes(selectedSize)) {
-        return res.status(400).json({
-          message: `Please select a valid size for ${product.name}`,
-        });
-      }
-
-      pricing = addProductPricing(pricing, product, qty);
-
-      orderItems.push(
-        buildOrderItemSnapshot(
-          product,
-          { ...it, quantity: qty },
-          pricing.salePrice
-        )
-      );
-    }
-
-    if (!orderItems.length || pricing.payableAmount <= 0) {
-      return res.status(400).json({ message: "Invalid order" });
-    }
+    const { orderItems, pricing } = await buildValidatedOrderItems(products);
     // 🔥🔥🔥 MAIN FIX END
 
     const { totalAmount, taxableAmount, taxAmount, payableAmount } = pricing;
@@ -150,18 +269,7 @@ exports.createOrder = async (req, res) => {
     await order.populate("products.product");
 
     // ✅ STOCK REDUCE
-    for (const item of orderItems) {
-      if (item.selectedSize) {
-        await Product.updateOne(
-          { _id: item.product, "sizeVariants.size": item.selectedSize },
-          { $inc: { stock: -item.quantity, "sizeVariants.$.stock": -item.quantity } }
-        );
-      } else {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { stock: -item.quantity },
-        });
-      }
-    }
+    await reduceStockForOrderItems(orderItems);
 
     try {
       const emailResults = await sendOrderPlacedEmails(order);
@@ -195,9 +303,86 @@ exports.createOrder = async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error placing order:", err);
-    res.status(500).json({
-      message: "Failed to place order",
+    res.status(err.statusCode || 500).json({
+      message: err.statusCode ? err.message : "Failed to place order",
       error: err.message,
+    });
+  }
+};
+
+exports.createManualOrder = async (req, res) => {
+  try {
+    const products = parseProducts(req.body.products);
+    const address = normalizeAddress(getAddressFromBody(req.body));
+
+    if (
+      !products.length ||
+      !address.name ||
+      !address.phone ||
+      !address.street ||
+      !address.city ||
+      !address.state ||
+      !address.postalCode
+    ) {
+      return res.status(400).json({
+        message: "Customer, address, and product details are required",
+      });
+    }
+
+    const user = await getOrCreateManualUser(address);
+    const { orderItems, pricing } = await buildValidatedOrderItems(products);
+    const paymentMethod = PAYMENT_METHODS.includes(req.body.paymentMethod)
+      ? req.body.paymentMethod
+      : "COD";
+    const paymentStatus = PAYMENT_STATUSES.includes(req.body.paymentStatus)
+      ? req.body.paymentStatus
+      : paymentMethod === "Prepaid"
+        ? "Paid"
+        : "Pending";
+    const orderStatus = ORDER_STATUSES.includes(req.body.orderStatus)
+      ? req.body.orderStatus
+      : "pending";
+
+    const order = new Order({
+      orderNumber: await getNextOrderNumber(),
+      user: user._id,
+      products: orderItems,
+      totalAmount: pricing.totalAmount,
+      taxableAmount: pricing.taxableAmount,
+      taxAmount: pricing.taxAmount,
+      payableAmount: pricing.payableAmount,
+      paymentStatus,
+      paymentMethod,
+      orderStatus,
+      address,
+      createdBy: "admin",
+      manualEntry: true,
+      adminNote: normalizeText(req.body.adminNote),
+    });
+
+    if (orderStatus === "cancelled") {
+      order.cancelled = true;
+      order.cancelledAt = new Date();
+      order.cancelledBy = "admin";
+      order.cancellationStatus = "approved";
+      order.cancellationReason = "Created as cancelled manual entry";
+    }
+
+    await order.save();
+    if (shouldReserveManualStock(orderStatus, paymentStatus)) {
+      await reduceStockForOrderItems(orderItems);
+    }
+    await order.populate("products.product");
+
+    res.status(201).json({
+      message: "Manual order created",
+      order,
+    });
+  } catch (error) {
+    console.error("❌ Error creating manual order:", error);
+    res.status(error.statusCode || 500).json({
+      message: error.statusCode ? error.message : "Failed to create manual order",
+      error: error.message,
     });
   }
 };
@@ -271,9 +456,7 @@ exports.updateOrderStatus = async (req, res) => {
       }
     } else if (status === 'cancelled') {
       // Optional: cancel hone par payment ko Refunded/Fails jaisa rakh sakte ho
-      if (order.paymentStatus === 'Pending') {
-        order.paymentStatus = 'Failed';
-      }
+      order.paymentStatus = order.paymentStatus === 'Paid' ? 'Refunded' : 'Failed';
     }
 
     order.orderStatus = status;
@@ -427,6 +610,7 @@ exports.updateCancellationStatus = async (req, res) => {
 
     if (status === 'approved') {
       order.orderStatus = 'cancelled';
+      order.paymentStatus = order.paymentStatus === 'Paid' ? 'Refunded' : 'Failed';
 
       // Send email to user about approved cancellation
       if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL_PASS) {

@@ -9,6 +9,7 @@ import {
   FileDown,
   Loader,
   Package,
+  Plus,
   RefreshCw,
   Trash2,
   Truck,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { showToastConfirm } from "../../utils/toastConfirm";
+import { extractProducts } from "../../utils/products";
 
 const pageTitle = {
   all: "All Orders",
@@ -33,6 +35,41 @@ const getItemImage = (item) => item.product?.image || "/placeholder.jpg";
 
 const getItemPrice = (item) =>
   item.priceAtPurchase ?? item.product?.price?.sale ?? 0;
+
+const emptyManualOrder = {
+  customerName: "",
+  phone: "",
+  email: "",
+  street: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  paymentMethod: "COD",
+  paymentStatus: "Pending",
+  orderStatus: "pending",
+  adminNote: "",
+  products: [{ product: "", selectedSize: "", quantity: 1 }],
+};
+
+const getProductSalePrice = (product) => Number(product?.price?.sale || 0);
+
+const getProductSizes = (product) => {
+  if (Array.isArray(product?.sizeVariants) && product.sizeVariants.length) {
+    return product.sizeVariants.map((variant) => ({
+      size: String(variant.size || "").toUpperCase(),
+      stock: Number(variant.stock || 0),
+    }));
+  }
+
+  if (Array.isArray(product?.sizes) && product.sizes.length) {
+    return product.sizes.map((size) => ({
+      size: String(size || "").toUpperCase(),
+      stock: Number(product?.stock || 0),
+    }));
+  }
+
+  return [];
+};
 
 const OrderDetailsModal = ({
   apiUrl,
@@ -97,6 +134,13 @@ const OrderDetailsModal = ({
               </div>
             ))}
           </div>
+
+          {order.manualEntry && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+              <p className="font-semibold">Manual admin entry</p>
+              {order.adminNote && <p className="mt-1">{order.adminNote}</p>}
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-xl border border-gray-200 bg-gray-50 p-5">
@@ -276,6 +320,7 @@ const OrderDetailsModal = ({
 
 const ManageOrders = ({ view = "all" }) => {
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
   const [cancellationRequests, setCancellationRequests] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]); // ✅ ADDED
   const activeTab = view;
@@ -286,6 +331,9 @@ const ManageOrders = ({ view = "all" }) => {
   const [deletingOrderId, setDeletingOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [shipmentAction, setShipmentAction] = useState(null);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [manualOrder, setManualOrder] = useState(emptyManualOrder);
+  const [savingManualOrder, setSavingManualOrder] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL;
   // Axios instance with admin token auth
   const axiosAdmin = axios.create({
@@ -304,6 +352,7 @@ const ManageOrders = ({ view = "all" }) => {
   useEffect(() => {
     sessionStorage.removeItem("fromDashboard");
     fetchOrders();
+    fetchProducts();
     fetchCancellationRequests();
     fetchReturnRequests(); // ✅ ADDED
 
@@ -388,6 +437,15 @@ const ManageOrders = ({ view = "all" }) => {
       console.error("Error updating return status", error);
       setProcessingReturn(null);
       toast.error("Failed to update return status");
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get(`${apiUrl}/api/products`);
+      setProducts(extractProducts(res.data));
+    } catch (error) {
+      console.error("Error fetching products for manual orders", error);
     }
   };
 
@@ -516,6 +574,155 @@ const ManageOrders = ({ view = "all" }) => {
     }
   };
 
+  const getFreshManualOrder = () => ({
+    ...emptyManualOrder,
+    products: emptyManualOrder.products.map((item) => ({ ...item })),
+  });
+
+  const getManualProduct = (productId) =>
+    products.find((product) => product._id === productId);
+
+  const getManualItemStock = (item) => {
+    const product = getManualProduct(item.product);
+    if (!product) return 0;
+    const sizes = getProductSizes(product);
+    if (!sizes.length) return Number(product.stock || 0);
+
+    const selected = sizes.find((variant) => variant.size === item.selectedSize);
+    return Number(selected?.stock || 0);
+  };
+
+  const manualOrderTotal = manualOrder.products.reduce((sum, item) => {
+    const product = getManualProduct(item.product);
+    return sum + getProductSalePrice(product) * Number(item.quantity || 0);
+  }, 0);
+
+  const openManualOrderModal = () => {
+    setManualOrder(getFreshManualOrder());
+    setManualModalOpen(true);
+  };
+
+  const closeManualOrderModal = () => {
+    if (savingManualOrder) return;
+    setManualModalOpen(false);
+    setManualOrder(getFreshManualOrder());
+  };
+
+  const updateManualField = (field, value) => {
+    setManualOrder((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "paymentMethod"
+        ? { paymentStatus: value === "Prepaid" ? "Paid" : "Pending" }
+        : {}),
+    }));
+  };
+
+  const updateManualItem = (index, field, value) => {
+    setManualOrder((current) => {
+      const nextProducts = current.products.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        if (field === "product") {
+          const selectedProduct = products.find((product) => product._id === value);
+          const [firstSize] = getProductSizes(selectedProduct);
+          return {
+            product: value,
+            selectedSize: firstSize?.size || "",
+            quantity: 1,
+          };
+        }
+
+        if (field === "quantity") {
+          return {
+            ...item,
+            quantity: Math.max(1, Number(value || 1)),
+          };
+        }
+
+        return {
+          ...item,
+          [field]: value,
+          ...(field === "selectedSize" ? { quantity: 1 } : {}),
+        };
+      });
+
+      return { ...current, products: nextProducts };
+    });
+  };
+
+  const addManualItem = () => {
+    setManualOrder((current) => ({
+      ...current,
+      products: [
+        ...current.products,
+        { product: "", selectedSize: "", quantity: 1 },
+      ],
+    }));
+  };
+
+  const removeManualItem = (index) => {
+    setManualOrder((current) => ({
+      ...current,
+      products:
+        current.products.length > 1
+          ? current.products.filter((_, itemIndex) => itemIndex !== index)
+          : current.products,
+    }));
+  };
+
+  const handleCreateManualOrder = async (event) => {
+    event.preventDefault();
+
+    const orderProducts = manualOrder.products
+      .filter((item) => item.product)
+      .map((item) => ({
+        product: item.product,
+        selectedSize: item.selectedSize,
+        quantity: Number(item.quantity || 1),
+      }));
+
+    if (!orderProducts.length) {
+      toast.error("Please add at least one product");
+      return;
+    }
+
+    try {
+      setSavingManualOrder(true);
+      await axiosAdmin.post("/admin/manual", {
+        address: {
+          name: manualOrder.customerName,
+          phone: manualOrder.phone,
+          email: manualOrder.email,
+          street: manualOrder.street,
+          city: manualOrder.city,
+          state: manualOrder.state,
+          postalCode: manualOrder.postalCode,
+          country: "India",
+        },
+        products: orderProducts,
+        paymentMethod: manualOrder.paymentMethod,
+        paymentStatus: manualOrder.paymentStatus,
+        orderStatus: manualOrder.orderStatus,
+        adminNote: manualOrder.adminNote,
+      });
+
+      await fetchOrders();
+      await fetchProducts();
+      closeManualOrderModal();
+      toast.success("Manual order added successfully");
+    } catch (error) {
+      console.error("Failed to create manual order", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to add manual order"
+      );
+    } finally {
+      setSavingManualOrder(false);
+    }
+  };
+
   const getPaymentStatusBadge = (status) => {
     const colors = {
       Pending: 'bg-yellow-100 text-yellow-800',
@@ -567,13 +774,25 @@ const ManageOrders = ({ view = "all" }) => {
   return (
     <div className="space-y-6">
       
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-bold uppercase tracking-[0.28em] text-gray-400">
-          Order Operations
-        </p>
-        <h2 className="text-2xl font-bold text-gray-950 md:text-3xl">
-          {pageTitle[activeTab] || "Orders"}
-        </h2>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-gray-400">
+            Order Operations
+          </p>
+          <h2 className="text-2xl font-bold text-gray-950 md:text-3xl">
+            {pageTitle[activeTab] || "Orders"}
+          </h2>
+        </div>
+        {activeTab === "all" && (
+          <button
+            type="button"
+            onClick={openManualOrderModal}
+            className="inline-flex items-center justify-center gap-2 border border-black bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-white hover:text-black"
+          >
+            <Plus className="h-4 w-4" />
+            Add Manual Order
+          </button>
+        )}
       </div>
 
       {activeTab === "all" ? (
@@ -626,6 +845,11 @@ const ManageOrders = ({ view = "all" }) => {
                               {isNewOrder(order.createdAt) && (
                                 <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
                                   NEW
+                                </span>
+                              )}
+                              {order.manualEntry && (
+                                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                  MANUAL
                                 </span>
                               )}
                             </div>
@@ -780,6 +1004,314 @@ const ManageOrders = ({ view = "all" }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {manualModalOpen && (
+            <div
+              className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) closeManualOrderModal();
+              }}
+            >
+              <form
+                onSubmit={handleCreateManualOrder}
+                className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+              >
+                <div className="sticky top-0 z-10 flex items-start justify-between border-b border-gray-200 bg-white px-6 py-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
+                      Admin order entry
+                    </p>
+                    <h3 className="mt-1 text-2xl font-semibold text-gray-950">
+                      Add Manual Order
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeManualOrderModal}
+                    disabled={savingManualOrder}
+                    className="rounded-full border border-gray-200 p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-950 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Close manual order form"
+                    title="Close"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="max-h-[calc(92vh-150px)] space-y-6 overflow-y-auto p-6">
+                  <section>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                      Customer
+                    </h4>
+                    <div className="mt-3 grid gap-4 md:grid-cols-3">
+                      <input
+                        type="text"
+                        value={manualOrder.customerName}
+                        onChange={(event) =>
+                          updateManualField("customerName", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                        placeholder="Customer name"
+                        required
+                      />
+                      <input
+                        type="tel"
+                        value={manualOrder.phone}
+                        onChange={(event) =>
+                          updateManualField("phone", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                        placeholder="Phone"
+                        required
+                      />
+                      <input
+                        type="email"
+                        value={manualOrder.email}
+                        onChange={(event) =>
+                          updateManualField("email", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                        placeholder="Email optional"
+                      />
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                      Shipping Address
+                    </h4>
+                    <div className="mt-3 grid gap-4 md:grid-cols-2">
+                      <input
+                        type="text"
+                        value={manualOrder.street}
+                        onChange={(event) =>
+                          updateManualField("street", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950 md:col-span-2"
+                        placeholder="Street address"
+                        required
+                      />
+                      <input
+                        type="text"
+                        value={manualOrder.city}
+                        onChange={(event) =>
+                          updateManualField("city", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                        placeholder="City"
+                        required
+                      />
+                      <input
+                        type="text"
+                        value={manualOrder.state}
+                        onChange={(event) =>
+                          updateManualField("state", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                        placeholder="State"
+                        required
+                      />
+                      <input
+                        type="text"
+                        value={manualOrder.postalCode}
+                        onChange={(event) =>
+                          updateManualField("postalCode", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                        placeholder="Pincode"
+                        required
+                      />
+                      <input
+                        type="text"
+                        value="India"
+                        readOnly
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+                      />
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                      Payment & Status
+                    </h4>
+                    <div className="mt-3 grid gap-4 md:grid-cols-3">
+                      <select
+                        value={manualOrder.paymentMethod}
+                        onChange={(event) =>
+                          updateManualField("paymentMethod", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-950"
+                      >
+                        <option value="COD">COD</option>
+                        <option value="Prepaid">Prepaid</option>
+                      </select>
+                      <select
+                        value={manualOrder.paymentStatus}
+                        onChange={(event) =>
+                          updateManualField("paymentStatus", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-950"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Failed">Failed</option>
+                        <option value="Refunded">Refunded</option>
+                      </select>
+                      <select
+                        value={manualOrder.orderStatus}
+                        onChange={(event) =>
+                          updateManualField("orderStatus", event.target.value)
+                        }
+                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-950"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900">
+                        Products
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={addManualItem}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 transition hover:border-gray-950 hover:bg-gray-950 hover:text-white"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Item
+                      </button>
+                    </div>
+
+                    <div className="mt-3 space-y-3">
+                      {manualOrder.products.map((item, index) => {
+                        const selectedProduct = getManualProduct(item.product);
+                        const sizes = getProductSizes(selectedProduct);
+                        const stock = item.product ? getManualItemStock(item) : 0;
+                        const lineTotal =
+                          getProductSalePrice(selectedProduct) *
+                          Number(item.quantity || 0);
+
+                        return (
+                          <div
+                            key={`${index}-${item.product || "blank"}`}
+                            className="grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 md:grid-cols-[1.7fr_0.8fr_0.65fr_0.65fr_auto]"
+                          >
+                            <select
+                              value={item.product}
+                              onChange={(event) =>
+                                updateManualItem(index, "product", event.target.value)
+                              }
+                              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-950"
+                              required
+                            >
+                              <option value="">
+                                {products.length ? "Select product" : "Loading products..."}
+                              </option>
+                              {products.map((product) => (
+                                <option key={product._id} value={product._id}>
+                                  {product.name} · ₹{getProductSalePrice(product)}
+                                </option>
+                              ))}
+                            </select>
+
+                            <select
+                              value={item.selectedSize}
+                              onChange={(event) =>
+                                updateManualItem(index, "selectedSize", event.target.value)
+                              }
+                              disabled={!sizes.length}
+                              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-950 disabled:bg-gray-100"
+                              required={sizes.length > 0}
+                            >
+                              <option value="">
+                                {sizes.length ? "Size" : "No size"}
+                              </option>
+                              {sizes.map((variant) => (
+                                <option key={variant.size} value={variant.size}>
+                                  {variant.size} · {variant.stock} left
+                                </option>
+                              ))}
+                            </select>
+
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(event) =>
+                                updateManualItem(index, "quantity", event.target.value)
+                              }
+                              className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                              required
+                            />
+
+                            <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+                              <p className="font-semibold text-gray-950">₹{lineTotal}</p>
+                              <p className="text-xs text-gray-500">Stock {stock}</p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => removeManualItem(index)}
+                              disabled={manualOrder.products.length === 1}
+                              className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white p-2 text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                              aria-label="Remove item"
+                              title="Remove item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  <section className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                    <textarea
+                      value={manualOrder.adminNote}
+                      onChange={(event) =>
+                        updateManualField("adminNote", event.target.value)
+                      }
+                      className="min-h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-950"
+                      placeholder="Admin note optional"
+                    />
+                    <div className="rounded-xl border border-gray-200 bg-gray-950 px-5 py-4 text-white">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                        Payable total
+                      </p>
+                      <p className="mt-1 text-2xl font-bold">₹{manualOrderTotal}</p>
+                    </div>
+                  </section>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-white px-6 py-4 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeManualOrderModal}
+                    disabled={savingManualOrder}
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingManualOrder}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-black bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {savingManualOrder ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                    {savingManualOrder ? "Saving..." : "Save Manual Order"}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
